@@ -1,0 +1,32 @@
+#!/bin/bash
+
+printf "Assembling individual memory banks...\n\n"
+
+cd source_files
+
+../Ophis/Ophis Bank00.asm ../output_files/Bank00.bin
+../Ophis/Ophis Bank01.asm ../output_files/Bank01.bin
+../Ophis/Ophis Bank02.asm ../output_files/Bank02.bin
+../Ophis/Ophis Bank03.asm ../output_files/Bank03.bin
+
+printf "\nCalculating checksums of individual memory banks...\n\n"
+
+cd ..
+
+md5sum output_files/Bank00.bin
+md5sum original_files/Bank00.bin
+md5sum output_files/Bank01.bin
+md5sum original_files/Bank01.bin
+md5sum output_files/Bank02.bin
+md5sum original_files/Bank02.bin
+md5sum output_files/Bank03.bin
+md5sum original_files/Bank03.bin
+
+#printf "\nAssembling working ROM...\n"
+
+#cat original_files/Header.bin output_files/Bank00.bin output_files/Bank01.bin output_files/Bank02.bin output_files/Bank03.bin original_files/CHR_ROM.bin > assembled_dragon_warrior.nes
+
+#printf "\nCalculating checksums of working ROMS...\n\n"
+
+#md5sum assembled_dragon_warrior.nes
+#md5sum original_dragon_warrior.nes

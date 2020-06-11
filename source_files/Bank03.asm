@@ -1,6 +1,6 @@
 .org $C000
 
-.include "Dragon_Warrior_Defines.txt"
+.include "Dragon_Warrior_Defines.asm"
 
 ;--------------------------------------[ Forward declarations ]--------------------------------------
 
@@ -436,23 +436,23 @@ PalFadeOut:
 LC212:  LDA #$00
 LC214:  STA PalModByte
 
-LC216:* LDX #$04
+LC216:* LDX #$04                ;Prepare to wait for 4 frames.
 LC218:* JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LC21B:  DEX
-LC21C:  BNE -
+LC21B:  DEX                     ;
+LC21C:  BNE -                   ;Has 4 frames elapsed? If not, branch to wait another frame.
 
-LC21E:  LDA $3E
+LC21E:  LDA SprtPalPtrLB
 LC220:  STA PalPtrLB
-LC222:  LDA $3F
+LC222:  LDA SprtPalPtrUB
 LC224:  STA PalPtrUB
 LC226:  JSR PrepSPPalLoad       ;($C632)Load sprite palette data into PPU buffer.
 
 LC229:  LDA $3D
 LC22B:  BEQ +
 
-LC22D:  LDA $40
+LC22D:  LDA BGPalPtrLB
 LC22F:  STA PalPtrLB
-LC231:  LDA $41
+LC231:  LDA BGPalPtrUB
 LC233:  STA PalPtrUB
 LC235:  JSR PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
 
@@ -1848,6 +1848,7 @@ LCA74:  BEQ $CA7C
 LCA76:  LDA RepelTimer
 LCA78:  CMP #$01
 LCA7A:  BNE $CA9B
+
 LCA7C:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCA7F:  LDA #NPC_STOP
 LCA81:  STA StopNPCMove
@@ -1966,19 +1967,23 @@ LCB44:  JMP $CA9F
 
 StartAtThroneRoom:
 LCB47:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LCB4A:  LDA BlackPalPtr
-LCB4D:  STA PalPtrLB
-LCB4F:  LDA BlackPalPtr+1
-LCB52:  STA PalPtrUB
-LCB54:  LDA #$00
-LCB56:  STA PalModByte
+LCB4A:  LDA BlackPalPtr         ;
+LCB4D:  STA PalPtrLB            ;
+LCB4F:  LDA BlackPalPtr+1       ;Point to the all black palette.
+LCB52:  STA PalPtrUB            ;
+
+LCB54:  LDA #$00                ;No sprite palette fade in.
+LCB56:  STA PalModByte          ;
+
 LCB58:  JSR PrepSPPalLoad       ;($C632)Load sprite palette data into PPU buffer.
-LCB5B:  LDA #$30
-LCB5D:  STA PalModByte
+LCB5B:  LDA #$30                ;
+LCB5D:  STA PalModByte          ;Prepare to fade in background tiles.
+
 LCB5F:  JSR PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
 LCB62:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCB65:  JSR LoadStats           ;($F050)Update player attributes.
 LCB68:  JSR Bank1ToNT0          ;($FC98)Load CHR ROM bank 1 into nametable 0.
+
 LCB6B:  LDA ModsnSpells
 LCB6D:  AND #$C0
 LCB6F:  BEQ $CB78
@@ -8324,22 +8329,23 @@ LF04F:  RTS
 ;----------------------------------------------------------------------------------------------------
 
 LoadStats:
-LF050:  LDX #$3A
-LF052:  LDA #LVL_30
-LF054:  STA DisplayedLevel
+LF050:  LDX #LVL_TBL_LAST       ;Point to level 30 in LevelUpTbl.
+LF052:  LDA #LVL_30             ;
+LF054:  STA DisplayedLevel      ;Set displayed level to 30.
 
 GetLevelLoop:
-LF056:  LDA ExpLB
-LF058:  SEC
-LF059:  SBC LevelUpTbl,X
-LF05C:  LDA ExpUB
-LF05E:  SBC LevelUpTbl+1,X
-LF061:  BCS $F069
-LF063:  DEC DisplayedLevel
-LF065:  DEX
-LF066:  DEX
-LF067:  BNE GetLevelLoop
+LF056:  LDA ExpLB               ;
+LF058:  SEC                     ;
+LF059:  SBC LevelUpTbl,X        ;
+LF05C:  LDA ExpUB               ;Get current experience and subtract the values in LevelUpTbl -->
+LF05E:  SBC LevelUpTbl+1,X      ;If the value goes negative, then the player's current level -->
+LF061:  BCS LevelFound          ;has been found.  Keep looping until the player's current -->
+LF063:  DEC DisplayedLevel      ;level is determined.
+LF065:  DEX                     ;
+LF066:  DEX                     ;
+LF067:  BNE GetLevelLoop        ;
 
+LevelFound:
 LF069:  LDA DisplayedLevel      ;
 LF06B:  SEC                     ;Subtract 1 from level as index into table starts at 0.
 LF06C:  SBC #$01                ;
@@ -8370,45 +8376,48 @@ LF08A:  .byte $7D, $B4, $00     ;ADC $00B4,X. Assembling as ADC $B4,X. Replaced 
 LF08D:  DEX                     ;Have all 4 characters been added together?
 LF08E:  BNE NameAddLoop         ;If not, loop to add another one.
 
-LF090:  STA $42
-LF092:  AND #$03
-LF094:  STA $43
+LF090:  STA StatBonus           ;Save off total value for later.
+LF092:  AND #$03                ;
+LF094:  STA StatPenalty         ;Get 2 LSBs for stat penalty calculations.
 
-LF096:  LDA $42
-LF098:  LSR
-LF099:  LSR
-LF09A:  AND #$03
-LF09C:  STA $42
+LF096:  LDA StatBonus           ;
+LF098:  LSR                     ;Get bits 2 and 3 for stat bonus calculations and -->
+LF099:  LSR                     ;move them to bits 0 and 1.
+LF09A:  AND #$03                ;
+LF09C:  STA StatBonus           ;
 
-LF09E:  LDA $43
-LF0A0:  LSR
-LF0A1:  BCS $F0AD
+LF09E:  LDA StatPenalty         ;If LSB is set, penalize max MP.
+LF0A0:  LSR                     ;
+LF0A1:  BCS MaxMPPenalty        ;Penalize max MP? If so, branch.
 
-LF0A3:  LDA DisplayedStr
+LF0A3:  LDA DisplayedStr        ;Penalize strength by 10%.
 LF0A5:  JSR ReduceStat          ;($F10C)Multiply stat by 9/10.
-LF0A8:  STA DisplayedStr
+LF0A8:  STA DisplayedStr        ;
 
-LF0AA:  JMP $F0B6
+LF0AA:  JMP ChkAgiPenalty       ;Check agility, max HP penalties.
 
-LF0AD:  LDA DisplayedMaxMP
-LF0AF:  BEQ $F0B6
+MaxMPPenalty:
+LF0AD:  LDA DisplayedMaxMP      ;Only penalize MP if player has any MP to penalize.
+LF0AF:  BEQ ChkAgiPenalty       ;
 
 LF0B1:  JSR ReduceStat          ;($F10C)Multiply stat by 9/10.
-LF0B4:  STA DisplayedMaxMP
+LF0B4:  STA DisplayedMaxMP      ;Penalize max MP.
 
-LF0B6:  LDA $43
-LF0B8:  AND #$02
-LF0BA:  BNE $F0C6
+ChkAgiPenalty:
+LF0B6:  LDA StatPenalty         ;if bit 1 is set, penalize agility.
+LF0B8:  AND #$02                ;
+LF0BA:  BNE MaxHPPenalty        ;Penalize max HP? If so, branch.
 
-LF0BC:  LDA DisplayedAgi
+LF0BC:  LDA DisplayedAgi        ;Penalize agility by 10%.
 LF0BE:  JSR ReduceStat          ;($F10C)Multiply stat by 9/10.
-LF0C1:  STA DisplayedAgi
+LF0C1:  STA DisplayedAgi        ;
 
 LF0C3:  JMP AddItemBonuses      ;($F0CD)Add bonuses for player's equipped items.
 
-LF0C6:  LDA DisplayedMaxHP
+MaxHPPenalty:
+LF0C6:  LDA DisplayedMaxHP      ;Penalize max HP.
 LF0C8:  JSR ReduceStat          ;($F10C)Multiply stat by 9/10.
-LF0CB:  STA DisplayedMaxHP
+LF0CB:  STA DisplayedMaxHP      ;
 
 AddItemBonuses:
 LF0CD:  LDA EqippedItems        ;Get equipped items.
@@ -8463,6 +8472,42 @@ LF10B:* RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
+;The name of the character is critical in determining how the stats are penalized.  There are two
+;pairs of stats that will always be penalized.  If a character has normal strength growth, then their
+;max MP will be penalized by 10%.  The opposite is true: if a character has normal MP growth, then
+;their strength will be penalized by 10%.  The other pair of stats is agility and max HP.  If agility
+;has normal growth, the max HP will be penalized by 10% and vice versa.  The important thing to take
+;away is that two stats will always be penalized while the other two are not.  A bonus of 0 to 3
+;points will be added to the 2 penalized stats.  This gives the effect of having the penalized stat
+;slightly stronger at the beginning of the game but becomes weaker as the player progresses levels.
+;
+;Only the first 4 letters in the name are used for the stat penalties and bonus calculations. Here
+;is how it works:
+;
+;The numeric value of the first four letters of the name are added together.  the following
+;is a list of the numeric values of the characters:
+;A=$24, B=$25, C=$26, D=$27, E=$28, F=$29, G=$2A, H=$2B, I=$2C, J=$2D,
+;K=$2E, L=$2F, M=$30, N=$31, O=$32, P=$33, Q=$34, R=$35, S=$36, T=$37,
+;U=$38, V=$39, W=$3A, X=$3B, Y=$3C, Z=$3D, -=$49, '=$40, !=$4C, ?=$4B,
+;(=$4F, )=$4E, a=0A$, b=$0B, c=$0C, d=$0D, e=$0E, f=$0F, g=$10, h=$11,
+;i=$12, j=$13, k=$14, l=$15, m=$16, n=$17, o=$18, p=$19, q=$1A, r=$1B,
+;s=$1C, t=$1D, u=$1E, v=$1F, w=$20, x=$21, y=$22, z=$23, ,=$48, .=$47,
+;space=$60
+;
+;Bits 0 and 1 are used to determine the stat penalties. Bits 2 and 3 are the stats bonus.
+;
+;If bit 0 is clear, strength is penalized by 10%. If bit 0 is set, max MP is penalized by 10%.
+;if bit 1 is clear, agility is penalized by 10%. If bit 1 is set, max HP is penalized by 10%.
+;
+;Bits 2 and 3 are shifted down to bits 0 and 1 and added to the penalized stats.
+;
+;Some examples:
+;JAKE = $2D+$24+$2E+$28 = $A7. Max MP penalized, max HP penalized, +1 added to max MP, HP.
+;Deez = $27+$0E+$0E+$23 = $66. Strength penalized, max HP penalized, +1 added to strength, max HP.
+;
+;The best combination would be to have the lowest 4 bits be 1111. This would reduce max HP and MP
+;but give a bonus of 3 points to each. Strength and agility would have normal growth.
+
 ReduceStat:
 LF10C:  STA MultNum1LB          ;
 LF10E:  LDA #$09                ;
@@ -8472,19 +8517,21 @@ LF114:  STA MultNum1UB          ;
 LF116:  STA MultNum2UB          ;
 LF118:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
 
-LF11B:  LDA MultRsltLB
-LF11D:  STA DivNum1LB
-LF11F:  LDA MultRsltUB
-LF121:  STA DivNmu1UB
-LF123:  LDA #$0A                ;Divide stat by 10.
-LF125:  STA DivNum2             ;Net result is stat*9/10.
-LF127:  LDA #$00
-LF129:  STA DivNum2NU
-LF12B:  JSR WordDivide          ;($C1F4)
-LF12E:  LDA DivQuotient
-LF130:  CLC
-LF131:  ADC $42
-LF133:  RTS
+LF11B:  LDA MultRsltLB          ;
+LF11D:  STA DivNum1LB           ;Save results of multiplication.
+LF11F:  LDA MultRsltUB          ;
+LF121:  STA DivNmu1UB           ;
+
+LF123:  LDA #$0A                ;prepare to Divide stat by 10.
+LF125:  STA DivNum2             ;
+LF127:  LDA #$00                ;
+LF129:  STA DivNum2NU           ;
+LF12B:  JSR WordDivide          ;($C1F4)Divide a 16-bit word by an 8-bit byte.
+LF12E:  LDA DivQuotient         ;Net result is stat*9/10.
+
+LF130:  CLC                     ;Add in any stat bonus that may have been calculated.
+LF131:  ADC StatBonus           ;Stat bonus may be in the range of 0-3.
+LF133:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 

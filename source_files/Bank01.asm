@@ -1,6 +1,6 @@
 .org $8000
 
-.include "Dragon_Warrior_Defines.txt"
+.include "Dragon_Warrior_Defines.asm"
 
 ;--------------------------------------[ Forward declarations ]--------------------------------------
 

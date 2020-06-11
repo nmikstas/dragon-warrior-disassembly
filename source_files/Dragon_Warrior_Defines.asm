@@ -229,6 +229,14 @@
 .alias ThisNPCXPos      $42     ;Copy of current NPCs X block position on map.
 .alias ThisNPCYPos      $43     ;Copy of current NPCs y block position on map.
 
+.alias StatBonus        $42     ;When stat penalties are applied, any value here will 
+                                ;be added in as a bonus. Potential bonus of 0-3 points.
+.alias StatPenalty      $43     ;Lower 2 bits only. stat penalties work as follows:
+                                ;If bit 0 is clear -> strength is reduced by 10%.
+                                ;If bit 0 is set   -> max MP is reduced by 10%.
+                                ;If bit 1 is clear -> agility is reduced by 10%.
+                                ;If bit 1 is set   -> max HP is reduced by 10%.
+
 .alias MapNumber        $45     ;Current map player is on.
 
 .alias JoypadBtns       $47     ;Captured button presses on controller 1.
@@ -775,6 +783,9 @@
 .alias LVL_28           $1C     ;Experience level 28.
 .alias LVL_29           $1D     ;Experience level 29.
 .alias LVL_30           $1E     ;Experience level 30.
+
+;Index to level 30 in the level up table.
+.alias LVL_TBL_LAST     $3A     ;2 bytes per level up table entry.
 
 ;Inventory items.
 .alias ITM_NONE         $00     ;No item.

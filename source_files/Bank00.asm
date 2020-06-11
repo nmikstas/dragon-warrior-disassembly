@@ -1,20 +1,27 @@
 .org $8000
 
-.include "Dragon_Warrior_Defines.txt"
+.include "Dragon_Warrior_Defines.asm"
 
 ;--------------------------------------[ Forward declarations ]--------------------------------------
 
+.alias GetSpclNPCType           $C0F4
 .alias WordMultiply             $C1C9
 .alias ByteDivide               $C1F0
 .alias PalFadeOut               $C212
 .alias PalFadeIn                $C529
+.alias UpdateRandNum            $C55B
+.alias CalcPPUBufAddr           $C596
 .alias PrepSPPalLoad            $C632
 .alias PrepBGPalLoad            $C63D
 .alias AddPPUBufEntry           $C690
 .alias ClearSpriteRAM           $C6BB
+.alias IdleUpdate               $CB30
+.alias CheckForEnding           $CBF7
 .alias MapTargetTbl             $F461
+.alias Bank1ToCHR0              $FC98
 .alias Bank0ToCHR0              $FCA3
 .alias Bank0ToCHR1              $FCA8
+.alias Bank2ToCHR1              $FCAD
 .alias WaitForNMI               $FF74
 .alias _DoReset                 $FF8E
 
