@@ -83,6 +83,10 @@
 .alias BoundryBlock     $15     ;Block ID of for blocks beyond the map boundaries.
 .alias MapType          $16     ;#$00-over world, #$10-town/castle, #$20-cave.
 
+.alias CoverDatPtr      $17     ;Pointer to map covered area data.
+.alias CoverDatLB       $17     ;Pointer to map covered area data, lower byte.
+.alias CoverDatUB       $18     ;Pointer to map covered area data, upper byte.
+
 .alias ThisTempIndex    $1A     ;Working index into temp buffer.
 .alias DescEntry        $1A     ;Entry number for item description.
 
@@ -117,6 +121,8 @@
 .alias PlayerDatPtr     $22     ;Pointer for loading/saving player stats.
 .alias PlayerDatPtrLB   $22     ;Pointer for loading/saving player stats, lower byte.
 .alias PlayerDatPtrUB   $23     ;Pointer for loading/saving player stats, upper byte.
+
+.alias AttribBufIndex   $23     ;Index into attribute table buffer
 
 .alias WndTypeCopy      $23     ;Temporary copy of current window type.
 
@@ -374,7 +380,8 @@
                                 ;%10000000-Wearing Death necklace.
 
 .alias LightDiameter    $D0     ;Diameter in blocks of light around player in dungeons.                             
-                                
+.alias PPUHorzVert      $D1     ;#$00=Write PPU data in vertical column(add #$20 every write).
+                                ;non-zero=Write PPU data horizontally.                                
 .alias WndTxtXCoord     $D2     ;X coordinant of current text byte relative to the window.  
 .alias WndTxtYCoord     $D3     ;Y coordinant of current text byte relative to the window.                      
 

@@ -33,8 +33,11 @@
 .alias MapChngNoSound           $B091
 .alias MapChngWithSound         $B097
 .alias ResumeMusicTbl           $B1AE
+.alias ChkSpecialLoc            $B219
 .alias CheckMapExit             $B228
 .alias DoJoyRight               $B252
+.alias DoJoyLeft                $B34C
+.alias DoJoyDown                $B3D8
 .alias DoJoyUp                  $B504
 .alias SprtFacingBaseAddr       $B6C2
 .alias DoSprites                $B6DA
@@ -1313,7 +1316,7 @@ LC717:  JMP $C734
 
 LC71A:  LDA #$00
 LC71C:  STA BlkRemoveFlgs
-LC71E:  STA $D1
+LC71E:  STA PPUHorzVert
 LC720:  JSR ModMapBlock         ;($AD66)Change block on map.
 LC723:  LDY #$00
 LC725:  LDA #$FF
@@ -1823,145 +1826,157 @@ LCA54:  STA StopNPCMove         ;
 ;This is the main loop where the rest of the game originates from.
 
 GameEngineLoop:
-LCA56:  LDA RadiantTimer
-LCA58:  BEQ $CA6C
+LCA56:  LDA RadiantTimer        ;Is the radiant timer active?
+LCA58:  BEQ CheckRepelTimer     ;If not, branch to check the repel timer.
 
-LCA5A:  DEC RadiantTimer
-LCA5C:  BNE $CA6C
+LCA5A:  DEC RadiantTimer        ;Decrement the radiant timer.
+LCA5C:  BNE CheckRepelTimer     ;Is radiant timer expired? If not, branch to check the repel timer.
 
-LCA5E:  LDA LightDiameter
-LCA60:  CMP #$01
-LCA62:  BEQ $CA6C
+LCA5E:  LDA LightDiameter       ;Radiant timer expired. Check light diameter.
+LCA60:  CMP #$01                ;Is light diameter at minimum?
+LCA62:  BEQ CheckRepelTimer     ;If so, branch to check the repel timer.
 
-LCA64:  LDA #$3C
-LCA66:  STA RadiantTimer
-LCA68:  DEC LightDiameter
-LCA6A:  DEC LightDiameter
+LCA64:  LDA #$3C                ;Reload radiant timer. 60 steps.
+LCA66:  STA RadiantTimer        ;
+LCA68:  DEC LightDiameter       ;Radius is reduced by two squares.
+LCA6A:  DEC LightDiameter       ;
 
+CheckRepelTimer:
 LCA6C:  LDA RepelTimer          ;Is the repel timer active?
 LCA6E:  BEQ JoypadCheckLoop     ;If not, branch to check joypad inputs.
 
 LCA70:  DEC RepelTimer          ;Decrement the repel timer by 2 every step.
 LCA72:  DEC RepelTimer          ;
+LCA74:  BEQ EndRepelTimer       ;Did repel timer just end? If so, branch to show message.
 
-LCA74:  BEQ $CA7C
-LCA76:  LDA RepelTimer
-LCA78:  CMP #$01
-LCA7A:  BNE $CA9B
+LCA76:  LDA RepelTimer          ;Ir repel timer about to end?
+LCA78:  CMP #$01                ;If not, jump to check user input.
+LCA7A:  BNE JoypadCheckLoop     ;
 
+EndRepelTimer:
 LCA7C:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LCA7F:  LDA #NPC_STOP
-LCA81:  STA StopNPCMove
+LCA7F:  LDA #NPC_STOP           ;
+LCA81:  STA StopNPCMove         ;Stop NPC movement.
 
 LCA83:  JSR Dowindow            ;($C6F0)display on-screen window.
 LCA86:  .byte WND_DIALOG        ;Dialog window.
 
-LCA87:  LDA RepelTimer
-LCA89:  BNE $CA8F
-LCA8B:  LDA #$37
-LCA8D:  BNE $CA91
+LCA87:  LDA RepelTimer          ;If repel timer is odd, it is the repel spell. If it is -->
+LCA89:  BNE RepelEndMsg         ;even, it is from fairy water. Branch accordingly.
 
-LCA8F:  LDA #$34                ;TextBlock4, entry 4.
-LCA91:  JSR DoMidDialog         ;($C7BD)Repel has lost its effect...
+LCA8B:  LDA #$37                ;TextBlock4, entry 7. The fairy water has lost its effect...
+LCA8D:  BNE +                   ;Branch always.
+
+RepelEndMsg:
+LCA8F:  LDA #$34                ;TextBlock4, entry 4. Repel has lost its effect...
+LCA91:* JSR DoMidDialog         ;($C7BD)Do any number of Dialogs.
 
 LCA94:  JSR ResumeGamePlay      ;($CFD9)Give control back to player.
 LCA97:  LDA #$00                ;
 LCA99:  STA RepelTimer          ;Deactivate the repel timer.
 
 JoypadCheckLoop:
-LCA9B:  LDA #$00
-LCA9D:  STA FrameCounter
+LCA9B:  LDA #$00                ;Reset the frame counter.
+LCA9D:  STA FrameCounter        ;
+
+CheckInputs:
 LCA9F:  JSR GetJoypadStatus     ;($C608)Get input button presses.
-LCAA2:  LDA JoypadBtns
-LCAA4:  AND #IN_START
-LCAA6:  BEQ CheckJoyA
+LCAA2:  LDA JoypadBtns          ;
+LCAA4:  AND #IN_START           ;Is game paused?
+LCAA6:  BEQ CheckJoyA           ;If not, branch to check user inputs.
 
 PausePrepLoop:
 LCAA8:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LCAAB:  LDA FrameCounter
-LCAAD:  AND #$0F
-LCAAF:  CMP #$01
-LCAB1:  BEQ GamePaused
+LCAAB:  LDA FrameCounter        ;
+LCAAD:  AND #$0F                ;Sync the pause every 16th frame of the frame counter. -->
+LCAAF:  CMP #$01                ;This lines up the NPCs and player on the background tiles.
+LCAB1:  BEQ GamePaused          ;
 LCAB3:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 LCAB6:  JMP PausePrepLoop       ;($CAA8)Start pressed.  Wait until first frame and then pause game.
 
 GamePaused:
 LCAB9:  JSR GetJoypadStatus     ;($C608)Get input button presses.
-LCABC:  LDA JoypadBtns
-LCABE:  AND #IN_START
-LCAC0:  BNE GamePaused
+LCABC:  LDA JoypadBtns          ;
+LCABE:  AND #IN_START           ;Stay in this loop until player releases pause button.
+LCAC0:  BNE GamePaused          ;
 
-LCAC2:  JSR GetJoypadStatus     ;($C608)Get input button presses.
-LCAC5:  LDA JoypadBtns
-LCAC7:  AND #IN_START
-LCAC9:  BEQ $CAC2
+LCAC2:* JSR GetJoypadStatus     ;($C608)Get input button presses.
+LCAC5:  LDA JoypadBtns          ;
+LCAC7:  AND #IN_START           ;Stay in this loop until user presses button to unpause game.
+LCAC9:  BEQ -                   ;
 
-LCACB:  JSR GetJoypadStatus     ;($C608)Get input button presses.
-LCACE:  LDA JoypadBtns
-LCAD0:  AND #IN_START
-LCAD2:  BNE $CACB
+LCACB:* JSR GetJoypadStatus     ;($C608)Get input button presses.
+LCACE:  LDA JoypadBtns          ;
+LCAD0:  AND #IN_START           ;Stay in this loop until user releases start button(unpause).
+LCAD2:  BNE -                   ;
 LCAD4:  JMP JoypadCheckLoop     ;($CA9B)Loop and check for controller input.
 
 CheckJoyA:
-LCAD7:  LDA JoypadBtns
-LCAD9:  LSR
-LCADA:  BCC CheckJoyUp
+LCAD7:  LDA JoypadBtns          ;Was A button pressed?
+LCAD9:  LSR                     ;If not, branch to check other buttons.
+LCADA:  BCC CheckJoyUp          ;
+
 LCADC:  JSR DoNCCmdWindow       ;($CF49)Bring up non-combat command window.
-LCADF:  JMP $CA9B
+LCADF:  JMP JoypadCheckLoop     ;Loop again to keep checking user inputs.
 
 CheckJoyUp:
-LCAE2:  LDA JoypadBtns
-LCAE4:  AND #IN_UP
-LCAE6:  BEQ CheckJoyDown
-LCAE8:  LDA #DIR_UP
-LCAEA:  STA CharDirection
+LCAE2:  LDA JoypadBtns          ;Get joypad buttons.
+LCAE4:  AND #IN_UP              ;Is up being pressed?
+LCAE6:  BEQ CheckJoyDown        ;If not, branch to check next button.
+
+LCAE8:  LDA #DIR_UP             ;Point character up.
+LCAEA:  STA CharDirection       ;
 LCAED:  JSR DoJoyUp             ;($B504)Do button up pressed checks.
-LCAF0:  JSR $B219
+LCAF0:  JSR ChkSpecialLoc       ;($B219)Check for special locations on the maps.
 LCAF3:  JMP GameEngineLoop      ;($CA56)Return to the start of the game engine loop.
 
 CheckJoyDown:
-LCAF6:  LDA JoypadBtns
-LCAF8:  AND #IN_DOWN
-LCAFA:  BEQ CheckJoyLeft
-LCAFC:  LDA #DIR_DOWN
-LCAFE:  STA CharDirection
-LCB01:  JSR $B3D8
-LCB04:  JSR $B219
+LCAF6:  LDA JoypadBtns          ;Get joypad buttons.
+LCAF8:  AND #IN_DOWN            ;Is down being pressed?
+LCAFA:  BEQ CheckJoyLeft        ;If not, branch to check next button.
+
+LCAFC:  LDA #DIR_DOWN           ;Point character down.
+LCAFE:  STA CharDirection       ;
+LCB01:  JSR DoJoyDown           ;($B3D8)Do button down pressed checks.
+LCB04:  JSR ChkSpecialLoc       ;($B219)Check for special locations on the maps.
 LCB07:  JMP GameEngineLoop      ;($CA56)Return to the start of the game engine loop.
 
 CheckJoyLeft:
-LCB0A:  LDA JoypadBtns
-LCB0C:  AND #IN_LEFT
-LCB0E:  BEQ CheckJoyRight
-LCB10:  LDA #DIR_LEFT
-LCB12:  STA CharDirection
-LCB15:  JSR $B34C
-LCB18:  JSR $B219
+LCB0A:  LDA JoypadBtns          ;Get joypad buttons.
+LCB0C:  AND #IN_LEFT            ;Is left being pressed?
+LCB0E:  BEQ CheckJoyRight       ;If not, branch to check next button.
+
+LCB10:  LDA #DIR_LEFT           ;Point character left.
+LCB12:  STA CharDirection       ;
+LCB15:  JSR DoJoyLeft           ;($B34C)Do button left pressed checks.
+LCB18:  JSR ChkSpecialLoc       ;($B219)Check for special locations on the maps.
 LCB1B:  JMP GameEngineLoop      ;($CA56)Return to the start of the game engine loop.
 
 CheckJoyRight:
-LCB1E:  LDA JoypadBtns
-LCB20:  BPL $CB30
-LCB22:  LDA #DIR_RIGHT
-LCB24:  STA CharDirection
+LCB1E:  LDA JoypadBtns          ;Get joypad buttons.
+LCB20:  BPL IdleUpdate          ;Is right being pressed? If not, branch to update the idle status.
+
+LCB22:  LDA #DIR_RIGHT          ;Point character right.
+LCB24:  STA CharDirection       ;
 LCB27:  JSR DoJoyRight          ;($B252)Do button right pressed checks.
-LCB2A:  JSR $B219
+LCB2A:  JSR ChkSpecialLoc       ;($B219)Check for special locations on the maps.
 LCB2D:  JMP GameEngineLoop      ;($CA56)Return to the start of the game engine loop.
 
 IdleUpdate:
 LCB30:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LCB33:  LDA FrameCounter
-LCB35:  CMP #$31
-LCB37:  BNE $CB41
+LCB33:  LDA FrameCounter        ;Has the input been idle for 50 frames?
+LCB35:  CMP #$31                ;
+LCB37:  BNE EngineLoopEnd       ;If not, branch to not bring up the pop-up window.
 
 LCB39:  JSR Dowindow            ;($C6F0)display on-screen window.
 LCB3C:  .byte WND_POPUP         ;Pop-up window.
 
-LCB3D:  LDA #$32
-LCB3F:  STA FrameCounter
+LCB3D:  LDA #$32                ;Indicate pop-up window is active.
+LCB3F:  STA FrameCounter        ;
 
+EngineLoopEnd:
 LCB41:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LCB44:  JMP $CA9F
+LCB44:  JMP CheckInputs         ;Loop until user presses a button.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -2055,7 +2070,7 @@ LCBF6:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-CheckForEnding:
+CheckForTriggers:
 LCBF7:  LDA StoryFlags          ;Is the dragonlord dead?
 LCBF9:  AND #F_DGNLRD_DEAD      ;If so, branch to continue checks.
 LCBFB:  BNE ChkCstlEnd          ;

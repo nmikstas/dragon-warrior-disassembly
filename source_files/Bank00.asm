@@ -16,7 +16,8 @@
 .alias AddPPUBufEntry           $C690
 .alias ClearSpriteRAM           $C6BB
 .alias IdleUpdate               $CB30
-.alias CheckForEnding           $CBF7
+.alias CheckForTriggers         $CBF7
+.alias ChangeMaps               $D9E2
 .alias MapTargetTbl             $F461
 .alias Bank1ToCHR0              $FC98
 .alias Bank0ToCHR0              $FCA3
@@ -3155,7 +3156,7 @@ LA816:  BEQ $A81A
 LA818:  LDA #$FF
 LA81A:  STA $4D
 LA81C:  LDA #$00
-LA81E:  STA $23
+LA81E:  STA AttribBufIndex
 LA820:  STA $22
 LA822:  LDA $9D
 LA824:  STA $0F
@@ -3170,7 +3171,7 @@ LA834:  BCC $A838
 LA836:  INC $9A
 LA838:  INC $22
 LA83A:  INC $22
-LA83C:  INC $23
+LA83C:  INC AttribBufIndex
 LA83E:  INC $0F
 LA840:  INC $0F
 LA842:  DEC $97
@@ -3222,7 +3223,7 @@ LA88E:  BEQ $A893
 LA890:  JMP $A8AD
 LA893:  LDA #$00
 LA895:  STA BlkRemoveFlgs
-LA897:  STA $D1
+LA897:  STA PPUHorzVert
 LA899:  JSR $A921
 LA89C:  LDY #$00
 LA89E:  LDA #$FF
@@ -3291,7 +3292,7 @@ LA913:  BCS $A919
 LA915:  LDA #$02
 LA917:  BNE $A91B
 LA919:  LDA #$03
-LA91B:  LDX $23
+LA91B:  LDX AttribBufIndex
 LA91D:  STA AttribTblBuf,X
 LA920:  RTS
 
@@ -3436,9 +3437,9 @@ LAA29:  LDA $49
 LAA2B:  STA $3E
 LAA2D:  LDA ($40),Y
 LAA2F:  STA PPUDataByte
-LAA31:  LDA $D1
+LAA31:  LDA PPUHorzVert
 LAA33:  BNE $AA3C
-LAA35:  LDX $23
+LAA35:  LDX AttribBufIndex
 LAA37:  LDA PPUDataByte
 LAA39:  STA AttribTblBuf,X
 LAA3C:* RTS
@@ -3514,6 +3515,7 @@ LAABB:  JMP PrepSPPalLoad       ;($C632)Wait for PPU buffer to be open.
 
 ;----------------------------------------------------------------------------------------------------
 
+CheckCoveredArea:
 LAABE:  LDA MapWidth
 LAAC0:  CLC
 LAAC1:  ADC #$01
@@ -3522,38 +3524,41 @@ LAAC4:  STA $3C
 LAAC6:  LDA #$00
 LAAC8:  STA $3D
 LAACA:  STA $3F
-LAACC:  LDA $43
+LAACC:  LDA _TargetY
 LAACE:  STA $3E
 LAAD0:  JSR WordMultiply        ;($C1C9)
-LAAD3:  LDA $42
+LAAD3:  LDA _TargetX
 LAAD5:  LSR
 LAAD6:  CLC
-LAAD7:  ADC $40
+LAAD7:  ADC MapBytePtrLB
 LAAD9:  STA $3E
-LAADB:  LDA $41
+
+LAADB:  LDA MapBytePtrUB
 LAADD:  ADC #$00
 LAADF:  STA $3F
-LAAE1:  LDA $17
-LAAE3:  ORA $18
+
+LAAE1:  LDA CoverDatLB
+LAAE3:  ORA CoverDatUB
 LAAE5:  BNE $AAEC
+
 LAAE7:  LDA #$00
 LAAE9:  STA $3D
 LAAEB:  RTS
 
 LAAEC:  LDA MapWidth
-LAAEE:  CMP $42
+LAAEE:  CMP _TargetX
 LAAF0:  BCC $AAE7
 LAAF2:  LDA MapHeight
-LAAF4:  CMP $43
+LAAF4:  CMP _TargetY
 LAAF6:  BCC $AAE7
 
 LAAF8:  LDA $3E
 LAAFA:  CLC
-LAAFB:  ADC $17
+LAAFB:  ADC CoverDatLB
 LAAFD:  STA $3E
 
 LAAFF:  LDA $3F
-LAB01:  ADC $18
+LAB01:  ADC CoverDatUB
 LAB03:  STA $3F
 
 LAB05:  TYA
@@ -3563,7 +3568,7 @@ LAB09:  LDA ($3E),Y
 LAB0B:  STA $3D
 LAB0D:  PLA
 LAB0E:  TAY
-LAB0F:  LDA $42
+LAB0F:  LDA _TargetX
 LAB11:  AND #$01
 LAB13:  BNE $AB1D
 LAB15:  LSR $3D
@@ -4231,7 +4236,7 @@ LAEE7:  STA $3E
 LAEE9:  LDA ($40),Y
 LAEEB:  STA PPUDataByte
 LAEED:  JSR $C006
-LAEF0:  LDA $D1
+LAEF0:  LDA PPUHorzVert
 LAEF2:  BNE $AEFE
 LAEF4:  LDA PPUAddrUB
 LAEF6:  CLC
@@ -4421,8 +4426,8 @@ LB034:  LDA #MAP_DUNGEON
 LB036:  STA MapType
 
 LB038:  LDA #$00
-LB03A:  STA $17
-LB03C:  STA $18
+LB03A:  STA CoverDatLB
+LB03C:  STA CoverDatUB
 LB03E:  RTS
 
 LB03F:  LDA MapNumber
@@ -4441,36 +4446,36 @@ LB051:  CMP #MAP_BRECCONARY
 LB053:  BNE $B060
 
 LB055:  LDA BrecCvrdDatPtr
-LB058:  STA $17
+LB058:  STA CoverDatLB
 LB05A:  LDA BrecCvrdDatPtr+1
-LB05D:  STA $18
+LB05D:  STA CoverDatUB
 LB05F:  RTS
 
 LB060:  CMP #MAP_GARINHAM
 LB062:  BNE $B06F
 
 LB064:  LDA GarinCvrdDatPtr
-LB067:  STA $17
+LB067:  STA CoverDatLB
 LB069:  LDA GarinCvrdDatPtr+1
-LB06C:  STA $18
+LB06C:  STA CoverDatUB
 LB06E:  RTS
 
 LB06F:  CMP #MAP_CANTLIN
 LB071:  BNE $B07E
 
 LB073:  LDA CantCvrdDatPtr
-LB076:  STA $17
+LB076:  STA CoverDatLB
 LB078:  LDA CantCvrdDatPtr+1
-LB07B:  STA $18
+LB07B:  STA CoverDatUB
 LB07D:  RTS
 
 LB07E:  CMP #MAP_RIMULDAR
 LB080:  BNE $B038
 
 LB082:  LDA RimCvrdDatPtr
-LB085:  STA $17
+LB085:  STA CoverDatLB
 LB087:  LDA RimCvrdDatPtr+1
-LB08A:  STA $18
+LB08A:  STA CoverDatUB
 LB08C:  RTS
 
 ;----------------------------------------------------------------------------------------------------
@@ -4486,6 +4491,7 @@ LB095:  BEQ $B09E
 
 MapChngWithSound:
 LB097:  LDA #$01
+
 LB099:  STA $25
 LB09B:  JSR ScreenFadeOut       ;($A743)Fade out screen.
 LB09E:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
@@ -4514,7 +4520,7 @@ LB0CC:  STA $0F
 
 LB0CE:  LDA #$00
 LB0D0:  STA BlkRemoveFlgs
-LB0D2:  STA $D1
+LB0D2:  STA PPUHorzVert
 LB0D4:  JSR ModMapBlock         ;($AD66)Change block on map.
 LB0D7:  INC $0F
 LB0D9:  INC $0F
@@ -4523,7 +4529,7 @@ LB0DD:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LB0E0:  LDA #$00
 LB0E2:  STA BlkRemoveFlgs
-LB0E4:  STA $D1
+LB0E4:  STA PPUHorzVert
 LB0E6:  JSR ModMapBlock         ;($AD66)Change block on map.
 LB0E9:  INC $0F
 LB0EB:  INC $0F
@@ -4664,23 +4670,27 @@ LB1CB:  .byte MSC_DUNGEON2      ;Erdrick's cave B2.                   Resume dun
 
 ;----------------------------------------------------------------------------------------------------
 
-LB1CC:  LDA _CharXPos
-LB1CE:  STA XTarget
-LB1D0:  LDA _CharYPos
-LB1D2:  STA YTarget
+CheckCollision:
+LB1CC:  LDA _CharXPos           ;Get potential new position of character and transfer -->
+LB1CE:  STA XTarget             ;it to thx and y target registers.
+LB1D0:  LDA _CharYPos           ;
+LB1D2:  STA YTarget             ;Check to see what kind of block is at the destination.
 LB1D4:  JSR GetBlockID          ;($AC17)Get description of block.
-LB1D7:  LDA TargetResults
-LB1D9:  CMP #BLK_LRG_TILE
-LB1DB:  BCC $B1F5
-LB1DD:  LDA CharXPos
-LB1DF:  STA _CharXPos
-LB1E1:  LDA CharYPos
-LB1E3:  STA _CharYPos
 
-LB1E5:  PLA
-LB1E6:  PLA
-LB1E7:  PLA
-LB1E8:  PLA
+LB1D7:  LDA TargetResults       ;Is target block an obstruction?
+LB1D9:  CMP #BLK_LRG_TILE       ;
+LB1DB:  BCC CheckNPCCollision   ;If not, branch to check for NPC collisions.
+
+DirectionBlocked:
+LB1DD:  LDA CharXPos            ;Direction blocked!
+LB1DF:  STA _CharXPos           ;
+LB1E1:  LDA CharYPos            ;Undo the potential character movement.
+LB1E3:  STA _CharYPos           ;
+
+LB1E5:  PLA                     ;
+LB1E6:  PLA                     ;Pull the last two return addresses off the stack.
+LB1E7:  PLA                     ;Movement aborted.
+LB1E8:  PLA                     ;
 
 LB1E9:  LDA #SFX_WALL_BUMP      ;Wall bump SFX
 LB1EB:  BRK                     ;
@@ -4690,52 +4700,69 @@ LB1EE:  LDA #$00                ;Reset frame counter.
 LB1F0:  STA FrameCounter        ;
 LB1F2:  JMP IdleUpdate          ;($CB30)Update NPC movement and pop-up window.
 
-LB1F5:  LDA NPCUpdateCntr
-LB1F7:  CMP #$FF
-LB1F9:  BNE $B1FC
-LB1FB:  RTS
+CheckNPCCollision:
+LB1F5:  LDA NPCUpdateCntr       ;Are there NPCs on the current map?
+LB1F7:  CMP #$FF                ;
+LB1F9:  BNE InitNPCCheck        ;If so, branch to check their locations.
+LB1FB:  RTS                     ;
 
-LB1FC:  LDX #$00
-LB1FE:  LDA NPCXPos,X
-LB200:  AND #$1F
-LB202:  CMP _CharXPos
-LB204:  BNE $B211
-LB206:  LDA NPCYPos,X
-LB208:  AND #$1F
-LB20A:  CMP _CharYPos
-LB20C:  BNE $B211
-LB20E:  JMP $B1DD
-LB211:  INX
-LB212:  INX
-LB213:  INX
-LB214:  CPX #$3C
-LB216:  BNE $B1FE
-LB218:  RTS
+InitNPCCheck:
+LB1FC:  LDX #$00                ;Prepare to loop through all the NPC locations.
+
+NPCCheckLoop:
+LB1FE:  LDA NPCXPos,X           ;Extract NPC's X position and compare it to character's X position.
+LB200:  AND #$1F                ;Are they the same?
+LB202:  CMP _CharXPos           ;
+LB204:  BNE NextNPC             ;If not, branch to check next NPC.
+
+LB206:  LDA NPCYPos,X           ;Extract NPC's Y position and compare it to character's Y position.
+LB208:  AND #$1F                ;Are they the same?
+LB20A:  CMP _CharYPos           ;
+LB20C:  BNE NextNPC             ;If not, branch to check next NPC.
+
+LB20E:  JMP DirectionBlocked    ;NPC collision!
+
+NextNPC:
+LB211:  INX                     ;
+LB212:  INX                     ;Increment to the next NPC.
+LB213:  INX                     ;
+
+LB214:  CPX #$3C                ;Have all the NPC locations been checked?
+LB216:  BNE NPCCheckLoop        ;If not, branch to check the next NPC.
+LB218:  RTS                     ;Done checking, return indicating no collisions detected.
 
 ;----------------------------------------------------------------------------------------------------
 
-LB219:  LDA MapWidth
-LB21B:  CMP CharXPos
-LB21D:  BCC $B228
-LB21F:  LDA MapHeight
-LB221:  CMP CharYPos
-LB223:  BCC $B228
-LB225:  JMP CheckForEnding      ;($CBF7)Check movement updates.
+ChkSpecialLoc:
+LB219:  LDA MapWidth            ;Is player X position beyond map boundaries?
+LB21B:  CMP CharXPos            ;
+LB21D:  BCC CheckMapExit        ;If so, branch to change maps.
+
+LB21F:  LDA MapHeight           ;Is player Y position beyond map boundaries?
+LB221:  CMP CharYPos            ;
+LB223:  BCC CheckMapExit        ;If so, branch to change maps.
+
+LB225:  JMP CheckForTriggers    ;($CBF7)Check movement updates.
 
 CheckMapExit:
-LB228:  LDX #$00
-LB22A:  LDA MapNumber
-LB22C:  CMP MapTargetTbl,X
-LB22F:  BEQ $B239
-LB231:  INX
-LB232:  INX
-LB233:  INX
-LB234:  CPX #$93
-LB236:  BNE $B22C
-LB238:  RTS
+LB228:  LDX #$00                ;Prepare to search for the proper target map.
+LB22A:  LDA MapNumber           ;
 
-LB239:  LDA #$02
-LB23B:  JMP $D9E2
+LB22C:* CMP MapTargetTbl,X      ;Has the target map been found?
+LB22F:  BEQ NewMapFound         ;If so, branch to change maps.
+
+LB231:  INX                     ;
+LB232:  INX                     ;Increment to next target map entry.
+LB233:  INX                     ;
+
+LB234:  CPX #$93                ;Have all the map entries been checked?
+LB236:  BNE -                   ;If not, branch to check the next map entry.
+
+LB238:  RTS                     ;Error! Did not find the target map. Exit.
+
+NewMapFound:
+LB239:  LDA #DIR_DOWN           ;Point character down by default.
+LB23B:  JMP ChangeMaps          ;($D9E2)Load a new map.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4760,88 +4787,115 @@ LB251:  RTS                     ;
 
 DoJoyRight:
 LB252:  JSR ChkRemovePopUp      ;($B23E)Check if pop-up window needs to be removed.
-LB255:  LDA FrameCounter
-LB257:  AND #$0F
-LB259:  BEQ $B260
-LB25B:  PLA
-LB25C:  PLA
+LB255:  LDA FrameCounter        ;
+LB257:  AND #$0F                ;
+LB259:  BEQ RightSynced         ;Only move if on the first frame of the frame counter.
+
+LB25B:  PLA                     ;Not on first frame. Remove return address from stack and -->
+LB25C:  PLA                     ;update the idle status instead.
 LB25D:  JMP IdleUpdate          ;($CB30)Update NPC movement and pop-up window.
 
-LB260:  INC _CharXPos
-LB262:  JSR $B1CC
-LB265:  LDA MapType
-LB267:  CMP #MAP_DUNGEON
-LB269:  BNE $B28C
-LB26B:  INC CharXPos
-LB26D:  JSR $B2D4
-LB270:  LDA CharXPixelsLB
-LB272:  CLC
-LB273:  ADC #$08
-LB275:  STA CharXPixelsLB
-LB277:  BCC $B27B
-LB279:  INC CharXPixelsUB
-LB27B:  JSR $B30E
-LB27E:  LDA CharXPixelsLB
-LB280:  CLC
-LB281:  ADC #$08
-LB283:  STA CharXPixelsLB
-LB285:  BCC $B289
-LB287:  INC CharXPixelsUB
-LB289:  JMP DoSprites           ;($B6DA)Update player and NPC sprites.
-LB28C:  LDA #$12
-LB28E:  STA $0F
-LB290:  LDA #$F2
-LB292:  STA $10
+RightSynced:
+LB260:  INC _CharXPos           ;Prepare to check for collisions on the right.
+LB262:  JSR CheckCollision      ;($B1CC)Check if character will run into wall or NPC.
+
+LB265:  LDA MapType             ;Is player in a dungeon?
+LB267:  CMP #MAP_DUNGEON        ;
+LB269:  BNE UpdtRNonDungeon     ;If not, branch to update non-dungeon map.
+
+LB26B:  INC CharXPos            ;Move player 1 block to the right.
+LB26D:  JSR UpdtHorzDungeon     ;($B2D4)Update left/right side of dungeon map.
+
+LB270:  LDA CharXPixelsLB       ;
+LB272:  CLC                     ;
+LB273:  ADC #$08                ;Move player 8 pixels to the right.
+LB275:  STA CharXPixelsLB       ;
+LB277:  BCC +                   ;Update upper byte of X position, if necessary. 
+LB279:  INC CharXPixelsUB       ;
+
+LB27B:* JSR Move1Tick           ;($B30E)Move player 1 tick in the given direction.
+
+LB27E:  LDA CharXPixelsLB       ;
+LB280:  CLC                     ;
+LB281:  ADC #$08                ;Move player 8 pixels to the right.
+LB283:  STA CharXPixelsLB       ;
+LB285:  BCC +                   ;Update upper byte of X position, if necessary. 
+LB287:  INC CharXPixelsUB       ;
+
+LB289:* JMP DoSprites           ;($B6DA)Update player and NPC sprites.
+
+UpdtRNonDungeon:
+LB28C:  LDA #$12                ;Prepare to write a nametable column starting 18 -->
+LB28E:  STA XPosFromCenter      ;tiles right(#$12) and -14 tiles up(#$F2) from -->
+LB290:  LDA #$F2                ;player's current location.
+LB292:  STA YPosFromCenter      ;
+
+RightColumnLoop:
 LB294:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB297:  LDA #$00
-LB299:  STA BlkRemoveFlgs
-LB29B:  STA $D1
+LB297:  LDA #$00                ;
+LB299:  STA BlkRemoveFlgs       ;Remove no tiles from the current block.
+LB29B:  STA PPUHorzVert         ;PPU column write.
+
 LB29D:  JSR ModMapBlock         ;($AD66)Change block on map.
-LB2A0:  INC $10
-LB2A2:  INC $10
-LB2A4:  INC ScrollX
-LB2A6:  INC CharXPixelsLB
+
+LB2A0:  INC YPosFromCenter      ;Move to next block position in the column.
+LB2A2:  INC YPosFromCenter      ;
+LB2A4:  INC ScrollX             ;Update the X scroll register.
+LB2A6:  INC CharXPixelsLB       ;Update player's X pixel position.
+
 LB2A8:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LB2AB:  LDA $10
-LB2AD:  CMP #$10
-LB2AF:  BNE $B294
+
+LB2AB:  LDA YPosFromCenter      ;Have 16 blocks been written?
+LB2AD:  CMP #$10                ;
+LB2AF:  BNE RightColumnLoop     ;If not, branch to write another block to the map.
+
 LB2B1:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB2B4:  INC ScrollX
-LB2B6:  BNE $B2BE
-LB2B8:  LDA ActiveNmTbl
-LB2BA:  EOR #$01
-LB2BC:  STA ActiveNmTbl
+LB2B4:  INC ScrollX             ;Increment scroll register and switch to -->
+LB2B6:  BNE UpdtRNTBlock        ;other nametable, if necessary.
+
+LB2B8:  LDA ActiveNmTbl         ;
+LB2BA:  EOR #$01                ;Swap to other nametable.
+LB2BC:  STA ActiveNmTbl         ;
+
+UpdtRNTBlock:
 LB2BE:  INC NTBlockX
 LB2C0:  LDA #$1F
 LB2C2:  AND NTBlockX
 LB2C4:  STA NTBlockX
 LB2C6:  INC CharXPos
 LB2C8:  INC CharXPixelsLB
-LB2CA:  BNE $B2CE
+LB2CA:  BNE +
 LB2CC:  INC CharXPixelsUB
-LB2CE:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LB2D1:  JMP $B5FA
+
+LB2CE:* JSR DoSprites           ;($B6DA)Update player and NPC sprites.
+LB2D1:  JMP DoCoveredArea       ;($B5FA)Handle covered areas of the map, if necessary.
+
+;----------------------------------------------------------------------------------------------------
+
+UpdtHorzDungeon:
 LB2D4:  LDA NTBlockX
 LB2D6:  EOR #$10
 LB2D8:  AND #$1F
 LB2DA:  STA NTBlockX
 LB2DC:  LDA #$FA
-LB2DE:  STA $10
+LB2DE:  STA YPosFromCenter
 LB2E0:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LB2E3:  LDA #$F9
-LB2E5:  STA $0F
-LB2E7:  LDA #$00
-LB2E9:  STA BlkRemoveFlgs
-LB2EB:  STA $D1
+LB2E5:  STA XPosFromCenter
+
+LB2E7:  LDA #$00                ;Make sure no blocks are removed.
+LB2E9:  STA BlkRemoveFlgs       ;
+
+LB2EB:  STA PPUHorzVert
 LB2ED:  JSR ModMapBlock         ;($AD66)Change block on map.
-LB2F0:  INC $0F
-LB2F2:  INC $0F
-LB2F4:  LDA $0F
+LB2F0:  INC XPosFromCenter
+LB2F2:  INC XPosFromCenter
+LB2F4:  LDA XPosFromCenter
 LB2F6:  CMP #$09
 LB2F8:  BNE $B2E7
-LB2FA:  INC $10
-LB2FC:  INC $10
-LB2FE:  LDA $10
+LB2FA:  INC YPosFromCenter
+LB2FC:  INC YPosFromCenter
+LB2FE:  LDA YPosFromCenter
 LB300:  CMP #$08
 LB302:  BNE $B2E0
 LB304:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
@@ -4849,29 +4903,32 @@ LB307:  LDA ActiveNmTbl
 LB309:  EOR #$01
 LB30B:  STA ActiveNmTbl
 LB30D:  RTS
+
+Move1Tick:
 LB30E:  LDA NTBlockX
 LB310:  CLC
 LB311:  ADC #$10
 LB313:  AND #$1F
 LB315:  STA NTBlockX
+
 LB317:  LDA #$FA
-LB319:  STA $10
+LB319:  STA YPosFromCenter
 LB31B:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 LB31E:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LB321:  LDA #$FA
-LB323:  STA $0F
+LB323:  STA XPosFromCenter
 LB325:  LDA #$00
 LB327:  STA BlkRemoveFlgs
-LB329:  STA $D1
+LB329:  STA PPUHorzVert
 LB32B:  JSR ModMapBlock         ;($AD66)Change block on map.
-LB32E:  INC $0F
-LB330:  INC $0F
-LB332:  LDA $0F
+LB32E:  INC XPosFromCenter
+LB330:  INC XPosFromCenter
+LB332:  LDA XPosFromCenter
 LB334:  CMP #$08
 LB336:  BNE $B325
-LB338:  INC $10
-LB33A:  INC $10
-LB33C:  LDA $10
+LB338:  INC YPosFromCenter
+LB33A:  INC YPosFromCenter
+LB33C:  LDA YPosFromCenter
 LB33E:  CMP #$08
 LB340:  BNE $B31E
 LB342:  LDA ActiveNmTbl
@@ -4882,6 +4939,7 @@ LB34B:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
+DoJoyLeft:
 LB34C:  JSR ChkRemovePopUp      ;($B23E)Check if pop-up window needs to be removed.
 LB34F:  LDA FrameCounter
 LB351:  AND #$0F
@@ -4891,11 +4949,12 @@ LB356:  PLA
 LB357:  JMP IdleUpdate          ;($CB30)Update NPC movement and pop-up window.
 
 LB35A:  DEC _CharXPos
-LB35C:  JSR $B1CC
+LB35C:  JSR CheckCollision      ;($B1CC)Check if character will run into wall or NPC.
 LB35F:  LDA MapType
 LB361:  CMP #MAP_DUNGEON
 LB363:  BNE $B386
-LB365:  JSR $B2D4
+
+LB365:  JSR UpdtHorzDungeon     ;($B2D4)Update left/right side of dungeon map.
 LB368:  DEC CharXPos
 LB36A:  LDA CharXPixelsLB
 LB36C:  SEC
@@ -4903,7 +4962,7 @@ LB36D:  SBC #$08
 LB36F:  STA CharXPixelsLB
 LB371:  BCS $B375
 LB373:  DEC CharXPixelsUB
-LB375:  JSR $B30E
+LB375:  JSR Move1Tick           ;($B30E)Move player 1 tick in the given direction.
 LB378:  LDA CharXPixelsLB
 LB37A:  SEC
 LB37B:  SBC #$08
@@ -4918,7 +4977,7 @@ LB38C:  STA $10
 LB38E:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LB391:  LDA #$00
 LB393:  STA BlkRemoveFlgs
-LB395:  STA $D1
+LB395:  STA PPUHorzVert
 LB397:  JSR ModMapBlock         ;($AD66)Change block on map.
 LB39A:  INC $10
 LB39C:  INC $10
@@ -4949,20 +5008,23 @@ LB3CC:  STA NTBlockX
 LB3CE:  DEC CharXPos
 LB3D0:  DEC CharXPixelsLB
 LB3D2:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LB3D5:  JMP $B5FA
+LB3D5:  JMP DoCoveredArea       ;($B5FA)Handle covered areas of the map, if necessary.
 
 ;----------------------------------------------------------------------------------------------------
 
+DoJoyDown:
 LB3D8:  JSR ChkRemovePopUp      ;($B23E)Check if pop-up window needs to be removed.
-LB3DB:  LDA FrameCounter
-LB3DD:  AND #$0F
-LB3DF:  BEQ $B3E6
-LB3E1:  PLA
-LB3E2:  PLA
+LB3DB:  LDA FrameCounter        ;
+LB3DD:  AND #$0F                ;
+LB3DF:  BEQ DownSynced          ;Only move if on the first frame of the frame counter.
+
+LB3E1:  PLA                     ;Not on first frame. Remove return address from stack and -->
+LB3E2:  PLA                     ;update the idle status instead.
 LB3E3:  JMP IdleUpdate          ;($CB30)Update NPC movement and pop-up window.
 
+DownSynced:
 LB3E6:  INC _CharYPos
-LB3E8:  JSR $B1CC
+LB3E8:  JSR CheckCollision      ;($B1CC)Check if character will run into wall or NPC.
 LB3EB:  LDA MapType
 LB3ED:  CMP #MAP_DUNGEON
 LB3EF:  BNE $B412
@@ -4974,7 +5036,7 @@ LB3F9:  ADC #$08
 LB3FB:  STA CharYPixelsLB
 LB3FD:  BCC $B401
 LB3FF:  INC CharYPixelsUB
-LB401:  JSR $B30E
+LB401:  JSR Move1Tick           ;($B30E)Move player 1 tick in the given direction.
 LB404:  LDA CharYPixelsLB
 LB406:  CLC
 LB407:  ADC #$08
@@ -4995,7 +5057,7 @@ LB426:  STA $4D
 LB428:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LB42B:  LDA #$0C
 LB42D:  STA BlkRemoveFlgs
-LB42F:  STA $D1
+LB42F:  STA PPUHorzVert
 LB431:  JSR ModMapBlock         ;($AD66)Change block on map.
 LB434:  INC $0F
 LB436:  INC $0F
@@ -5036,7 +5098,7 @@ LB47D:  STA $4D
 LB47F:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LB482:  LDA #$03
 LB484:  STA BlkRemoveFlgs
-LB486:  STA $D1
+LB486:  STA PPUHorzVert
 LB488:  JSR ModMapBlock         ;($AD66)Change block on map.
 LB48B:  INC $0F
 LB48D:  INC $0F
@@ -5066,7 +5128,8 @@ LB4BD:  INC CharYPixelsLB
 LB4BF:  BNE $B4C3
 LB4C1:  INC CharYPixelsUB
 LB4C3:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LB4C6:  JMP $B5FA
+LB4C6:  JMP DoCoveredArea       ;($B5FA)Handle covered areas of the map, if necessary.
+
 LB4C9:  LDA NTBlockX
 LB4CB:  CLC
 LB4CC:  ADC #$10
@@ -5077,9 +5140,11 @@ LB4D4:  STA $0F
 LB4D6:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LB4D9:  LDA #$F9
 LB4DB:  STA $10
+
 LB4DD:  LDA #$00
 LB4DF:  STA BlkRemoveFlgs
-LB4E1:  STA $D1
+LB4E1:  STA PPUHorzVert
+
 LB4E3:  JSR ModMapBlock         ;($AD66)Change block on map.
 LB4E6:  INC $10
 LB4E8:  INC $10
@@ -5109,7 +5174,7 @@ LB50E:  PLA
 LB50F:  JMP IdleUpdate          ;($CB30)Update NPC movement and pop-up window.
 
 LB512:  DEC _CharYPos
-LB514:  JSR $B1CC
+LB514:  JSR CheckCollision      ;($B1CC)Check if character will run into wall or NPC.
 LB517:  LDA MapType
 LB519:  CMP #MAP_DUNGEON
 LB51B:  BNE $B53E
@@ -5121,7 +5186,7 @@ LB525:  SBC #$08
 LB527:  STA CharYPixelsLB
 LB529:  BCS $B52D
 LB52B:  DEC CharYPixelsUB
-LB52D:  JSR $B30E
+LB52D:  JSR Move1Tick           ;($B30E)Move player 1 tick in the given direction.
 LB530:  LDA CharYPixelsLB
 LB532:  SEC
 LB533:  SBC #$08
@@ -5152,7 +5217,7 @@ LB565:  STA $4D
 LB567:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LB56A:  LDA #$03
 LB56C:  STA BlkRemoveFlgs
-LB56E:  STA $D1
+LB56E:  STA PPUHorzVert
 LB570:  JSR ModMapBlock         ;($AD66)Change block on map.
 LB573:  INC $0F
 LB575:  INC $0F
@@ -5191,9 +5256,11 @@ LB5B8:  STA $0F
 LB5BA:  LDA #$03
 LB5BC:  STA $4D
 LB5BE:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB5C1:  LDA #$0C
-LB5C3:  STA BlkRemoveFlgs
-LB5C5:  STA $D1
+
+LB5C1:  LDA #$0C                ;
+LB5C3:  STA BlkRemoveFlgs       ;Remove lower 2 tiles from the block
+LB5C5:  STA PPUHorzVert         ;PPU row write.
+
 LB5C7:  JSR ModMapBlock         ;($AD66)Change block on map.
 LB5CA:  INC $0F
 LB5CC:  INC $0F
@@ -5216,13 +5283,16 @@ LB5EE:  STA NTBlockY
 LB5F0:  DEC CharYPos
 LB5F2:  DEC CharYPixelsLB
 LB5F4:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LB5F7:  JMP $B5FA
+LB5F7:  JMP DoCoveredArea       ;($B5FA)Handle covered areas of the map, if necessary.
 
+;----------------------------------------------------------------------------------------------------
+
+DoCoveredArea:
 LB5FA:  LDA CharXPos
 LB5FC:  STA _TargetX
 LB5FE:  LDA CharYPos
 LB600:  STA _TargetY
-LB602:  JSR $AABE
+LB602:  JSR CheckCoveredArea    ;($AABE)Check if player is in a covered map area.
 LB605:  LDA $3D
 LB607:  CMP $19
 LB609:  BNE $B60C
@@ -5247,9 +5317,11 @@ LB62E:  STA $10
 LB630:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LB633:  LDA #$F0
 LB635:  STA $0F
-LB637:  LDA #$00
-LB639:  STA BlkRemoveFlgs
-LB63B:  STA $D1
+
+LB637:  LDA #$00                ;
+LB639:  STA BlkRemoveFlgs       ;Remove no tiles from the current block.
+LB63B:  STA PPUHorzVert         ;PPU column write.
+
 LB63D:  JSR ModMapBlock         ;($AD66)Change block on map.
 LB640:  INC $0F
 LB642:  INC $0F
@@ -5257,9 +5329,11 @@ LB644:  LDA $0F
 LB646:  CMP #$00
 LB648:  BNE $B637
 LB64A:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB64D:  LDA #$00
-LB64F:  STA BlkRemoveFlgs
-LB651:  STA $D1
+
+LB64D:  LDA #$00                ;
+LB64F:  STA BlkRemoveFlgs       ;Remove no tiles from the current block.
+LB651:  STA PPUHorzVert         ;PPU column write.
+
 LB653:  JSR ModMapBlock         ;($AD66)Change block on map.
 LB656:  INC $0F
 LB658:  INC $0F
@@ -5287,9 +5361,11 @@ LB684:  STA $0F
 LB686:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LB689:  LDA #$F2
 LB68B:  STA $10
-LB68D:  LDA #$00
-LB68F:  STA BlkRemoveFlgs
-LB691:  STA $D1
+
+LB68D:  LDA #$00                ;
+LB68F:  STA BlkRemoveFlgs       ;Remove no tiles from the current block.
+LB691:  STA PPUHorzVert         ;PPU column write.
+
 LB693:  JSR ModMapBlock         ;($AD66)Change block on map.
 LB696:  INC $10
 LB698:  INC $10
@@ -5297,9 +5373,11 @@ LB69A:  LDA $10
 LB69C:  CMP #$02
 LB69E:  BNE $B68D
 LB6A0:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB6A3:  LDA #$00
-LB6A5:  STA BlkRemoveFlgs
-LB6A7:  STA $D1
+
+LB6A3:  LDA #$00                ;
+LB6A5:  STA BlkRemoveFlgs       ;Remove no tiles from the current block.
+LB6A7:  STA PPUHorzVert         ;PPU column write.
+
 LB6A9:  JSR ModMapBlock         ;($AD66)Change block on map.
 LB6AC:  INC $10
 LB6AE:  INC $10
@@ -5484,7 +5562,7 @@ LB7BA:  BEQ $B7C2
 LB7BC:  LDA $40
 LB7BE:  CMP #$FF
 LB7C0:  BNE $B79A
-LB7C2:  JSR $AABE
+LB7C2:  JSR CheckCoveredArea    ;($AABE)Check if player is in a covered map area.
 LB7C5:  LDA NPCYPos,X
 LB7C7:  AND #$60
 LB7C9:  BNE $B7D0
@@ -5684,7 +5762,7 @@ LB94F:  LDA $42
 LB951:  STA $3C
 LB953:  LDA $43
 LB955:  STA $3E
-LB957:  JSR $AABE
+LB957:  JSR CheckCoveredArea    ;($AABE)Check if player is in a covered map area.
 LB95A:  LDA $3D
 LB95C:  CMP $19
 LB95E:  BEQ $B963
