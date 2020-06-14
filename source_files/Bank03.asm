@@ -2002,12 +2002,15 @@ LCB68:  JSR Bank1ToNT0          ;($FC98)Load CHR ROM bank 1 into nametable 0.
 LCB6B:  LDA ModsnSpells
 LCB6D:  AND #$C0
 LCB6F:  BEQ $CB78
+
 LCB71:  LDA #$01
 LCB73:  STA HitPoints
 LCB75:  JMP $CB96
+
 LCB78:  LDA ThisStrtStat
 LCB7B:  CMP #STRT_FULL_HP
 LCB7D:  BNE $CB96
+
 LCB7F:  TXA
 LCB80:  PHA
 LCB81:  LDA DisplayedMaxHP
@@ -2020,6 +2023,7 @@ LCB8E:  STA StartStatus1,X
 LCB91:  STA ThisStrtStat
 LCB94:  PLA
 LCB95:  TAX
+
 LCB96:  LDA #$03
 LCB98:  STA CharXPos
 LCB9A:  STA _CharXPos
@@ -2054,6 +2058,7 @@ LCBD7:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 LCBDA:  JMP $CBCD
 
 LCBDD:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
+
 LCBE0:  LDA FrameCounter
 LCBE2:  AND #$0F
 LCBE4:  CMP #$01
