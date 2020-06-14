@@ -78,14 +78,15 @@
 .alias MapDatPtr        $11     ;Pointer to base address of map data.
 .alias MapDatPtrLB      $11     ;Pointer to base address of map data, lower byte.
 .alias MapDatPtrUB      $12     ;Pointer to base address of map data, upper byte.
-.alias MapWidth         $13     ;Width of current map.
-.alias MapHeight        $14     ;Height of current map. 
+.alias MapWidth         $13     ;Width of current map in blocks.
+.alias MapHeight        $14     ;Height of current map in blocks. 
 .alias BoundryBlock     $15     ;Block ID of for blocks beyond the map boundaries.
 .alias MapType          $16     ;#$00-over world, #$10-town/castle, #$20-cave.
 
 .alias CoverDatPtr      $17     ;Pointer to map covered area data.
 .alias CoverDatLB       $17     ;Pointer to map covered area data, lower byte.
 .alias CoverDatUB       $18     ;Pointer to map covered area data, upper byte.
+.alias CoverStatus      $19     ;#$00=Not covered, #$08=Under cover.
 
 .alias ThisTempIndex    $1A     ;Working index into temp buffer.
 .alias DescEntry        $1A     ;Entry number for item description.
@@ -157,8 +158,8 @@
 .alias IRQStoreX        $38     ;Temp storage for X in IRQ routine.
 .alias IRQStoreY        $39     ;Temp storage for Y in IRQ routine.
 
-.alias CharXPos         $3A     ;Player's X position on current map.
-.alias CharYPos         $3B     ;Player's Y position on current map.
+.alias CharXPos         $3A     ;Player's X position on current map in blocks.
+.alias CharYPos         $3B     ;Player's Y position on current map in blocks.
 
 .alias BufByteCntr      $3C     ;Buffer byte load counter.
 .alias _EnNumber        $3C     ;Working copy of enemy number.
@@ -172,6 +173,8 @@
 .alias LevelDatPtr      $3C     ;Pointer into BaseStatsTbl.
 .alias PalModByte       $3C     ;Added to palette data to change it in some cases.
 .alias LoadBGPal        $3D     ;#$00-skip loading BG palette, #$FF-Load BG palette.
+
+.alias CoveredStsNext   $3D     ;Indicates the covered status after player movement.
 
 .alias XPosFromLeft     $3C     ;Tile X position with respect to top left of display. 
 .alias YPosFromTop      $3E     ;Tile Y position with respect to top left of display. 
