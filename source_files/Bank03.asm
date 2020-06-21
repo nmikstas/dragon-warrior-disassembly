@@ -45,38 +45,39 @@
 
 ;-----------------------------------------[ Start of code ]------------------------------------------
 
-LC000:  JSR $C5E0
-LC003:  JMP $C009
+LC000:  JSR $C5E0               ;Not used.
+LC003:  JMP $C009               ;
 
-LC006:  JSR $C5E4
+LC006:  JSR CalcAttribAddr      ;($C5E4)Calculate attribute table address for given nametable byte.
 
-LC009:  TYA
-LC00A:  PHA
-LC00B:  LDA $3E
-LC00D:  AND #$02
-LC00F:  ASL
-LC010:  STA $3D
-LC012:  LDA $3C
-LC014:  AND #$02
-LC016:  CLC
-LC017:  ADC $3D
-LC019:  TAY
-LC01A:  LDA #$FC
-LC01C:  CPY #$00
-LC01E:  BEQ $C027
-LC020:  SEC
-LC021:  ROL
-LC022:  ASL PPUDataByte
-LC024:  DEY
-LC025:  BNE $C020
+LC009:  TYA                     ;
+LC00A:  PHA                     ;
+LC00B:  LDA $3E                 ;
+LC00D:  AND #$02                ;
+LC00F:  ASL                     ;
+LC010:  STA $3D                 ;
+LC012:  LDA $3C                 ;
+LC014:  AND #$02                ;Not used.
+LC016:  CLC                     ;
+LC017:  ADC $3D                 ;
+LC019:  TAY                     ;
+LC01A:  LDA #$FC                ;
+LC01C:  CPY #$00                ;
+LC01E:  BEQ $C027               ;
 
-LC027:  AND (PPUBufPtr),Y
-LC029:  ORA PPUDataByte
-LC02B:  STA (PPUBufPtr),Y
-LC02D:  STA PPUDataByte
-LC02F:  PLA
-LC030:  TAY
-LC031:  RTS
+LC020:  SEC                     ;
+LC021:  ROL                     ;
+LC022:  ASL PPUDataByte         ;Not used.
+LC024:  DEY                     ;
+LC025:  BNE $C020               ;
+
+LC027:  AND (PPUBufPtr),Y       ;
+LC029:  ORA PPUDataByte         ;
+LC02B:  STA (PPUBufPtr),Y       ;
+LC02D:  STA PPUDataByte         ;Not used.
+LC02F:  PLA                     ;
+LC030:  TAY                     ;
+LC031:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -436,80 +437,93 @@ LC211:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 PalFadeOut:
-LC212:  LDA #$00
-LC214:  STA PalModByte
+LC212:  LDA #$00                ;Start at brightest palette.
+LC214:  STA PalModByte          ;
 
-LC216:* LDX #$04                ;Prepare to wait for 4 frames.
+FadeOutLoop:
+LC216:  LDX #$04                ;Prepare to wait for 4 frames.
 LC218:* JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LC21B:  DEX                     ;
 LC21C:  BNE -                   ;Has 4 frames elapsed? If not, branch to wait another frame.
 
-LC21E:  LDA SprtPalPtrLB
-LC220:  STA PalPtrLB
-LC222:  LDA SprtPalPtrUB
-LC224:  STA PalPtrUB
+LC21E:  LDA SprtPalPtrLB        ;
+LC220:  STA PalPtrLB            ;Load sprite palette pointers.
+LC222:  LDA SprtPalPtrUB        ;
+LC224:  STA PalPtrUB            ;
 LC226:  JSR PrepSPPalLoad       ;($C632)Load sprite palette data into PPU buffer.
 
-LC229:  LDA $3D
-LC22B:  BEQ +
+LC229:  LDA LoadBGPal           ;Is background palette supposed to change?
+LC22B:  BEQ +                   ;If not, branch to skip.
 
-LC22D:  LDA BGPalPtrLB
-LC22F:  STA PalPtrLB
-LC231:  LDA BGPalPtrUB
-LC233:  STA PalPtrUB
+LC22D:  LDA BGPalPtrLB          ;
+LC22F:  STA PalPtrLB            ;Load background palette pointers.
+LC231:  LDA BGPalPtrUB          ;
+LC233:  STA PalPtrUB            ;
 LC235:  JSR PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
 
-LC238:* LDA PalModByte
-LC23A:  CLC
-LC23B:  ADC #$10
-LC23D:  STA PalModByte
-LC23F:  CMP #$50
-LC241:  BNE ---
-LC243:  RTS
+LC238:* LDA PalModByte          ;
+LC23A:  CLC                     ;Move to next palette.
+LC23B:  ADC #$10                ;
+LC23D:  STA PalModByte          ;
+
+LC23F:  CMP #$50                ;Has the fade out effect completed?
+LC241:  BNE FadeOutLoop         ;If not, branch to load the next palette in the sequence.
+LC243:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-LC244:  LDA NTBlockX
-LC246:  ASL
-LC247:  CLC
-LC248:  ADC $0F
-LC24A:  AND #$3F
-LC24C:  PHA
-LC24D:  LDA NTBlockY
-LC24F:  ASL
-LC250:  CLC
-LC251:  ADC $10
-LC253:  CLC
-LC254:  ADC #$1E
-LC256:  STA DivNum1LB
-LC258:  LDA #$1E
-LC25A:  STA DivNum2
+ClearAttribByte:
+LC244:  LDA NTBlockX            ;Get the offset for the current block in the nametable row.
+LC246:  ASL                     ;*2. 2 tiles per block.
+LC247:  CLC                     ;
+LC248:  ADC XPosFromCenter      ;Pow position of tile(0-63).
+LC24A:  AND #$3F                ;Max. 64 tiles in a row spanning the 2 nametables.
+LC24C:  PHA                     ;Save row position on the stack.
+
+LC24D:  LDA NTBlockY            ;Get the offset for the current block in the nametable column.
+LC24F:  ASL                     ;*2. 2 tiles per block.
+LC250:  CLC                     ;
+LC251:  ADC YPosFromCenter      ;Column position(0-30).
+LC253:  CLC                     ;
+LC254:  ADC #$1E                ;Ensure dividend is positive since YPosFromCenter is signed.
+
+LC256:  STA DivNum1LB           ;
+LC258:  LDA #$1E                ;Divide by 30 to get proper nametable row to update.
+LC25A:  STA DivNum2             ;
 LC25C:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
-LC25F:  LDA DivRemainder
-LC261:  STA DivNum2
-LC263:  PLA
-LC264:  STA DivNum1LB
-LC266:  JSR $C270
+
+LC25F:  LDA DivRemainder        ;
+LC261:  STA NTYPos              ;Store column position.
+LC263:  PLA                     ;Restore A from stack.
+
+LC264:  STA NTXPos              ;Store row position.
+LC266:  JSR PrepClearAttrib     ;($C270)Calculate attribute table byte for blanking tiles.
 LC269:  RTS
 
-LC26A:  JSR $C5E0
-LC26D:  JMP $C273
+LC26A:  JSR $C5E0               ;Not used.
+LC26D:  JMP ClearAttrib         ;($C273)Set black palette for given tiles.
 
-LC270:  JSR $C5E4
+PrepClearAttrib:
+LC270:  JSR CalcAttribAddr      ;($C5E4)Calculate attribute table address for given nametable byte.
 
-LC273:  TYA
-LC274:  PHA
-LC275:  LDY #$00
-LC277:  LDA (PPUBufPtr),Y
-LC279:  STA PPUDataByte
-LC27B:  PLA
-LC27C:  TAY
-LC27D:  LDA PPUAddrUB
-LC27F:  CLC
-LC280:  ADC #$20
-LC282:  STA PPUAddrUB
+ClearAttrib:
+LC273:  TYA                     ;Save Y to stack.
+LC274:  PHA                     ;
+
+LC275:  LDY #$00                ;
+LC277:  LDA (PPUBufPtr),Y       ;Clear calculated attribute table byte.
+LC279:  STA PPUDataByte         ;
+
+LC27B:  PLA                     ;Restore Y from the stack.
+LC27C:  TAY                     ;
+
+LC27D:  LDA PPUAddrUB           ;
+LC27F:  CLC                     ;Increment to the next row in the nametable.
+LC280:  ADC #$20                ;
+LC282:  STA PPUAddrUB           ;
+
 LC284:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
-LC287:  RTS
+LC287:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -944,7 +958,7 @@ LC510:  LDA #$00
 LC512:  STA PPUDataByte
 
 LC514:  JSR $C006
-LC517:  JSR $C273
+LC517:  JSR ClearAttrib         ;($C273)Set black palette for given tiles.
 
 DQBranch27:
 LC51A:  PLA
@@ -963,6 +977,7 @@ PalFadeIn:
 LC529:  LDA #$30
 LC52B:  STA PalModByte
 
+FadeInLoop:
 LC52D:  LDX #$04
 LC52F:* JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LC532:  DEX
@@ -988,7 +1003,7 @@ LC551:  SEC
 LC552:  SBC #$10
 LC554:  STA PalModByte
 LC556:  CMP #$F0
-LC558:  BNE $C52D
+LC558:  BNE FadeInLoop
 LC55A:  RTS
 
 ;----------------------------------------------------------------------------------------------------
@@ -1094,32 +1109,37 @@ LC5DF:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
-LC5E0:  ASL $3C
-LC5E2:  ASL $3E
+LC5E0:  ASL NTXPos              ;Not used.
+LC5E2:  ASL NTYPos              ;
 
-LC5E4:  LDA $3E
-LC5E6:  AND #$FC
-LC5E8:  ASL
-LC5E9:  STA PPUAddrLB
-LC5EB:  LDA $3C
-LC5ED:  AND #$1F
-LC5EF:  LSR
-LC5F0:  LSR
-LC5F1:  CLC
-LC5F2:  ADC PPUAddrLB
-LC5F4:  CLC
-LC5F5:  ADC #$C0
-LC5F7:  STA PPUAddrLB
-LC5F9:  LDA $3C
-LC5FB:  AND #$20
-LC5FD:  BNE $C603
+CalcAttribAddr:
+LC5E4:  LDA NTYPos              ;Drop lower 2 bytes and multiply by 2. -->
+LC5E6:  AND #$FC                ;Attribute table byte controls 4x4 tile square.
+LC5E8:  ASL                     ;
+LC5E9:  STA PPUAddrLB           ;
 
-LC5FF:  LDA #$03
-LC601:  BNE $C605
+LC5EB:  LDA NTXPos              ;
+LC5ED:  AND #$1F                ;Do not exceed 32 tiles in the row.
+LC5EF:  LSR                     ;
+LC5F0:  LSR                     ;/4. 1 byte of attrib. table controls 4x4 tile square.
+LC5F1:  CLC                     ;
+LC5F2:  ADC PPUAddrLB           ;Add X offset to calculation.
+LC5F4:  CLC                     ;
+LC5F5:  ADC #$C0                ;Offset to attribute table at $23C0 or $27C0. Lower byte now -->
+LC5F7:  STA PPUAddrLB           ;contains proper address to corresponding attribute table address.
 
-LC603:  LDA #$07
-LC605:  STA PPUAddrUB
-LC607:  RTS
+LC5F9:  LDA NTXPos              ;Are we currently on nametable 0?
+LC5FB:  AND #$20                ;
+LC5FD:  BNE +                   ;If not, branch to use address for nametable 1.
+
+LC5FF:  LDA #$03                ;Lower nibble of upper byte(attribute table for nametable 0).
+LC601:  BNE ExitAttribCalc      ;Branch always.
+
+LC603:* LDA #$07                ;Lower nibble of upper byte(attribute table for nametable 1).
+
+ExitAttribCalc:
+LC605:  STA PPUAddrUB           ;Lower nibble of upper byte(attribute table for nametable 1).
+LC607:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -1211,26 +1231,27 @@ LC68F:  RTS
 ;----------------------------------------------------------------------------------------------------
 
 AddPPUBufEntry:
-LC690:  LDX PPUBufCount
-LC692:  CPX #$B0
-LC694:  BCC PutPPUBufDat
+LC690:  LDX PPUBufCount         ;
+LC692:  CPX #$B0                ;Is the PPU buffer full?
+LC694:  BCC PutPPUBufDat        ;If not, branch to add data to the PPU buffer.
+
 LC696:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LC699:  JMP AddPPUBufEntry      ;Loop until buffer has room.
 
 PutPPUBufDat:
-LC69C:  LDX PPUBufCount
-LC69E:  LDA PPUAddrUB
-LC6A0:  STA BlockRAM,X
-LC6A3:  INX
-LC6A4:  LDA PPUAddrLB
-LC6A6:  STA BlockRAM,X
-LC6A9:  INX
-LC6AA:  LDA PPUDataByte
-LC6AC:  STA BlockRAM,X
+LC69C:  LDX PPUBufCount         ;Copy PPU buffer count to X
+LC69E:  LDA PPUAddrUB           ;
+LC6A0:  STA BlockRAM,X          ;Add upper byte of PPU target address to buffer.
+LC6A3:  INX                     ;
+LC6A4:  LDA PPUAddrLB           ;
+LC6A6:  STA BlockRAM,X          ;Add lower byte of PPU target address to buffer.
+LC6A9:  INX                     ;
+LC6AA:  LDA PPUDataByte         ;
+LC6AC:  STA BlockRAM,X          ;Add data byte to write to PPU to the buffer.
+LC6AF:  INX                     ;
 
-LC6AF:  INX
-LC6B0:  INC PPUEntCount
-LC6B2:  STX PPUBufCount
+LC6B0:  INC PPUEntCount         ;Increase PPU buffer entries by 1(3 bytes per entry).
+LC6B2:  STX PPUBufCount         ;Increase buffer count by 3 bytes.
 
 LC6B4:  INC PPUAddrLB           ;
 LC6B6:  BNE +                   ;Increment PPU target address.
@@ -2035,7 +2056,7 @@ LCBA4:  STA CharXPixelsLB
 LCBA6:  LDA #$40
 LCBA8:  STA CharYPixelsLB
 LCBAA:  LDA #$00
-LCBAC:  STA $D6
+LCBAC:  STA RepeatCounter
 LCBAE:  STA RepelTimer
 LCBB0:  STA CharXPixelsUB
 LCBB2:  STA CharYPixelsUB
@@ -2048,11 +2069,14 @@ LCBBE:  STA MapNumber
 LCBC0:  JSR $A788
 LCBC3:  JSR MapChngNoSound      ;($B091)Change maps with no stairs sound.
 LCBC6:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
+
 LCBC9:  LDA #$00
 LCBCB:  STA FrameCounter
+
 LCBCD:  JSR GetJoypadStatus     ;($C608)Get input button presses.
 LCBD0:  LDA JoypadBtns
 LCBD2:  BNE $CBDD
+
 LCBD4:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCBD7:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 LCBDA:  JMP $CBCD
@@ -2111,26 +2135,30 @@ LCC29:  .byte $1B
 LCC2A:  LDA PlayerFlags
 LCC2C:  AND #$02
 LCC2E:  BEQ $CC6A
+
 LCC30:  LDA #$C7
 LCC32:  STA $8A
 LCC34:  LDA #$27
 LCC36:  STA $8B
 LCC38:  LDA #$00
 LCC3A:  STA $8C
+
 LCC3C:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCC3F:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 
-LCC42:  JSR DoDialogHiBlock     ;($C7C5)
-LCC45:  .byte $1C
+LCC42:  JSR DoDialogHiBlock     ;($C7C5)Gwaelin said: please wait...
+LCC45:  .byte $1C               ;TextBlock18, entry 12.
 
 LCC46:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LCC49:  JSR WaitForNMI          ;($FF74)
+LCC49:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
+
 LCC4C:  LDA $8C
 LCC4E:  CLC
 LCC4F:  ADC #$10
 LCC51:  STA $8C
 LCC53:  BCC $CC57
 LCC55:  INC $8A
+
 LCC57:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 LCC5A:  LDA $8A
 LCC5C:  CMP #$CA
@@ -2139,18 +2167,22 @@ LCC60:  LDA #$47
 LCC62:  STA $8B
 LCC64:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 LCC67:  JMP $CC8B
+
 LCC6A:  LDA PlayerFlags
 LCC6C:  LSR
 LCC6D:  BCC $CCB8
+
 LCC6F:  LDA PlayerFlags
 LCC71:  AND #$FE
 LCC73:  STA PlayerFlags
+
 LCC75:  LDA #$CA
 LCC77:  STA $8A
 LCC79:  LDA #$47
 LCC7B:  STA $8B
 LCC7D:  LDA #$00
 LCC7F:  STA $8C
+
 LCC81:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCC84:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 

@@ -183,6 +183,9 @@
 .alias XTarget          $3C     ;X position to check for item, door, etc.
 .alias YTarget          $3E     ;Y position to check for item, door, etc.
 
+.alias NTXPos           $3C     ;Nametable X position to modify (#$00-#$3F, spans 2 nametables).
+.alias NTYPos           $3E     ;Nametable Y position to modify (#$00-#$1E).
+
 .alias ROMSrcPtr        $3C     ;ROM copy source pointer.
 .alias ROMSrcPtrLB      $3C     ;ROM copy source pointer, lower byte.
 .alias ROMSrcPtrUB      $3D     ;ROM copy source pointer, upper byte.
@@ -255,7 +258,7 @@
                                 
 .alias BlkRemoveFlgs    $4C     ;Lower nibble is flags for tiles to keep when changing a map block.
                                 ;1-upper left, 2-upper right, 4-lower left, 8-lower right.
-                                
+.alias TileCounter      $4D     ;Used to count tiles when modifying blocks.                                
 .alias FrameCounter     $4F     ;Normally increments every frame. used for timing.
 
 .alias CharLeftRight    $50     ;Controls character animations. bit 3 atlernates animations.
