@@ -5208,7 +5208,7 @@ LB451:  LDA #$05                ;Prepare to change the attribute table for a giv
 LB453:  STA TileCounter         ;
 LB455:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
-AttribClearLoop:
+AttribClearLoop1:
 LB458:  JSR ClearAttribByte     ;($C244)Set black palette for 4x4 block area.
 
 LB45B:  LDA XPosFromCenter      ;
@@ -5217,7 +5217,7 @@ LB45E:  ADC #$04                ;
 LB460:  STA XPosFromCenter      ;
 
 LB462:  DEC TileCounter         ;Done clearing this section?
-LB464:  BNE AttribClearLoop     ;If not, branch to clear another attrib byte.
+LB464:  BNE AttribClearLoop1    ;If not, branch to clear another attrib byte.
 
 LB466:  INC ScrollY             ;Increment vertical scroll and player Y pixel position.
 LB468:  INC CharYPixelsLB       ;
@@ -5333,125 +5333,165 @@ LB503:  RTS                     ;
 
 DoJoyUp:
 LB504:  JSR ChkRemovePopUp      ;($B23E)Check if pop-up window needs to be removed.
-LB507:  LDA FrameCounter
-LB509:  AND #$0F
-LB50B:  BEQ $B512
-LB50D:  PLA
-LB50E:  PLA
+LB507:  LDA FrameCounter		;
+LB509:  AND #$0F				;
+LB50B:  BEQ UpSynced			;Only move if on the first frame of the frame counter.
+
+LB50D:  PLA                     ;Not on first frame. Remove return address from stack and -->
+LB50E:  PLA                     ;update the idle status instead.
 LB50F:  JMP IdleUpdate          ;($CB30)Update NPC movement and pop-up window.
 
-LB512:  DEC _CharYPos
+UpSynced:
+LB512:  DEC _CharYPos           ;Prepare to check for collisions to the top.
 LB514:  JSR CheckCollision      ;($B1CC)Check if character will run into wall or NPC.
-LB517:  LDA MapType
-LB519:  CMP #MAP_DUNGEON
-LB51B:  BNE $B53E
+
+LB517:  LDA MapType             ;Is player in a dungeon?
+LB519:  CMP #MAP_DUNGEON		;
+LB51B:  BNE UpdtUNonDungeon     ;If not, branch to update non-dungeon map.
+
 LB51D:  JSR UpdtVertDungeon     ;($B4C9)Vertically update dungeons.
-LB520:  DEC CharYPos
-LB522:  LDA CharYPixelsLB
-LB524:  SEC
-LB525:  SBC #$08
-LB527:  STA CharYPixelsLB
-LB529:  BCS $B52D
-LB52B:  DEC CharYPixelsUB
-LB52D:  JSR PostMoveUpdate      ;($B30E)Update nametables after player moves.
-LB530:  LDA CharYPixelsLB
-LB532:  SEC
-LB533:  SBC #$08
-LB535:  STA CharYPixelsLB
-LB537:  BCS $B53B
-LB539:  DEC CharYPixelsUB
-LB53B:  JMP DoSprites           ;($B6DA)Update player and NPC sprites.
+LB520:  DEC CharYPos			;Move player 1 block up.
 
+LB522:  LDA CharYPixelsLB		;
+LB524:  SEC						;
+LB525:  SBC #$08                ;Move player 8 pixels down.
+LB527:  STA CharYPixelsLB		;
+LB529:  BCS +                   ;Update upper byte of Y position, if necessary. 
+LB52B:  DEC CharYPixelsUB		;
+
+LB52D:* JSR PostMoveUpdate      ;($B30E)Update nametables after player moves.
+
+LB530:  LDA CharYPixelsLB		;
+LB532:  SEC						;
+LB533:  SBC #$08                ;Move player 8 pixels up.
+LB535:  STA CharYPixelsLB		;
+LB537:  BCS +					;Update upper byte of Y position, if necessary. 
+LB539:  DEC CharYPixelsUB		;
+
+LB53B:* JMP DoSprites           ;($B6DA)Update player and NPC sprites.
+
+UpdtUNonDungeon:
 LB53E:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB541:  DEC ScrollY
-LB543:  LDA ScrollY
-LB545:  CMP #$FF
-LB547:  BNE $B54D
-LB549:  LDA #$EF
-LB54B:  STA ScrollY
-LB54D:  LDA CharYPixelsLB
-LB54F:  SEC
-LB550:  SBC #$01
-LB552:  STA CharYPixelsLB
-LB554:  BCS $B558
-LB556:  DEC CharYPixelsUB
-LB558:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 
-LB55B:  LDA #$F0
-LB55D:  STA $10
-LB55F:  LDA #$EE
-LB561:  STA $0F
-LB563:  LDA #$03
-LB565:  STA TileCounter
+LB541:  DEC ScrollY             ;Decrement vertical scroll.
+LB543:  LDA ScrollY				;
+LB545:  CMP #$FF				;If the scroll value rolls over, set it -->
+LB547:  BNE +					;to the proper maximum value.
+LB549:  LDA #$EF				;
+LB54B:  STA ScrollY				;
+
+LB54D:* LDA CharYPixelsLB		;
+LB54F:  SEC						;
+LB550:  SBC #$01				;Update the player's Y pixel position.
+LB552:  STA CharYPixelsLB		;
+LB554:  BCS +					;
+LB556:  DEC CharYPixelsUB		;
+
+LB558:* JSR DoSprites           ;($B6DA)Update player and NPC sprites.
+
+LB55B:  LDA #$F0                ;Prepare to update blocks starting -16 tiles above the player.
+LB55D:  STA YPosFromCenter		;
+LB55F:  LDA #$EE				;Prepare to update blocks starting -18 tiles left of the player.
+LB561:  STA XPosFromCenter		;
+
+VertRowLoop2:
+LB563:  LDA #$03                ;Prepare to change a 3 block section.
+LB565:  STA TileCounter			;
 LB567:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB56A:  LDA #$03
-LB56C:  STA BlkRemoveFlgs
-LB56E:  STA PPUHorzVert
-LB570:  JSR ModMapBlock         ;($AD66)Change block on map.
-LB573:  INC $0F
-LB575:  INC $0F
-LB577:  DEC TileCounter
-LB579:  BNE $B56A
-LB57B:  DEC ScrollY
-LB57D:  DEC CharYPixelsLB
-LB57F:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LB582:  LDA $0F
-LB584:  CMP #$12
-LB586:  BNE $B563
-LB588:  LDA #$F0
-LB58A:  STA $10
-LB58C:  LDA #$EC
-LB58E:  STA $0F
-LB590:  LDA #$05
-LB592:  STA TileCounter
-LB594:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB597:  JSR $C244
 
-LB59A:  LDA $0F
-LB59C:  CLC
-LB59D:  ADC #$04
-LB59F:  STA $0F
-LB5A1:  DEC $4D
-LB5A3:  BNE $B597
-LB5A5:  DEC ScrollY
-LB5A7:  DEC CharYPixelsLB
+VertBlockLoop2:
+LB56A:  LDA #$03                ;Remove upper tiles in block.
+LB56C:  STA BlkRemoveFlgs		;
+LB56E:  STA PPUHorzVert         ;PPU row write.
+LB570:  JSR ModMapBlock         ;($AD66)Change block on map.
+
+LB573:  INC XPosFromCenter      ;Increment to next block in row.
+LB575:  INC XPosFromCenter		;
+
+LB577:  DEC TileCounter         ;Done changing block section?
+LB579:  BNE VertBlockLoop2      ;If not, branch to do more.
+
+LB57B:  DEC ScrollY             ;Decrement vertical scroll register and pixel position.
+LB57D:  DEC CharYPixelsLB		;
+LB57F:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
+
+LB582:  LDA XPosFromCenter		;
+LB584:  CMP #$12                ;Done clearing this row?
+LB586:  BNE VertRowLoop2     	;If not, branch to clear another section.
+
+LB588:  LDA #$F0                ;Prepare to update blocks starting -16 tiles above the player.
+LB58A:  STA YPosFromCenter		;
+LB58C:  LDA #$EC				;Prepare to update blocks starting -20 tiles left of the player.
+LB58E:  STA XPosFromCenter		;
+
+VertAttribLoop2:
+LB590:  LDA #$05                ;Prepare to change a 5 block section.
+LB592:  STA TileCounter			;
+LB594:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
+
+AttribClearLoop2:
+LB597:  JSR ClearAttribByte     ;($C244)Set black palette for 4x4 block area.
+
+LB59A:  LDA $0F					;
+LB59C:  CLC                     ;Move to the next 4x4 block area.
+LB59D:  ADC #$04				;
+LB59F:  STA XPosFromCenter		;
+
+LB5A1:  DEC TileCounter         ;Done clearing this section?
+LB5A3:  BNE AttribClearLoop2    ;If not, branch to clear another attrib byte.
+
+LB5A5:  DEC ScrollY             ;Decrement vertical scroll and player Y pixel position.
+LB5A7:  DEC CharYPixelsLB		;
 LB5A9:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LB5AC:  LDA $0F
-LB5AE:  CMP #$14
-LB5B0:  BNE $B590
-LB5B2:  LDA #$F0
-LB5B4:  STA $10
-LB5B6:  LDA #$EE
-LB5B8:  STA $0F
-LB5BA:  LDA #$03
-LB5BC:  STA TileCounter
+
+LB5AC:  LDA XPosFromCenter		;
+LB5AE:  CMP #$14                ;Done clearing this row?
+LB5B0:  BNE VertAttribLoop2     ;If not, branch to clear another section.
+
+LB5B2:  LDA #$F0                ;Prepare to update blocks starting -16 tiles above the player.
+LB5B4:  STA YPosFromCenter		;
+LB5B6:  LDA #$EE				;Prepare to update blocks starting -18 tiles left of the player.
+LB5B8:  STA XPosFromCenter		;
+
+VertRowLoop3:
+LB5BA:  LDA #$03                ;Prepare to change a 3 block section.
+LB5BC:  STA TileCounter			;
 LB5BE:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
+VertBlockLoop3:
 LB5C1:  LDA #$0C                ;
 LB5C3:  STA BlkRemoveFlgs       ;Remove lower 2 tiles from the block
 LB5C5:  STA PPUHorzVert         ;PPU row write.
 
 LB5C7:  JSR ModMapBlock         ;($AD66)Change block on map.
-LB5CA:  INC $0F
-LB5CC:  INC $0F
-LB5CE:  DEC TileCounter
-LB5D0:  BNE $B5C1
-LB5D2:  DEC ScrollY
-LB5D4:  DEC CharYPixelsLB
+
+LB5CA:  INC XPosFromCenter      ;Increment to next block in row.
+LB5CC:  INC XPosFromCenter		;
+
+LB5CE:  DEC TileCounter         ;Done changing block section?
+LB5D0:  BNE VertBlockLoop3      ;If not, branch to do more.
+
+LB5D2:  DEC ScrollY		        ;Move player up 1 pixel.
+LB5D4:  DEC CharYPixelsLB		;
+
 LB5D6:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LB5D9:  LDA $0F
-LB5DB:  CMP #$12
-LB5DD:  BNE $B5BA
+LB5D9:  LDA XPosFromCenter		;
+LB5DB:  CMP #$12                ;Done changing block row?
+LB5DD:  BNE VertRowLoop3        ;If not, branch to do more.
+
 LB5DF:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB5E2:  DEC ScrollY
-LB5E4:  DEC NTBlockY
-LB5E6:  LDA NTBlockY
-LB5E8:  CMP #$FF
-LB5EA:  BNE $B5F0
-LB5EC:  LDA #$0E
-LB5EE:  STA NTBlockY
-LB5F0:  DEC CharYPos
-LB5F2:  DEC CharYPixelsLB
+
+LB5E2:  DEC ScrollY             ;Decrement vertical scroll register.
+
+LB5E4:  DEC NTBlockY			;
+LB5E6:  LDA NTBlockY			;
+LB5E8:  CMP #$FF				;Decrement Y block position on nametable. -->
+LB5EA:  BNE +					;If it rolls over, make sure its set to the proper value.
+LB5EC:  LDA #$0E				;
+LB5EE:  STA NTBlockY			;
+
+LB5F0:* DEC CharYPos       		;Move player 1 pixel up.
+LB5F2:  DEC CharYPixelsLB		;
 
 LB5F4:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 LB5F7:  JMP DoCoveredArea       ;($B5FA)Handle covered areas of the map, if necessary.

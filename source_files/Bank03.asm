@@ -518,7 +518,7 @@ LC27B:  PLA                     ;Restore Y from the stack.
 LC27C:  TAY                     ;
 
 LC27D:  LDA PPUAddrUB           ;
-LC27F:  CLC                     ;Increment to the next row in the nametable.
+LC27F:  CLC                     ;Add in upper nibble of upper address byte.
 LC280:  ADC #$20                ;
 LC282:  STA PPUAddrUB           ;
 
