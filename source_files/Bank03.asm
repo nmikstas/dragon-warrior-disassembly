@@ -50,34 +50,34 @@ LC003:  JMP $C009               ;
 
 LC006:  JSR CalcAttribAddr      ;($C5E4)Calculate attribute table address for given nametable byte.
 
-LC009:  TYA                     ;
-LC00A:  PHA                     ;
-LC00B:  LDA $3E                 ;
-LC00D:  AND #$02                ;
-LC00F:  ASL                     ;
-LC010:  STA $3D                 ;
-LC012:  LDA $3C                 ;
-LC014:  AND #$02                ;Not used.
-LC016:  CLC                     ;
-LC017:  ADC $3D                 ;
-LC019:  TAY                     ;
-LC01A:  LDA #$FC                ;
-LC01C:  CPY #$00                ;
-LC01E:  BEQ $C027               ;
+LC009:  TYA
+LC00A:  PHA
+LC00B:  LDA $3E
+LC00D:  AND #$02
+LC00F:  ASL
+LC010:  STA $3D
+LC012:  LDA $3C
+LC014:  AND #$02
+LC016:  CLC
+LC017:  ADC $3D
+LC019:  TAY
+LC01A:  LDA #$FC
+LC01C:  CPY #$00
+LC01E:  BEQ $C027
 
-LC020:  SEC                     ;
-LC021:  ROL                     ;
-LC022:  ASL PPUDataByte         ;Not used.
-LC024:  DEY                     ;
-LC025:  BNE $C020               ;
+LC020:  SEC
+LC021:  ROL
+LC022:  ASL PPUDataByte
+LC024:  DEY
+LC025:  BNE $C020
 
-LC027:  AND (PPUBufPtr),Y       ;
-LC029:  ORA PPUDataByte         ;
-LC02B:  STA (PPUBufPtr),Y       ;
-LC02D:  STA PPUDataByte         ;Not used.
-LC02F:  PLA                     ;
-LC030:  TAY                     ;
-LC031:  RTS                     ;
+LC027:  AND (PPUBufPtr),Y
+LC029:  ORA PPUDataByte
+LC02B:  STA (PPUBufPtr),Y
+LC02D:  STA PPUDataByte
+LC02F:  PLA
+LC030:  TAY
+LC031:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -9346,7 +9346,7 @@ LF841:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 ShowStartGame:
-LF842:  JSR ClearBGBufRAM       ;($FC4D)Clear RAM $0400-$07BF;
+LF842:  JSR ClearWinBufRAM      ;($FC4D)Clear RAM $0400-$07BF;
 LF845:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
 LF848:  JSR ClearPPU            ;($C17A)Clear the PPU.
 LF84B:  LDA #%00011000          ;Turn on background and sprites.
@@ -10164,26 +10164,26 @@ LFC4C:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-ClearBGBufRAM:
+ClearWinBufRAM:
 LFC4D:  LDA #TL_BLANK_TILE1     ;Fill buffer with Blank tiles.
 
 LFC4F:  LDX #$00                ;
-LFC51:* STA BGBufRAM,X          ;Clear RAM $0400-$04FF
+LFC51:* STA WinBufRAM,X         ;Clear RAM $0400-$04FF
 LFC54:  DEX                     ;
 LFC55:  BNE -                   ;
 
 LFC57:  LDX #$00                ;
-LFC59:* STA BGBufRAM+$100,X     ;Clear RAM $0500-$05FF
+LFC59:* STA WinBufRAM+$100,X    ;Clear RAM $0500-$05FF
 LFC5C:  DEX                     ;
 LFC5D:  BNE -                   ;
 
 LFC5F:  LDX #$00                ;
-LFC61:* STA BGBufRAM+$200,X     ;Clear RAM $0600-$06FF
+LFC61:* STA WinBufRAM+$200,X    ;Clear RAM $0600-$06FF
 LFC64:  DEX                     ;
 LFC65:  BNE -                   ;
 
 LFC67:  LDX #$00                ;
-LFC69:* STA BGBufRAM+$300,X     ;
+LFC69:* STA WinBufRAM+$300,X    ;
 LFC6C:  INX                     ;Clear RAM $0700-$07BF
 LFC6D:  CPX #$C0                ;
 LFC6F:  BCC -                   ;
@@ -10436,10 +10436,10 @@ LFDA3:  TAX                     ;
 LFDA4:  STA UpdateBGTiles       ;Clear update background tiles byte.
 LFDA7:* STA $00,X               ;
 LFDA9:  STA BlockRAM,X          ;
-LFDAC:  STA BGBufRAM,X          ;Clear internal NES RAM.
-LFDAF:  STA BGBufRAM+$0100,X    ;
-LFDB2:  STA BGBufRAM+$0200,X    ;
-LFDB5:  STA BGBufRAM+$0300,X    ;
+LFDAC:  STA WinBufRAM,X         ;Clear internal NES RAM.
+LFDAF:  STA WinBufRAM+$0100,X   ;
+LFDB2:  STA WinBufRAM+$0200,X   ;
+LFDB5:  STA WinBufRAM+$0300,X   ;
 LFDB8:  INX                     ;
 LFDB9:  BNE -                   ;
 

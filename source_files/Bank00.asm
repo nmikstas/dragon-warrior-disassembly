@@ -1740,6 +1740,7 @@ L9762:  .word TaDLStatTbl       ;($97CE)Tantagel castle, after dragonlord defeat
 ;XXXXX    - NPC X position.
 ;_        - Unused.
 ;DD       - NPC direction: 0=Facing up, 1=Facing right, 2=Facing down, 3=Facing left.
+;YYYYY    - NPC Y position.
 ;CCCCCCCC - Dialog control byte.
 
 ;----------------------------------------------------------------------------------------------------
@@ -4823,7 +4824,7 @@ LB23B:  JMP ChangeMaps          ;($D9E2)Load a new map.
 ;----------------------------------------------------------------------------------------------------
 
 ChkRemovePopUp:
-LB23E:  LDA BGBufRAM+$84        ;
+LB23E:  LDA WinBufRAM+$84       ;
 LB241:  CMP #$FF                ;This tile will be blank unless the pop-up window is active.
 LB243:  BNE DoRemovePopUp       ;If it is active, branch to remove it from the screen.
 LB245:  RTS                     ;
@@ -5333,9 +5334,9 @@ LB503:  RTS                     ;
 
 DoJoyUp:
 LB504:  JSR ChkRemovePopUp      ;($B23E)Check if pop-up window needs to be removed.
-LB507:  LDA FrameCounter		;
-LB509:  AND #$0F				;
-LB50B:  BEQ UpSynced			;Only move if on the first frame of the frame counter.
+LB507:  LDA FrameCounter        ;
+LB509:  AND #$0F                ;
+LB50B:  BEQ UpSynced            ;Only move if on the first frame of the frame counter.
 
 LB50D:  PLA                     ;Not on first frame. Remove return address from stack and -->
 LB50E:  PLA                     ;update the idle status instead.
@@ -5346,27 +5347,27 @@ LB512:  DEC _CharYPos           ;Prepare to check for collisions to the top.
 LB514:  JSR CheckCollision      ;($B1CC)Check if character will run into wall or NPC.
 
 LB517:  LDA MapType             ;Is player in a dungeon?
-LB519:  CMP #MAP_DUNGEON		;
+LB519:  CMP #MAP_DUNGEON        ;
 LB51B:  BNE UpdtUNonDungeon     ;If not, branch to update non-dungeon map.
 
 LB51D:  JSR UpdtVertDungeon     ;($B4C9)Vertically update dungeons.
-LB520:  DEC CharYPos			;Move player 1 block up.
+LB520:  DEC CharYPos            ;Move player 1 block up.
 
-LB522:  LDA CharYPixelsLB		;
-LB524:  SEC						;
+LB522:  LDA CharYPixelsLB       ;
+LB524:  SEC                     ;
 LB525:  SBC #$08                ;Move player 8 pixels down.
-LB527:  STA CharYPixelsLB		;
+LB527:  STA CharYPixelsLB       ;
 LB529:  BCS +                   ;Update upper byte of Y position, if necessary. 
-LB52B:  DEC CharYPixelsUB		;
+LB52B:  DEC CharYPixelsUB       ;
 
 LB52D:* JSR PostMoveUpdate      ;($B30E)Update nametables after player moves.
 
-LB530:  LDA CharYPixelsLB		;
-LB532:  SEC						;
+LB530:  LDA CharYPixelsLB       ;
+LB532:  SEC                     ;
 LB533:  SBC #$08                ;Move player 8 pixels up.
-LB535:  STA CharYPixelsLB		;
-LB537:  BCS +					;Update upper byte of Y position, if necessary. 
-LB539:  DEC CharYPixelsUB		;
+LB535:  STA CharYPixelsLB       ;
+LB537:  BCS +                   ;Update upper byte of Y position, if necessary. 
+LB539:  DEC CharYPixelsUB       ;
 
 LB53B:* JMP DoSprites           ;($B6DA)Update player and NPC sprites.
 
@@ -5374,88 +5375,88 @@ UpdtUNonDungeon:
 LB53E:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LB541:  DEC ScrollY             ;Decrement vertical scroll.
-LB543:  LDA ScrollY				;
-LB545:  CMP #$FF				;If the scroll value rolls over, set it -->
-LB547:  BNE +					;to the proper maximum value.
-LB549:  LDA #$EF				;
-LB54B:  STA ScrollY				;
+LB543:  LDA ScrollY             ;
+LB545:  CMP #$FF                ;If the scroll value rolls over, set it -->
+LB547:  BNE +                   ;to the proper maximum value.
+LB549:  LDA #$EF                ;
+LB54B:  STA ScrollY             ;
 
-LB54D:* LDA CharYPixelsLB		;
-LB54F:  SEC						;
-LB550:  SBC #$01				;Update the player's Y pixel position.
-LB552:  STA CharYPixelsLB		;
-LB554:  BCS +					;
-LB556:  DEC CharYPixelsUB		;
+LB54D:* LDA CharYPixelsLB       ;
+LB54F:  SEC                     ;
+LB550:  SBC #$01                ;Update the player's Y pixel position.
+LB552:  STA CharYPixelsLB       ;
+LB554:  BCS +                   ;
+LB556:  DEC CharYPixelsUB       ;
 
 LB558:* JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 
 LB55B:  LDA #$F0                ;Prepare to update blocks starting -16 tiles above the player.
-LB55D:  STA YPosFromCenter		;
-LB55F:  LDA #$EE				;Prepare to update blocks starting -18 tiles left of the player.
-LB561:  STA XPosFromCenter		;
+LB55D:  STA YPosFromCenter      ;
+LB55F:  LDA #$EE                ;Prepare to update blocks starting -18 tiles left of the player.
+LB561:  STA XPosFromCenter      ;
 
 VertRowLoop2:
 LB563:  LDA #$03                ;Prepare to change a 3 block section.
-LB565:  STA TileCounter			;
+LB565:  STA TileCounter         ;
 LB567:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 VertBlockLoop2:
 LB56A:  LDA #$03                ;Remove upper tiles in block.
-LB56C:  STA BlkRemoveFlgs		;
+LB56C:  STA BlkRemoveFlgs       ;
 LB56E:  STA PPUHorzVert         ;PPU row write.
 LB570:  JSR ModMapBlock         ;($AD66)Change block on map.
 
 LB573:  INC XPosFromCenter      ;Increment to next block in row.
-LB575:  INC XPosFromCenter		;
+LB575:  INC XPosFromCenter      ;
 
 LB577:  DEC TileCounter         ;Done changing block section?
 LB579:  BNE VertBlockLoop2      ;If not, branch to do more.
 
 LB57B:  DEC ScrollY             ;Decrement vertical scroll register and pixel position.
-LB57D:  DEC CharYPixelsLB		;
+LB57D:  DEC CharYPixelsLB       ;
 LB57F:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 
-LB582:  LDA XPosFromCenter		;
+LB582:  LDA XPosFromCenter      ;
 LB584:  CMP #$12                ;Done clearing this row?
-LB586:  BNE VertRowLoop2     	;If not, branch to clear another section.
+LB586:  BNE VertRowLoop2        ;If not, branch to clear another section.
 
 LB588:  LDA #$F0                ;Prepare to update blocks starting -16 tiles above the player.
-LB58A:  STA YPosFromCenter		;
-LB58C:  LDA #$EC				;Prepare to update blocks starting -20 tiles left of the player.
-LB58E:  STA XPosFromCenter		;
+LB58A:  STA YPosFromCenter      ;
+LB58C:  LDA #$EC                ;Prepare to update blocks starting -20 tiles left of the player.
+LB58E:  STA XPosFromCenter      ;
 
 VertAttribLoop2:
 LB590:  LDA #$05                ;Prepare to change a 5 block section.
-LB592:  STA TileCounter			;
+LB592:  STA TileCounter         ;
 LB594:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 AttribClearLoop2:
 LB597:  JSR ClearAttribByte     ;($C244)Set black palette for 4x4 block area.
 
-LB59A:  LDA $0F					;
+LB59A:  LDA $0F                 ;
 LB59C:  CLC                     ;Move to the next 4x4 block area.
-LB59D:  ADC #$04				;
-LB59F:  STA XPosFromCenter		;
+LB59D:  ADC #$04                ;
+LB59F:  STA XPosFromCenter      ;
 
 LB5A1:  DEC TileCounter         ;Done clearing this section?
 LB5A3:  BNE AttribClearLoop2    ;If not, branch to clear another attrib byte.
 
 LB5A5:  DEC ScrollY             ;Decrement vertical scroll and player Y pixel position.
-LB5A7:  DEC CharYPixelsLB		;
+LB5A7:  DEC CharYPixelsLB       ;
 LB5A9:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 
-LB5AC:  LDA XPosFromCenter		;
+LB5AC:  LDA XPosFromCenter      ;
 LB5AE:  CMP #$14                ;Done clearing this row?
 LB5B0:  BNE VertAttribLoop2     ;If not, branch to clear another section.
 
 LB5B2:  LDA #$F0                ;Prepare to update blocks starting -16 tiles above the player.
-LB5B4:  STA YPosFromCenter		;
-LB5B6:  LDA #$EE				;Prepare to update blocks starting -18 tiles left of the player.
-LB5B8:  STA XPosFromCenter		;
+LB5B4:  STA YPosFromCenter      ;
+LB5B6:  LDA #$EE                ;Prepare to update blocks starting -18 tiles left of the player.
+LB5B8:  STA XPosFromCenter      ;
 
 VertRowLoop3:
 LB5BA:  LDA #$03                ;Prepare to change a 3 block section.
-LB5BC:  STA TileCounter			;
+LB5BC:  STA TileCounter         ;
 LB5BE:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 VertBlockLoop3:
@@ -5466,16 +5467,16 @@ LB5C5:  STA PPUHorzVert         ;PPU row write.
 LB5C7:  JSR ModMapBlock         ;($AD66)Change block on map.
 
 LB5CA:  INC XPosFromCenter      ;Increment to next block in row.
-LB5CC:  INC XPosFromCenter		;
+LB5CC:  INC XPosFromCenter      ;
 
 LB5CE:  DEC TileCounter         ;Done changing block section?
 LB5D0:  BNE VertBlockLoop3      ;If not, branch to do more.
 
-LB5D2:  DEC ScrollY		        ;Move player up 1 pixel.
-LB5D4:  DEC CharYPixelsLB		;
+LB5D2:  DEC ScrollY             ;Move player up 1 pixel.
+LB5D4:  DEC CharYPixelsLB       ;
 
 LB5D6:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LB5D9:  LDA XPosFromCenter		;
+LB5D9:  LDA XPosFromCenter      ;
 LB5DB:  CMP #$12                ;Done changing block row?
 LB5DD:  BNE VertRowLoop3        ;If not, branch to do more.
 
@@ -5483,15 +5484,15 @@ LB5DF:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LB5E2:  DEC ScrollY             ;Decrement vertical scroll register.
 
-LB5E4:  DEC NTBlockY			;
-LB5E6:  LDA NTBlockY			;
-LB5E8:  CMP #$FF				;Decrement Y block position on nametable. -->
-LB5EA:  BNE +					;If it rolls over, make sure its set to the proper value.
-LB5EC:  LDA #$0E				;
-LB5EE:  STA NTBlockY			;
+LB5E4:  DEC NTBlockY            ;
+LB5E6:  LDA NTBlockY            ;
+LB5E8:  CMP #$FF                ;Decrement Y block position on nametable. -->
+LB5EA:  BNE +                   ;If it rolls over, make sure its set to the proper value.
+LB5EC:  LDA #$0E                ;
+LB5EE:  STA NTBlockY            ;
 
-LB5F0:* DEC CharYPos       		;Move player 1 pixel up.
-LB5F2:  DEC CharYPixelsLB		;
+LB5F0:* DEC CharYPos            ;Move player 1 pixel up.
+LB5F2:  DEC CharYPixelsLB       ;
 
 LB5F4:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 LB5F7:  JMP DoCoveredArea       ;($B5FA)Handle covered areas of the map, if necessary.
@@ -5719,21 +5720,21 @@ LB721:  LDA CharDirection       ;Use character facing direction for char table i
 LB724:  JSR SprtFacingBaseAddr  ;($B6C2)Calculate entry into char data table based on direction.
 
 GetPlayerTileLoop1:
-LB727:  LDA #$80
-LB729:  STA CharXScrPos
+LB727:  LDA #$80                ;First sprite tile of player is 128 pixels from left of screen.
+LB729:  STA CharXScrPos         ;
 
 GetPlayerTileLoop2:
-LB72B:  LDA $05D0
-LB72E:  CMP #$FF
-LB730:  BEQ $B736
+LB72B:  LDA WinBufRAM+$1D0      ;Check if window is covering player's position.
+LB72E:  CMP #$FF                ;If not, branch to hide player sprites.
+LB730:  BEQ +                   ;
 
-LB732:  LDA #$F0
-LB734:  BNE PlyrSetXCord
+LB732:  LDA #$F0                ;Hide the player sprite.
+LB734:  BNE PlyrSetXCord        ;Branch always.
 
-LB736:  LDA CharYScrPos
+LB736:* LDA CharYScrPos         ;Load the player sprite Y position.
 
 PlyrSetXCord:
-LB738:  STA SpriteRAM,X
+LB738:  STA SpriteRAM,X         ;Store player sprite Y screen position.
 
 LB73B:  INX                     ;
 LB73C:  LDA (GenPtr22),Y        ;Store player sprite tile pattern byte.
@@ -5749,13 +5750,15 @@ LB749:  INY                     ;Store player sprite X screen position.
 LB74A:  LDA CharXScrPos         ;
 LB74C:  STA SpriteRAM,X         ;
 
-LB74F:  INX
-LB750:  LDA CharXScrPos
-LB752:  CLC
-LB753:  ADC #$08
-LB755:  STA CharXScrPos
-LB757:  CMP #$90
-LB759:  BNE GetPlayerTileLoop2
+LB74F:  INX                     ;Move to next sprite.
+
+LB750:  LDA CharXScrPos         ;
+LB752:  CLC                     ;Next sprite is 8 pixels to the right.
+LB753:  ADC #$08                ;
+LB755:  STA CharXScrPos         ;
+
+LB757:  CMP #$90                ;Have the 2 sprites in the row been processed?
+LB759:  BNE GetPlayerTileLoop2  ;If not, branch to process second sprite.
 
 LB75B:  LDA CharYScrPos         ;
 LB75D:  CLC                     ;Move down 1 row for next player sprite tiles(8 pixels).
@@ -5765,138 +5768,189 @@ LB760:  STA CharYScrPos         ;
 LB762:  CMP #$7F                ;Have all 4 sprite tiles for the player been placed?
 LB764:  BNE GetPlayerTileLoop1  ;If not, branch to place another tile.
 
-LB766:  LDA NPCUpdateCntr
-LB768:  AND #$F0
-LB76A:  BEQ $B76F
-LB76C:  JMP $B9FB
+LB766:  LDA NPCUpdateCntr       ;Are NPCs on the current map?
+LB768:  AND #$F0                ;
+LB76A:  BEQ UpdateNPCs1         ;If so, branch to update NPCs.
 
-LB76F:  LDA NPCUpdateCntr
-LB771:  ASL
-LB772:  STA $3C
-LB774:  ASL
-LB775:  ADC $3C
-LB777:  TAX
-LB778:  LDA #$02
-LB77A:  STA $4E
-LB77C:  LDA NPCXPos,X
-LB77E:  AND #$1F
-LB780:  BNE $B78B
-LB782:  LDA NPCYPos,X
-LB784:  AND #$1F
-LB786:  BNE $B78B
-LB788:  JMP $B8EA
-LB78B:  LDA FrameCounter
-LB78D:  AND #$0F
-LB78F:  CMP #$01
-LB791:  BEQ $B796
-LB793:  JMP $B861
-LB796:  LDA StopNPCMove
-LB798:  BEQ $B7A1
-LB79A:  ASL NPCYPos,X
-LB79C:  LSR NPCYPos,X
-LB79E:  JMP $B8EA
+LB76C:  JMP UpdateNPCCounter    ;($B9FB)Update NPC counter and exit.
+
+;This code calculates the movement of 2 NPC whenever its entered. Which 2 NPCs is based on
+;NPCUpdateCntr.  There are a max of 20 NPCs but only 10 can move. Valid ranges for NPCUpdateCntr
+;are 0 to 4.  There are 3 bytes of data per NPC.
+
+UpdateNPCs1:
+LB76F:  LDA NPCUpdateCntr       ;
+LB771:  ASL                     ;
+LB772:  STA GenByte3C           ;Calculate the offset to the NPCs to do movement calculations for.
+LB774:  ASL                     ;
+LB775:  ADC GenByte3C           ;
+LB777:  TAX                     ;
+
+LB778:  LDA #$02                ;Prepare to calculate movements for 2 NPCs.
+LB77A:  STA NPCUpdCounter       ;
+
+NPCMoveLoop:
+LB77C:  LDA NPCXPos,X           ;Extract the NPC X location data.
+LB77E:  AND #$1F                ;Is NPC X coordinate on screen?
+LB780:  BNE +                   ;If so, branch to move to next step of calculation.
+
+LB782:  LDA NPCYPos,X           ;Extract the NPC Y location data.
+LB784:  AND #$1F                ;Is NPC Y coordinate on screen?
+LB786:  BNE +                   ;If so, branch to move to next step of calculation.
+
+LB788:  JMP EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
+
+LB78B:* LDA FrameCounter        ;
+LB78D:  AND #$0F                ;NPC movement can only be processed on frame 1.
+LB78F:  CMP #$01                ;Is the frame counter on frame 1?
+LB791:  BEQ +                   ;If so, branch to keep processing movement for this NPC.
+
+LB793:  JMP NPCProcessCont      ;($B861)Can't move NPC. Jump to do other processing.
+
+LB796:* LDA StopNPCMove         ;Can NPC move?
+LB798:  BEQ SetNPCDir           ;If so, branch to choose random facing direction.
+
+HaltNPCMoveCalcs:
+LB79A:  ASL NPCYPos,X           ;Clear MSB to indicate movement processing is done for NPC. 
+LB79C:  LSR NPCYPos,X           ;
+LB79E:  JMP EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
+
+SetNPCDir:
 LB7A1:  JSR UpdateRandNum       ;($C55B)Get random number.
-LB7A4:  LDA NPCYPos,X
-LB7A6:  AND #$9F
-LB7A8:  STA NPCYPos,X
-LB7AA:  LDA $95
-LB7AC:  AND #$60
-LB7AE:  ORA NPCYPos,X
-LB7B0:  STA NPCYPos,X
-LB7B2:  JSR GetNPCPosCopy       ;($BA15)Get a copy of the NPCs X and Y block position.
-LB7B5:  JSR $BA22
-LB7B8:  LDA $41
-LB7BA:  BEQ $B7C2
-LB7BC:  LDA $40
-LB7BE:  CMP #$FF
-LB7C0:  BNE $B79A
-LB7C2:  JSR CheckCoveredArea    ;($AABE)Check if player is in a covered map area.
-LB7C5:  LDA NPCYPos,X
-LB7C7:  AND #$60
-LB7C9:  BNE $B7D0
-LB7CB:  DEC $43
-LB7CD:  JMP $B7E4
-LB7D0:  CMP #$20
-LB7D2:  BNE $B7D9
-LB7D4:  INC $42
-LB7D6:  JMP $B7E4
-LB7D9:  CMP #$40
-LB7DB:  BNE $B7E2
-LB7DD:  INC $43
-LB7DF:  JMP $B7E4
-LB7E2:  DEC $42
-LB7E4:  LDA MapHeight
-LB7E6:  CMP $43
-LB7E8:  BCS $B7ED
-LB7EA:  JMP $B79A
+LB7A4:  LDA NPCYPos,X           ;
+LB7A6:  AND #$9F                ;Set NPC direction facing up.
+LB7A8:  STA NPCYPos,X           ;
 
-LB7ED:  LDA MapWidth
-LB7EF:  CMP $42
-LB7F1:  BCC $B79A
-LB7F3:  JSR $BA22
-LB7F6:  LDA $41
-LB7F8:  BEQ $B800
-LB7FA:  LDA $40
-LB7FC:  CMP #$FF
-LB7FE:  BNE $B79A
-LB800:  LDA $42
+LB7AA:  LDA RandNumUB           ;
+LB7AC:  AND #$60                ;Randomly set direction of NPC.
+LB7AE:  ORA NPCYPos,X           ;
+LB7B0:  STA NPCYPos,X           ;
+
+LB7B2:  JSR GetNPCPosCopy       ;($BA15)Get a copy of the NPCs X and Y block position.
+
+LB7B5:  JSR ChkNPCWndwBlock     ;($BA22)Check if window blocking NPC movement.
+LB7B8:  LDA NPCWndwSts          ;Is the NPC on the screen?
+LB7BA:  BEQ +                   ;If not, branch to skip window block check.
+
+LB7BC:  LDA WindowBlock         ;Is a window blocking the NPC from moving?
+LB7BE:  CMP #$FF                ;
+LB7C0:  BNE HaltNPCMoveCalcs    ;If so, branch to stop movement.
+
+LB7C2:* JSR CheckCoveredArea    ;($AABE)Check if player is in a covered map area.
+
+LB7C5:  LDA NPCYPos,X           ;Extract NPC direction facing data.
+LB7C7:  AND #$60                ;Is NPC facing up?
+LB7C9:  BNE +                   ;If not, branch to check next direction.
+
+LB7CB:  DEC ThisNPCYPos         ;Prepare to move NPC up 1 block.
+LB7CD:  JMP ChkNPCMapLimit      ;($B7E4)Check if NPC will move off end of map.
+
+LB7D0:* CMP #NPC_RIGHT          ;Is NPC facing right?
+LB7D2:  BNE +                   ;If not, branch to check next direction.
+
+LB7D4:  INC ThisNPCXPos         ;Prepare to move NPC right 1 block.
+LB7D6:  JMP ChkNPCMapLimit      ;($B7E4)Check if NPC will move off end of map.
+
+LB7D9:* CMP #NPC_DOWN           ;Is NPC facing down?
+LB7DB:  BNE +                   ;If not, branch to move NPC left.
+
+LB7DD:  INC ThisNPCYPos         ;Prepare to move NPC down 1 block.
+LB7DF:  JMP ChkNPCMapLimit      ;($B7E4)Check if NPC will move off end of map.
+
+LB7E2:* DEC ThisNPCXPos         ;Prepare to move NPC left 1 block.
+
+ChkNPCMapLimit:
+LB7E4:  LDA MapHeight           ;Is NPC trying to move beyond map height?
+LB7E6:  CMP ThisNPCYPos         ;
+LB7E8:  BCS +                   ;If not, branch to check map width.
+
+LB7EA:  JMP HaltNPCMoveCalcs    ;($B79A)Can't move NPC. Stop movement calculations.
+
+LB7ED:* LDA MapWidth            ;Is NPC trying to move beyond map width?
+LB7EF:  CMP ThisNPCXPos         ;
+LB7F1:  BCC HaltNPCMoveCalcs    ;If so, branch to stop movement.
+
+LB7F3:  JSR ChkNPCWndwBlock     ;($BA22)Check if window blocking NPC movement.
+LB7F6:  LDA NPCWndwSts          ;Is the NPC on the screen?
+LB7F8:  BEQ +                   ;If not, branch to skip window block check.
+
+LB7FA:  LDA WindowBlock         ;Is a window blocking the NPC from moving?
+LB7FC:  CMP #$FF                ;
+LB7FE:  BNE HaltNPCMoveCalcs    ;If so, branch to stop movement.
+
+LB800:* LDA ThisNPCXPos
 LB802:  CMP CharXPos
 LB804:  BNE $B80C
-LB806:  LDA $43
+LB806:  LDA ThisNPCYPos
 LB808:  CMP CharYPos
-LB80A:  BEQ $B79A
-LB80C:  LDA $42
+LB80A:  BEQ HaltNPCMoveCalcs
+
+LB80C:  LDA ThisNPCXPos
 LB80E:  CMP _CharXPos
 LB810:  BNE $B81B
-LB812:  LDA $43
+LB812:  LDA ThisNPCYPos
 LB814:  CMP _CharYPos
 LB816:  BNE $B81B
-LB818:  JMP $B79A
+LB818:  JMP HaltNPCMoveCalcs    ;($B79A)Can't move NPC. Stop movement calculations.
+
 LB81B:  LDY #$00
+
 LB81D:  LDA _NPCXPos,Y
 LB820:  AND #$1F
-LB822:  CMP $42
+LB822:  CMP ThisNPCXPos
 LB824:  BNE $B832
+
 LB826:  LDA _NPCYPos,Y
 LB829:  AND #$1F
-LB82B:  CMP $43
+LB82B:  CMP ThisNPCYPos
 LB82D:  BNE $B832
-LB82F:  JMP $B79A
+
+LB82F:  JMP HaltNPCMoveCalcs    ;($B79A)Can't move NPC. Stop movement calculations.
+
 LB832:  INY
 LB833:  INY
 LB834:  INY
 LB835:  CPY #$3C
 LB837:  BNE $B81D
+
 LB839:  LDA $3D
 LB83B:  PHA
-LB83C:  LDA $42
-LB83E:  STA $3C
-LB840:  LDA $43
-LB842:  STA $3E
+
+LB83C:  LDA ThisNPCXPos         ;
+LB83E:  STA XTarget             ;Prepare to get the block type the NPC is standing on.
+LB840:  LDA ThisNPCYPos         ;
+LB842:  STA YTarget             ;
 LB844:  JSR GetBlockID          ;($AC17)Get description of block.
 LB847:  JSR HasCoverData        ;($AAE1)Check if current map has covered areas.
+
 LB84A:  PLA
 LB84B:  CMP $3D
 LB84D:  BEQ $B852
-LB84F:  JMP $B79A
+LB84F:  JMP HaltNPCMoveCalcs    ;($B79A)Can't move NPC. Stop movement calculations.
+
 LB852:  LDA $3C
 LB854:  CMP #$0D
 LB856:  BCC $B85B
-LB858:  JMP $B79A
-LB85B:  LDA NPCYPos,X
-LB85D:  ORA #$80
-LB85F:  STA NPCYPos,X
+LB858:  JMP HaltNPCMoveCalcs    ;($B79A)Can't move NPC. Stop movement calculations.
+
+LB85B:  LDA NPCYPos,X           ;Indicate NPC has not yet been processed by setting MSB.
+LB85D:  ORA #$80                ;
+LB85F:  STA NPCYPos,X           ;
+
+NPCProcessCont:
 LB861:  LDA NPCYPos,X
-LB863:  BMI $B868
-LB865:  JMP $B8EA
+LB863:  BMI +
+LB865:  JMP EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
 
-LB868:  LDA StopNPCMove
-LB86A:  BEQ $B86F
-LB86C:  JMP $B8EA
+LB868:* LDA StopNPCMove
+LB86A:  BEQ +
 
-LB86F:  LDA NPCYPos,X
+LB86C:  JMP EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
+
+LB86F:* LDA NPCYPos,X
 LB871:  AND #$60
 LB873:  BNE $B893
+
 LB875:  LDA NPCMidPos,X
 LB877:  AND #$0F
 LB879:  SEC
@@ -5909,11 +5963,14 @@ LB884:  ORA $3C
 LB886:  STA NPCMidPos,X
 LB888:  LDA $3C
 LB88A:  CMP #$0F
-LB88C:  BNE $B8EA
+LB88C:  BNE EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
+
 LB88E:  DEC NPCYPos,X
-LB890:  JMP $B8EA
+LB890:  JMP EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
+
 LB893:  CMP #$20
 LB895:  BNE $B8B1
+
 LB897:  LDA NPCMidPos,X
 LB899:  AND #$F0
 LB89B:  CLC
@@ -5924,9 +5981,11 @@ LB8A2:  AND #$0F
 LB8A4:  ORA $3C
 LB8A6:  STA NPCMidPos,X
 LB8A8:  LDA $3C
-LB8AA:  BNE $B8EA
+LB8AA:  BNE EndNPCMoveLoop      ;Check for next NPC movement.
+
 LB8AC:  INC NPCXPos,X
-LB8AE:  JMP $B8EA
+LB8AE:  JMP EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
+
 LB8B1:  CMP #$40
 LB8B3:  BNE $B8D1
 LB8B5:  LDA NPCMidPos,X
@@ -5935,14 +5994,17 @@ LB8B9:  CLC
 LB8BA:  ADC #$01
 LB8BC:  AND #$0F
 LB8BE:  STA $3C
+
 LB8C0:  LDA NPCMidPos,X
 LB8C2:  AND #$F0
 LB8C4:  ORA $3C
 LB8C6:  STA NPCMidPos,X
 LB8C8:  LDA $3C
-LB8CA:  BNE $B8EA
+LB8CA:  BNE EndNPCMoveLoop      ;Check for next NPC movement.
+
 LB8CC:  INC NPCYPos,X
-LB8CE:  JMP $B8EA
+LB8CE:  JMP EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
+
 LB8D1:  LDA NPCMidPos,X
 LB8D3:  AND #$F0
 LB8D5:  SEC
@@ -5954,18 +6016,25 @@ LB8DE:  ORA $3C
 LB8E0:  STA NPCMidPos,X
 LB8E2:  LDA $3C
 LB8E4:  CMP #$F0
-LB8E6:  BNE $B8EA
+LB8E6:  BNE EndNPCMoveLoop      ;Check for next NPC movement.
+
 LB8E8:  DEC NPCXPos,X
 
-LB8EA:  INX
-LB8EB:  INX
-LB8EC:  INX
-LB8ED:  DEC $4E
-LB8EF:  BEQ $B8F4
-LB8F1:  JMP $B77C
+EndNPCMoveLoop:
+LB8EA:  INX                     ;
+LB8EB:  INX                     ;Move to next set of NPC data.
+LB8EC:  INX                     ;
+
+LB8ED:  DEC NPCUpdCounter       ;Does the movement of another NPC need to be calculated?
+LB8EF:  BEQ UpdateNPCs2         ;If not, branch to move on to other calculations.
+
+LB8F1:  JMP NPCMoveLoop         ;($B77C)Calculate movement for an NPC.
+
+UpdateNPCs2:
 LB8F4:  LDX #$00
 LB8F6:  LDA #$10
-LB8F8:  STA $4E
+LB8F8:  STA NPCUpdCounter
+
 LB8FA:  LDA NPCXPos,X
 LB8FC:  AND #$1F
 LB8FE:  BNE $B909
@@ -6000,17 +6069,20 @@ LB935:  ADC #$00
 LB937:  BEQ $B93C
 LB939:  JMP $B9DF
 LB93C:  JSR GetNPCPosCopy       ;($BA15)Get a copy of the NPCs X and Y block position.
-LB93F:  JSR $BA22
-LB942:  LDA $41
-LB944:  BEQ $B94F
-LB946:  LDA $40
+
+LB93F:  JSR ChkNPCWndwBlock     ;($BA22)Check if window blocking NPC movement.
+LB942:  LDA NPCWndwSts
+LB944:  BEQ +
+LB946:  LDA WindowBlock
 LB948:  CMP #$FF
 LB94A:  BEQ $B94F
 LB94C:  JMP $B9DF
-LB94F:  LDA $42
+
+LB94F:* LDA ThisNPCXPos
 LB951:  STA $3C
-LB953:  LDA $43
+LB953:  LDA ThisNPCYPos
 LB955:  STA $3E
+
 LB957:  JSR CheckCoveredArea    ;($AABE)Check if player is in a covered map area.
 LB95A:  LDA CoveredStsNext
 LB95C:  CMP CoverStatus
@@ -6021,8 +6093,9 @@ LB963:  JSR GetSpclNPCType      ;($C0F4)Check for special NPC type.
 LB966:  STA $3C
 LB968:  JSR NPCXScrnCord        ;($BA52)Get NPC pixel X coord on the screen.
 LB96B:  JSR NPCYScrnCord        ;($BA84)Get NPC pixel Y coord on the screen.
-LB96E:  LDY $4E
-LB970:  STX $4E
+
+LB96E:  LDY NPCUpdCounter
+LB970:  STX NPCUpdCounter
 LB972:  LDX $3C
 LB974:  LDA #$00
 LB976:  STA $3C
@@ -6031,34 +6104,40 @@ LB97A:  STA $3D
 LB97C:  LDA $3E
 LB97E:  CLC
 LB97F:  ADC $3D
-LB981:  STA $42
+LB981:  STA ThisNPCXPos
 LB983:  LDA $3F
 LB985:  ADC #$00
 LB987:  BNE $B9C0
 LB989:  TYA
 LB98A:  STX $25
 LB98C:  TAX
-LB98D:  LDY $4E
-LB98F:  LDA _NPCYPos,Y
-LB992:  AND #$60
-LB994:  ASL
-LB995:  ROL
-LB996:  ROL
-LB997:  ROL
+LB98D:  LDY NPCUpdCounter
+
+LB98F:  LDA _NPCYPos,Y          ;Extract NPC facing direction data.
+LB992:  AND #$60                ;
+LB994:  ASL                     ;
+LB995:  ROL                     ;Move facing direction to LSBs.
+LB996:  ROL                     ;
+LB997:  ROL                     ;
 LB998:  JSR SprtFacingBaseAddr  ;($B6C2)Calculate entry into char data table based on direction.
-LB99B:  LDY $25
-LB99D:  LDA ThisNPCXPos
-LB99F:  STA $0203,X
+
+LB99B:  LDY NPCOffset           ;
+LB99D:  LDA ThisNPCXPos         ;Save updated X position of NPC.
+LB99F:  STA SpriteRAM+3,X       ;
+
 LB9A2:  LDA $40
 LB9A4:  CLC
 LB9A5:  ADC $3C
-LB9A7:  STA $0200,X
+LB9A7:  STA SpriteRAM,X
+
 LB9AA:  LDA ($22),Y
-LB9AC:  STA $0201,X
+LB9AC:  STA SpriteRAM+1,X
+
 LB9AF:  INY
 LB9B0:  LDA ($22),Y
 LB9B2:  DEY
-LB9B3:  STA $0202,X
+LB9B3:  STA SpriteRAM+2,X
+
 LB9B6:  TYA
 LB9B7:  STX $22
 LB9B9:  TAX
@@ -6083,26 +6162,29 @@ LB9D3:  ADC #$08
 LB9D5:  STA $3C
 LB9D7:  CMP #$10
 LB9D9:  BNE $B978
-LB9DB:  LDX $4E
-LB9DD:  STY $4E
+LB9DB:  LDX NPCUpdCounter
+LB9DD:  STY NPCUpdCounter
 
 LB9DF:  INX
 LB9E0:  INX
 LB9E1:  INX
 LB9E2:  CPX #$3C
 LB9E4:  BEQ $B9E9
+
 LB9E6:  JMP $B8FA
-LB9E9:  LDY $4E
+
+LB9E9:  LDY NPCUpdCounter
 LB9EB:  LDA #$F0
 LB9ED:  CPY #$00
-LB9EF:  BEQ $B9FB
-LB9F1:  STA $0200,Y
+LB9EF:  BEQ UpdateNPCCounter
+LB9F1:  STA SpriteRAM,Y
 LB9F4:  INY
 LB9F5:  INY
 LB9F6:  INY
 LB9F7:  INY
 LB9F8:  JMP $B9ED
 
+UpdateNPCCounter:
 LB9FB:  LDA FrameCounter
 LB9FD:  AND #$0F
 LB9FF:  BEQ $BA02
@@ -6110,17 +6192,18 @@ LBA01:  RTS
 
 LBA02:  LDA NPCUpdateCntr
 LBA04:  CMP #$FF
-LBA06:  BEQ $BA14
+LBA06:  BEQ SpritesEnd
 
 LBA08:  INC NPCUpdateCntr
 LBA0A:  LDA NPCUpdateCntr
 LBA0C:  CMP #$05
-LBA0E:  BNE $BA14
+LBA0E:  BNE SpritesEnd
 
-LBA10:  LDA #$00
-LBA12:  STA NPCUpdateCntr
+LBA10:  LDA #$00                ;Reset update NPC update counter.
+LBA12:  STA NPCUpdateCntr       ;
 
-LBA14:  RTS
+SpritesEnd:
+LBA14:  RTS                     ;End sprite processing.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -6136,41 +6219,45 @@ LBA21:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
+ChkNPCWndwBlock:
 LBA22:  LDA #$00
-LBA24:  STA $41
-LBA26:  LDA $42
+LBA24:  STA NPCWndwSts
+
+LBA26:  LDA ThisNPCXPos
 LBA28:  SEC
 LBA29:  SBC CharXPos
 LBA2B:  CLC
 LBA2C:  ADC #$08
 LBA2E:  STA $3C
 LBA30:  CMP #$10
-LBA32:  BCC $BA35
+LBA32:  BCC +
 LBA34:  RTS
 
-LBA35:  LDA $43
+LBA35:* LDA ThisNPCYPos
 LBA37:  SEC
 LBA38:  SBC CharYPos
 LBA3A:  CLC
 LBA3B:  ADC #$07
 LBA3D:  STA $3E
 LBA3F:  CMP #$0F
-LBA41:  BCC $BA44
+LBA41:  BCC +
 LBA43:  RTS
 
-LBA44:  JSR CalcPPUBufAddr      ;($C596)Calculate PPU address.
-LBA47:  LDY #$00
-LBA49:  LDA (PPUBufPtr),Y
-LBA4B:  STA $40
+LBA44:* JSR CalcPPUBufAddr      ;($C596)Calculate PPU address.
+LBA47:  LDY #$00                ;
+LBA49:  LDA (PPUBufPtr),Y       ;Get the any window data over the given block.
+LBA4B:  STA WindowBlock         ;
+
 LBA4D:  LDA #$FF
-LBA4F:  STA $41
+LBA4F:  STA NPCWndwSts
 LBA51:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
 NPCXScrnCord:
-LBA52:  LDA NPCXPos,X
-LBA54:  AND #$1F
+LBA52:  LDA NPCXPos,X           ;Extract NPC X position data.
+LBA54:  AND #$1F                ;
+
 LBA56:  STA $3F
 LBA58:  LDA NPCMidPos,X
 LBA5A:  STA $3E
@@ -6196,14 +6283,16 @@ LBA79:  LDA $3E
 LBA7B:  EOR #$80
 LBA7D:  STA $3E
 LBA7F:  BMI $BA83
+
 LBA81:  INC $3F
 LBA83:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
 NPCYScrnCord:
-LBA84:  LDA NPCYPos,X
-LBA86:  AND #$1F
+LBA84:  LDA NPCYPos,X           ;Extract NPC Y position data.
+LBA86:  AND #$1F                ;
+
 LBA88:  STA $41
 LBA8A:  LDA #$00
 LBA8C:  STA $40
@@ -6281,10 +6370,10 @@ LBAF9:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LBAFC:  LDA #$FF                ;Prepare to clear NES RAM.
 LBAFE:  LDY #$00                ;256 bytes.
 
-LBB00:* STA BGBufRAM,Y          ;
-LBB03:  STA BGBufRAM+$100,Y     ;
-LBB06:  STA BGBufRAM+$200,Y     ;Clear NES RAM.
-LBB09:  STA BGBufRAM+$300,Y     ;
+LBB00:* STA WinBufRAM,Y         ;
+LBB03:  STA WinBufRAM+$100,Y    ;
+LBB06:  STA WinBufRAM+$200,Y    ;Clear NES RAM.
+LBB09:  STA WinBufRAM+$300,Y    ;
 LBB0C:  DEY                     ;
 LBB0D:  BNE -                   ;
 

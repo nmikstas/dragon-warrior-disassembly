@@ -235,6 +235,9 @@
 .alias WrldMapPtrLB     $40     ;Pointer to overworld map row data, lower byte.
 .alias WrldMapPtrUB     $41     ;Pointer to overworld map row data, upper byte.
 
+.alias WindowBlock      $40     ;#$FF-No window data at selected block.
+.alias NPCWndwSts       $41     ;#$FF-NPC on screen, #$00-NPC not on screen.
+
 .alias _TargetX         $42     ;Target block, X position.
 .alias _TargetY         $43     ;Target block, Y position.
 
@@ -255,10 +258,10 @@
 
 .alias NTBlockX         $4A     ;Nametable X block position, #$00-#$1F(1/2 X tile position).
 .alias NTBlockY         $4B     ;Nametable Y block position, #$00-#$0E(1/2 y tile position).
-                                
 .alias BlkRemoveFlgs    $4C     ;Lower nibble is flags for tiles to keep when changing a map block.
                                 ;1-upper left, 2-upper right, 4-lower left, 8-lower right.
-.alias TileCounter      $4D     ;Used to count tiles when modifying blocks.                                
+.alias TileCounter      $4D     ;Used to count tiles when modifying blocks.
+.alias NPCUpdCounter    $4E     ;Counter for NPC updates.
 .alias FrameCounter     $4F     ;Normally increments every frame. used for timing.
 
 .alias CharLeftRight    $50     ;Controls character animations. bit 3 atlernates animations.
@@ -496,7 +499,7 @@
 .alias Stack            $0110   ;Through $01FF. CPU stack.
 .alias SpriteRAM        $0200   ;Through $02FF. Sprite DMA RAM.
 .alias BlockRAM         $0300   ;Through $03FF. Multipurpose RAM for buffering.
-.alias BGBufRAM         $0400   ;Through $07BF. Background for screen. 32 by 30 bytes.  
+.alias WinBufRAM        $0400   ;Through $07BF. Window data buffer. 32 by 30 bytes.  
 
 ;--------------------------------------[Hardware defines]--------------------------------------------
 
@@ -764,6 +767,12 @@
 .alias DIR_RIGHT        $01     ;Player facing right.
 .alias DIR_DOWN         $02     ;Player facing down.
 .alias DIR_LEFT         $03     ;Player facing left.
+
+;NPC direction
+.alias NPC_UP           $00     ;NPC facing up.
+.alias NPC_RIGHT        $20     ;NPC facing right.
+.alias NPC_DOWN         $40     ;NPC facing down.
+.alias NPC_LEFT         $60     ;NPC facing left.
 
 ;Player levels.
 .alias LVL_01           $01     ;Experience level 01.

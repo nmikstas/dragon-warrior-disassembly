@@ -8749,7 +8749,7 @@ DialogToScreenBuf:
 LB85D:  LDA #$08                ;Total rows=8.
 LB85F:  STA RowsRemaining       ;
 
-LB861:  LDX #$00                ;Zero out BGBufRAM index.
+LB861:  LDX #$00                ;Zero out WinBufRAM index.
 LB863:  LDY #$00                ;Zero out DialogOutBuf index.
 
 NewDialogRow:
@@ -8758,7 +8758,7 @@ LB867:  STA ColsRemaining       ;
 
 CopyDialogByte:
 LB869:  LDA DialogOutBuf,Y      ;Copy dialog buffer to background screen buffer.
-LB86C:  STA BGBufRAM+$0265,X    ;
+LB86C:  STA WinBufRAM+$0265,X   ;
 
 LB86F:  INX                     ;Increment screen buffer index.
 LB870:  INY                     ;Increment dialog buffer index.
@@ -8767,8 +8767,8 @@ LB871:  DEC ColsRemaining       ;Are there stil characters left in current row?
 LB873:  BNE CopyDialogByte      ;If so, branch to get next character.
 
 LB875:  TXA                     ;
-LB876:  CLC                     ;Move to next row in BGBufRAM by adding-->
-LB877:  ADC #$0A                ;10 to the BGBufRAM index.
+LB876:  CLC                     ;Move to next row in WinBufRAM by adding-->
+LB877:  ADC #$0A                ;10 to the WinBufRAM index.
 LB879:  TAX                     ;
 
 LB87A:  DEC RowsRemaining       ;One more row completed.
