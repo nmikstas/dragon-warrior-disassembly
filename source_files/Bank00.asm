@@ -4,7 +4,7 @@
 
 ;--------------------------------------[ Forward declarations ]--------------------------------------
 
-.alias GetSpclNPCType           $C0F4
+.alias GetNPCSpriteIndex        $C0F4
 .alias WordMultiply             $C1C9
 .alias ByteDivide               $C1F0
 .alias PalFadeOut               $C212
@@ -5787,7 +5787,7 @@ LB775:  ADC GenByte3C           ;
 LB777:  TAX                     ;
 
 LB778:  LDA #$02                ;Prepare to calculate movements for 2 NPCs.
-LB77A:  STA NPCUpdCounter       ;
+LB77A:  STA NPCLoopCounter      ;
 
 NPCMoveLoop:
 LB77C:  LDA NPCXPos,X           ;Extract the NPC X location data.
@@ -5811,7 +5811,7 @@ LB796:* LDA StopNPCMove         ;Can NPC move?
 LB798:  BEQ SetNPCDir           ;If so, branch to choose random facing direction.
 
 HaltNPCMoveCalcs:
-LB79A:  ASL NPCYPos,X           ;Clear MSB to indicate movement processing is done for NPC. 
+LB79A:  ASL NPCYPos,X           ;Clear MSB to indicate movement is stopped for NPC. 
 LB79C:  LSR NPCYPos,X           ;
 LB79E:  JMP EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
 
@@ -5878,43 +5878,45 @@ LB7FA:  LDA WindowBlock         ;Is a window blocking the NPC from moving?
 LB7FC:  CMP #$FF                ;
 LB7FE:  BNE HaltNPCMoveCalcs    ;If so, branch to stop movement.
 
-LB800:* LDA ThisNPCXPos
-LB802:  CMP CharXPos
-LB804:  BNE $B80C
-LB806:  LDA ThisNPCYPos
-LB808:  CMP CharYPos
-LB80A:  BEQ HaltNPCMoveCalcs
+LB800:* LDA ThisNPCXPos         ;
+LB802:  CMP CharXPos            ;
+LB804:  BNE +                   ;Is NPC trying to move to player's current position?
+LB806:  LDA ThisNPCYPos         ;
+LB808:  CMP CharYPos            ;If so, branch to stop movement.
+LB80A:  BEQ HaltNPCMoveCalcs    ;
 
-LB80C:  LDA ThisNPCXPos
-LB80E:  CMP _CharXPos
-LB810:  BNE $B81B
-LB812:  LDA ThisNPCYPos
-LB814:  CMP _CharYPos
-LB816:  BNE $B81B
+LB80C:* LDA ThisNPCXPos         ;
+LB80E:  CMP _CharXPos           ;Is NPC trying to move to player's next position?
+LB810:  BNE +                   ;
+LB812:  LDA ThisNPCYPos         ;If so, jump to stop movement.
+LB814:  CMP _CharYPos           ;
+LB816:  BNE +                   ;
 LB818:  JMP HaltNPCMoveCalcs    ;($B79A)Can't move NPC. Stop movement calculations.
 
-LB81B:  LDY #$00
+LB81B:* LDY #$00                ;Prepare to check collisions with other NPCs.
 
-LB81D:  LDA _NPCXPos,Y
-LB820:  AND #$1F
-LB822:  CMP ThisNPCXPos
-LB824:  BNE $B832
+NPCCollideLoop:
+LB81D:  LDA _NPCXPos,Y          ;Does this NPC X position match another NPC X position?
+LB820:  AND #$1F                ;
+LB822:  CMP ThisNPCXPos         ;
+LB824:  BNE +                   ;If not, branch to check the next NPC.
 
-LB826:  LDA _NPCYPos,Y
-LB829:  AND #$1F
-LB82B:  CMP ThisNPCYPos
-LB82D:  BNE $B832
+LB826:  LDA _NPCYPos,Y          ;Does this NPC Y position match another NPC Y position?
+LB829:  AND #$1F                ;
+LB82B:  CMP ThisNPCYPos         ;
+LB82D:  BNE +                   ;If not, branch to check the next NPC.
 
 LB82F:  JMP HaltNPCMoveCalcs    ;($B79A)Can't move NPC. Stop movement calculations.
 
-LB832:  INY
-LB833:  INY
-LB834:  INY
-LB835:  CPY #$3C
-LB837:  BNE $B81D
+LB832:* INY                     ;
+LB833:  INY                     ;Increment to next NPC data set.
+LB834:  INY                     ;
 
-LB839:  LDA $3D
-LB83B:  PHA
+LB835:  CPY #$3C                ;Have all 20 NPCs been checked?
+LB837:  BNE NPCCollideLoop      ;If not, branch to check another NPC.
+
+LB839:  LDA GenByte3D           ;Save current status of $3D on stack.
+LB83B:  PHA                     ;
 
 LB83C:  LDA ThisNPCXPos         ;
 LB83E:  STA XTarget             ;Prepare to get the block type the NPC is standing on.
@@ -5923,109 +5925,117 @@ LB842:  STA YTarget             ;
 LB844:  JSR GetBlockID          ;($AC17)Get description of block.
 LB847:  JSR HasCoverData        ;($AAE1)Check if current map has covered areas.
 
-LB84A:  PLA
-LB84B:  CMP $3D
-LB84D:  BEQ $B852
+LB84A:  PLA                     ;Did player just enter/exit covered area?
+LB84B:  CMP CoveredStsNext      ;If so, jump to stop NPC movement.
+LB84D:  BEQ +                   ;
 LB84F:  JMP HaltNPCMoveCalcs    ;($B79A)Can't move NPC. Stop movement calculations.
 
-LB852:  LDA $3C
-LB854:  CMP #$0D
-LB856:  BCC $B85B
+LB852:* LDA TargetResults       ;Is NPC trying to move onto a non-walkable block?
+LB854:  CMP #BLK_FFIELD         ;If so, jump to stop NPC movement.
+LB856:  BCC +                   ;
 LB858:  JMP HaltNPCMoveCalcs    ;($B79A)Can't move NPC. Stop movement calculations.
 
-LB85B:  LDA NPCYPos,X           ;Indicate NPC has not yet been processed by setting MSB.
-LB85D:  ORA #$80                ;
+LB85B:* LDA NPCYPos,X           ;
+LB85D:  ORA #$80                ;Indicate NPC is in the process of moving.
 LB85F:  STA NPCYPos,X           ;
 
 NPCProcessCont:
-LB861:  LDA NPCYPos,X
-LB863:  BMI +
+LB861:  LDA NPCYPos,X           ;Is NPC in process of moving?
+LB863:  BMI +                   ;If so, branch to update NPC movement.
 LB865:  JMP EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
 
-LB868:* LDA StopNPCMove
-LB86A:  BEQ +
+LB868:* LDA StopNPCMove         ;Is NPC status prohibiting them from moving?
+LB86A:  BEQ +                   ;If not, branch to keep processing NPC movement.
 
 LB86C:  JMP EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
 
-LB86F:* LDA NPCYPos,X
-LB871:  AND #$60
-LB873:  BNE $B893
+LB86F:* LDA NPCYPos,X           ;Is NPC facing up?
+LB871:  AND #$60                ;
+LB873:  BNE +                   ;If not, branch to check the next direction.
 
-LB875:  LDA NPCMidPos,X
-LB877:  AND #$0F
-LB879:  SEC
-LB87A:  SBC #$01
-LB87C:  AND #$0F
-LB87E:  STA $3C
-LB880:  LDA NPCMidPos,X
-LB882:  AND #$F0
-LB884:  ORA $3C
-LB886:  STA NPCMidPos,X
-LB888:  LDA $3C
-LB88A:  CMP #$0F
+LB875:  LDA NPCMidPos,X         ;
+LB877:  AND #$0F                ;
+LB879:  SEC                     ;Move NPC 1 pixel up.
+LB87A:  SBC #$01                ;
+LB87C:  AND #$0F                ;
+LB87E:  STA GenByte3C           ;
+
+LB880:  LDA NPCMidPos,X         ;
+LB882:  AND #$F0                ;Get any upper nibble data and save it(should be none).
+LB884:  ORA GenByte3C           ;
+LB886:  STA NPCMidPos,X         ;
+
+LB888:  LDA GenByte3C           ;Has NPC moved 16 pixels?
+LB88A:  CMP #$0F                ;If not, branch to keep moving NPC.
 LB88C:  BNE EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
 
-LB88E:  DEC NPCYPos,X
+LB88E:  DEC NPCYPos,X           ;NPC is done moving. Update current Y position.
 LB890:  JMP EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
 
-LB893:  CMP #$20
-LB895:  BNE $B8B1
+LB893:* CMP #NPC_RIGHT          ;Is NPC facing right?
+LB895:  BNE +                   ;If not, branch to check the next direction.
 
-LB897:  LDA NPCMidPos,X
-LB899:  AND #$F0
-LB89B:  CLC
-LB89C:  ADC #$10
-LB89E:  STA $3C
-LB8A0:  LDA NPCMidPos,X
-LB8A2:  AND #$0F
-LB8A4:  ORA $3C
-LB8A6:  STA NPCMidPos,X
-LB8A8:  LDA $3C
+LB897:  LDA NPCMidPos,X         ;
+LB899:  AND #$F0                ;
+LB89B:  CLC                     ;Move NPC 1 pixel right.
+LB89C:  ADC #$10                ;
+LB89E:  STA GenByte3C           ;
+
+LB8A0:  LDA NPCMidPos,X         ;
+LB8A2:  AND #$0F                ;Get any lower nibble data and save it(should be none).
+LB8A4:  ORA GenByte3C           ;
+LB8A6:  STA NPCMidPos,X         ;
+
+LB8A8:  LDA GenByte3C           ;Has NPC moved 16 pixels? If not, branch to keep moving NPC.
 LB8AA:  BNE EndNPCMoveLoop      ;Check for next NPC movement.
 
-LB8AC:  INC NPCXPos,X
+LB8AC:  INC NPCXPos,X           ;NPC is done moving. Update current X position.
 LB8AE:  JMP EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
 
-LB8B1:  CMP #$40
-LB8B3:  BNE $B8D1
-LB8B5:  LDA NPCMidPos,X
-LB8B7:  AND #$0F
-LB8B9:  CLC
-LB8BA:  ADC #$01
-LB8BC:  AND #$0F
-LB8BE:  STA $3C
+LB8B1:* CMP #NPC_DOWN           ;Is NPC facing down?
+LB8B3:  BNE +                   ;If not, branch to move NPC left.
 
-LB8C0:  LDA NPCMidPos,X
-LB8C2:  AND #$F0
-LB8C4:  ORA $3C
-LB8C6:  STA NPCMidPos,X
-LB8C8:  LDA $3C
+LB8B5:  LDA NPCMidPos,X         ;
+LB8B7:  AND #$0F                ;
+LB8B9:  CLC                     ;Move NPC 1 pixel down.
+LB8BA:  ADC #$01                ;
+LB8BC:  AND #$0F                ;
+LB8BE:  STA GenByte3C           ;
+
+LB8C0:  LDA NPCMidPos,X         ;
+LB8C2:  AND #$F0                ;Get any upper nibble data and save it(should be none).
+LB8C4:  ORA GenByte3C           ;
+LB8C6:  STA NPCMidPos,X         ;
+
+LB8C8:  LDA GenByte3C           ;Has NPC moved 16 pixels? If not, branch to keep moving NPC.
 LB8CA:  BNE EndNPCMoveLoop      ;Check for next NPC movement.
 
-LB8CC:  INC NPCYPos,X
+LB8CC:  INC NPCYPos,X           ;NPC is done moving. Update current Y position.
 LB8CE:  JMP EndNPCMoveLoop      ;($B8EA)Check for next NPC movement.
 
-LB8D1:  LDA NPCMidPos,X
-LB8D3:  AND #$F0
-LB8D5:  SEC
-LB8D6:  SBC #$10
-LB8D8:  STA $3C
-LB8DA:  LDA NPCMidPos,X
-LB8DC:  AND #$0F
-LB8DE:  ORA $3C
-LB8E0:  STA NPCMidPos,X
-LB8E2:  LDA $3C
-LB8E4:  CMP #$F0
+LB8D1:* LDA NPCMidPos,X         ;
+LB8D3:  AND #$F0                ;
+LB8D5:  SEC                     ;Move NPC 1 pixel left.
+LB8D6:  SBC #$10                ;
+LB8D8:  STA GenByte3C           ;
+
+LB8DA:  LDA NPCMidPos,X         ;
+LB8DC:  AND #$0F                ;Get any lower nibble data and save it(should be none).
+LB8DE:  ORA GenByte3C           ;
+LB8E0:  STA NPCMidPos,X         ;
+
+LB8E2:  LDA GenByte3C           ;Has NPC moved 16 pixels? If not, branch to keep moving NPC.
+LB8E4:  CMP #$F0                ;
 LB8E6:  BNE EndNPCMoveLoop      ;Check for next NPC movement.
 
-LB8E8:  DEC NPCXPos,X
+LB8E8:  DEC NPCXPos,X           ;NPC is done moving. Update current X position.
 
 EndNPCMoveLoop:
 LB8EA:  INX                     ;
 LB8EB:  INX                     ;Move to next set of NPC data.
 LB8EC:  INX                     ;
 
-LB8ED:  DEC NPCUpdCounter       ;Does the movement of another NPC need to be calculated?
+LB8ED:  DEC NPCLoopCounter      ;Does the movement of another NPC need to be calculated?
 LB8EF:  BEQ UpdateNPCs2         ;If not, branch to move on to other calculations.
 
 LB8F1:  JMP NPCMoveLoop         ;($B77C)Calculate movement for an NPC.
@@ -6033,16 +6043,20 @@ LB8F1:  JMP NPCMoveLoop         ;($B77C)Calculate movement for an NPC.
 UpdateNPCs2:
 LB8F4:  LDX #$00
 LB8F6:  LDA #$10
-LB8F8:  STA NPCUpdCounter
+LB8F8:  STA NPCLoopCounter
 
 LB8FA:  LDA NPCXPos,X
 LB8FC:  AND #$1F
 LB8FE:  BNE $B909
+
 LB900:  LDA NPCYPos,X
 LB902:  AND #$1F
 LB904:  BNE $B909
+
 LB906:  JMP $B9DF
+
 LB909:  JSR NPCXScrnCord        ;($BA52)Get NPC pixel X coord on the screen.
+
 LB90C:  LDA $3E
 LB90E:  CLC
 LB90F:  ADC #$07
@@ -6050,6 +6064,7 @@ LB911:  STA $3E
 LB913:  LDA $3F
 LB915:  ADC #$00
 LB917:  BEQ $B929
+
 LB919:  CMP #$01
 LB91B:  BEQ $B920
 LB91D:  JMP $B9DF
@@ -6086,16 +6101,16 @@ LB955:  STA $3E
 LB957:  JSR CheckCoveredArea    ;($AABE)Check if player is in a covered map area.
 LB95A:  LDA CoveredStsNext
 LB95C:  CMP CoverStatus
-LB95E:  BEQ $B963
+LB95E:  BEQ +
 LB960:  JMP $B9DF
 
-LB963:  JSR GetSpclNPCType      ;($C0F4)Check for special NPC type.
+LB963:* JSR GetNPCSpriteIndex   ;($C0F4)Get index into sprite pattern table for NPC.
 LB966:  STA $3C
 LB968:  JSR NPCXScrnCord        ;($BA52)Get NPC pixel X coord on the screen.
 LB96B:  JSR NPCYScrnCord        ;($BA84)Get NPC pixel Y coord on the screen.
 
-LB96E:  LDY NPCUpdCounter
-LB970:  STX NPCUpdCounter
+LB96E:  LDY NPCLoopCounter
+LB970:  STX NPCLoopCounter
 LB972:  LDX $3C
 LB974:  LDA #$00
 LB976:  STA $3C
@@ -6111,7 +6126,7 @@ LB987:  BNE $B9C0
 LB989:  TYA
 LB98A:  STX $25
 LB98C:  TAX
-LB98D:  LDY NPCUpdCounter
+LB98D:  LDY NPCLoopCounter
 
 LB98F:  LDA _NPCYPos,Y          ;Extract NPC facing direction data.
 LB992:  AND #$60                ;
@@ -6162,8 +6177,8 @@ LB9D3:  ADC #$08
 LB9D5:  STA $3C
 LB9D7:  CMP #$10
 LB9D9:  BNE $B978
-LB9DB:  LDX NPCUpdCounter
-LB9DD:  STY NPCUpdCounter
+LB9DB:  LDX NPCLoopCounter
+LB9DD:  STY NPCLoopCounter
 
 LB9DF:  INX
 LB9E0:  INX
@@ -6173,11 +6188,13 @@ LB9E4:  BEQ $B9E9
 
 LB9E6:  JMP $B8FA
 
-LB9E9:  LDY NPCUpdCounter
+LB9E9:  LDY NPCLoopCounter
 LB9EB:  LDA #$F0
+
 LB9ED:  CPY #$00
 LB9EF:  BEQ UpdateNPCCounter
 LB9F1:  STA SpriteRAM,Y
+
 LB9F4:  INY
 LB9F5:  INY
 LB9F6:  INY
@@ -6185,19 +6202,19 @@ LB9F7:  INY
 LB9F8:  JMP $B9ED
 
 UpdateNPCCounter:
-LB9FB:  LDA FrameCounter
-LB9FD:  AND #$0F
-LB9FF:  BEQ $BA02
-LBA01:  RTS
+LB9FB:  LDA FrameCounter        ;Is the frame counter on frame 0?
+LB9FD:  AND #$0F                ;
+LB9FF:  BEQ +                   ;If so, branch to updater the NPC counter.
+LBA01:  RTS                     ;
 
-LBA02:  LDA NPCUpdateCntr
-LBA04:  CMP #$FF
-LBA06:  BEQ SpritesEnd
+LBA02:* LDA NPCUpdateCntr       ;Are there no NPCs on this map?
+LBA04:  CMP #$FF                ;
+LBA06:  BEQ SpritesEnd          ;If none, branch to exit.
 
-LBA08:  INC NPCUpdateCntr
-LBA0A:  LDA NPCUpdateCntr
-LBA0C:  CMP #$05
-LBA0E:  BNE SpritesEnd
+LBA08:  INC NPCUpdateCntr       ;Increment NPC counter.
+LBA0A:  LDA NPCUpdateCntr       ;
+LBA0C:  CMP #$05                ;Should be a value 0 to 4.
+LBA0E:  BNE SpritesEnd          ;If outside valid value, wrap counter.
 
 LBA10:  LDA #$00                ;Reset update NPC update counter.
 LBA12:  STA NPCUpdateCntr       ;
@@ -6220,8 +6237,8 @@ LBA21:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 ChkNPCWndwBlock:
-LBA22:  LDA #$00
-LBA24:  STA NPCWndwSts
+LBA22:  LDA #$00                ;Assume the NPC is off screen.
+LBA24:  STA NPCWndwSts          ;
 
 LBA26:  LDA ThisNPCXPos
 LBA28:  SEC
@@ -6257,43 +6274,44 @@ LBA51:  RTS
 NPCXScrnCord:
 LBA52:  LDA NPCXPos,X           ;Extract NPC X position data.
 LBA54:  AND #$1F                ;
+LBA56:  STA NPCXPixelsUB        ;
 
-LBA56:  STA $3F
-LBA58:  LDA NPCMidPos,X
-LBA5A:  STA $3E
+LBA58:  LDA NPCMidPos,X         ;Save NPC mid-movement X pixel position.
+LBA5A:  STA NPCXPixelsLB        ;
 
-LBA5C:  LSR $3F
-LBA5E:  ROR $3E
-LBA60:  LSR $3F
-LBA62:  ROR $3E
-LBA64:  LSR $3F
-LBA66:  ROR $3E
-LBA68:  LSR $3F
-LBA6A:  ROR $3E
+LBA5C:  LSR NPCXPixelsUB        ;
+LBA5E:  ROR NPCXPixelsLB        ;
+LBA60:  LSR NPCXPixelsUB        ;
+LBA62:  ROR NPCXPixelsLB        ;Calculate NPC X pixel location on the screen.
+LBA64:  LSR NPCXPixelsUB        ;
+LBA66:  ROR NPCXPixelsLB        ;
+LBA68:  LSR NPCXPixelsUB        ;
+LBA6A:  ROR NPCXPixelsLB        ;
 
-LBA6C:  LDA $3E
+LBA6C:  LDA NPCXPixelsLB
 LBA6E:  SEC
 LBA6F:  SBC CharXPixelsLB
-LBA71:  STA $3E
-LBA73:  LDA $3F
+LBA71:  STA NPCXPixelsLB
+
+LBA73:  LDA NPCXPixelsUB
 LBA75:  SBC CharXPixelsUB
-LBA77:  STA $3F
+LBA77:  STA NPCXPixelsUB
 
-LBA79:  LDA $3E
+LBA79:  LDA NPCXPixelsLB
 LBA7B:  EOR #$80
-LBA7D:  STA $3E
-LBA7F:  BMI $BA83
+LBA7D:  STA NPCXPixelsLB
+LBA7F:  BMI +
 
-LBA81:  INC $3F
-LBA83:  RTS
+LBA81:  INC NPCXPixelsUB
+LBA83:* RTS
 
 ;----------------------------------------------------------------------------------------------------
 
 NPCYScrnCord:
 LBA84:  LDA NPCYPos,X           ;Extract NPC Y position data.
 LBA86:  AND #$1F                ;
-
 LBA88:  STA $41
+
 LBA8A:  LDA #$00
 LBA8C:  STA $40
 

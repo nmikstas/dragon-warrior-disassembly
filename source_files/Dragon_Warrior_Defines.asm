@@ -212,6 +212,11 @@
 .alias SprtPalPtrLB     $3E     ;Pointer to sprite palette data, lower byte.
 .alias SprtPalPtrUB     $3F     ;Pointer to sprite palette data, upper byte.
 
+.alias NPCXPixelsLB     $3E     ;NPC X pixel coordinates, lower byte.
+.alias NPCXPixelsUB     $3F     ;NPC X pixel coordinates, upper byte.
+.alias NPCYPixelsLB     $40     ;NPC Y pixel coordinates, lower byte.
+.alias NPCYPixelsUB     $41     ;NPC Y pixel coordinates, upper byte.
+
 .alias BGPalPtr         $40     ;Pointer to background palette data.
 .alias BGPalPtrLB       $40     ;Pointer to background palette data, lower byte.
 .alias BGPalPtrUB       $41     ;Pointer to background palette data, upper byte.
@@ -261,7 +266,7 @@
 .alias BlkRemoveFlgs    $4C     ;Lower nibble is flags for tiles to keep when changing a map block.
                                 ;1-upper left, 2-upper right, 4-lower left, 8-lower right.
 .alias TileCounter      $4D     ;Used to count tiles when modifying blocks.
-.alias NPCUpdCounter    $4E     ;Counter for NPC updates.
+.alias NPCLoopCounter   $4E     ;Counter for controlling NPC update loops.
 .alias FrameCounter     $4F     ;Normally increments every frame. used for timing.
 
 .alias CharLeftRight    $50     ;Controls character animations. bit 3 atlernates animations.

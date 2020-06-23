@@ -196,7 +196,7 @@ LC0C8:  LDA #$04                ;Prepare to process 4 sprites for this NPC.
 LC0CA:  STA NPCSpriteCntr       ;
 
 LC0CC:  LDX NPCNumber
-LC0CE:  JSR GetSpclNPCType      ;($C0F4)Check for special NPC type.
+LC0CE:  JSR GetNPCSpriteIndex   ;($C0F4)Get index into sprite pattern table for NPC.
 
 LC0D1:  TAY                     ;Load index to NPC ROM data.
 LC0D2:  LDA NPCNewFace          ;Get new direction NPC will face.
@@ -230,90 +230,114 @@ LC0F3:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-GetSpclNPCType:
+;3 NPCs types change depending on the map and game flag. Those types are listed below:
+;%101 = Wizard or Dragonlord.
+;%110 = Princess Gwaelin or Female villager.
+;%111 = Stationary guard or Guard with trumpet.
+;The following function looks at the map number and game flags to determine which NPC type to use.
+
+GetNPCSpriteIndex:
 LC0F4:  LDA NPCXPos,X           ;Get NPC type.
 LC0F6:  AND #$E0                ;
-LC0F8:  LSR
-LC0F9:  STA $24
-LC0FB:  CMP #$60
-LC0FD:  BNE $C117
 
-LC0FF:  LDA MapNumber
-LC101:  CMP #MAP_TANTCSTL_GF
-LC103:  BNE $C10B
+LC0F8:  LSR                     ;/2 to get initial offset into sprite pattern table.
+LC0F9:  STA GenByte24           ;
 
-LC105:  LDA StoryFlags
-LC107:  AND #F_DGNLRD_DEAD
-LC109:  BNE $C111
+ChkFemaleNPC:
+LC0FB:  CMP #$60                ;Is this the princess or a female villager?
+LC0FD:  BNE ChkWizardNPC        ;If not, branch to check for dragonlord/wizard NPC.
 
-LC10B:  LDA MapNumber
-LC10D:  CMP #MAP_THRONEROOM
-LC10F:  BNE $C14B
+LC0FF:  LDA MapNumber           ;Is the current map the ground floor of Tantagel castle?
+LC101:  CMP #MAP_TANTCSTL_GF    ;
+LC103:  BNE ChkThroneRoomNPC    ;If not, branch to check next map.
 
-LC111:  LDA #$D0
-LC113:  STA $24
-LC115:  BNE $C14B
+LC105:  LDA StoryFlags          ;Is the dragonlord dead?
+LC107:  AND #F_DGNLRD_DEAD      ;
+LC109:  BNE SetPrincessNPC      ;If so, branch to get princess NPC sprites.
 
-LC117:  LDA $24
-LC119:  CMP #$50
-LC11B:  BNE $C147
+ChkThroneRoomNPC:
+LC10B:  LDA MapNumber           ;Is the current map the throne room?
+LC10D:  CMP #MAP_THRONEROOM     ;
+LC10F:  BNE NPCWalkAnim         ;If not, branch. Get female villager NPC sprites.
 
-LC11D:  LDA MapNumber
-LC11F:  CMP #MAP_TANTCSTL_GF
-LC121:  BNE $C13B
+SetPrincessNPC:
+LC111:  LDA #$D0                ;Load index to princess sprites.
+LC113:  STA GenByte24           ;
+LC115:  BNE NPCWalkAnim         ;Branch always.
 
-LC123:  LDA StoryFlags
-LC125:  AND #F_DGNLRD_DEAD
-LC127:  BEQ $C13B
+ChkWizardNPC:
+LC117:  LDA GenByte24           ;Is this the dragon lord or wizard NPC?
+LC119:  CMP #$50                ;
+LC11B:  BNE ChkGuardNPC         ;If not, branch to check for guard type NPC.
 
-LC129:  LDA #$F0
-LC12B:  STA $24
+LC11D:  LDA MapNumber           ;Is the current map the ground floor of Tantagel castle?
+LC11F:  CMP #MAP_TANTCSTL_GF    ;
+LC121:  BNE ChkDrgnLordNPC      ;If not, branch to check for dragonlord NPC sprites.
 
-LC12D:  LDA DisplayedLevel
-LC12F:  CMP #$FF
-LC131:  BNE $C153
+LC123:  LDA StoryFlags;         ;Is the dragonlord dead?
+LC125:  AND #F_DGNLRD_DEAD      ;
+LC127:  BEQ ChkDrgnLordNPC      ;If not, branch to check for dragonlord NPC sprites.
 
-LC133:  LDA $24
-LC135:  ORA #$08
-LC137:  STA $24
-LC139:  BNE $C153
+SetWizardNPC:
+LC129:  LDA #$F0                ;Load index to wizard sprites.
+LC12B:  STA GenByte24           ;
 
-LC13B:  LDA MapNumber
-LC13D:  CMP #MAP_DLCSTL_BF
-LC13F:  BNE $C14B
+GetGuardType:
+LC12D:  LDA DisplayedLevel      ;
+LC12F:  CMP #$FF                ;Has the end of the game just been reached?
+LC131:  BNE EndNPCSpclType      ;If so, change guards to guards with trumpets.
 
-LC141:  LDA #$E0
-LC143:  STA $24
-LC145:  BNE $C14B
+LC133:  LDA GenByte24           ;
+LC135:  ORA #$08                ;Get offset to guards with trumpets.
+LC137:  STA GenByte24           ;
+LC139:  BNE EndNPCSpclType      ;Branch always.
 
-LC147:  CMP #$70
-LC149:  BEQ $C12D
+ChkDrgnLordNPC:
+LC13B:  LDA MapNumber           ;Is the current map the basement of the dragonlord's castle?
+LC13D:  CMP #MAP_DLCSTL_BF      ;
+LC13F:  BNE NPCWalkAnim         ;If not, branch. Get wizard NPC sprites.
 
-LC14B:  LDA CharLeftRight
-LC14D:  AND #$08
-LC14F:  ORA $24
-LC151:  STA $24
+SetDgnLordNPC:
+LC141:  LDA #$E0                ;Load index to dragonlord sprites.
+LC143:  STA GenByte24           ;
+LC145:  BNE NPCWalkAnim         ;Branch always.
 
-LC153:  LDA $24
-LC155:  RTS
+ChkGuardNPC:
+LC147:  CMP #$70                ;Is this a guard NPC?
+LC149:  BEQ GetGuardType        ;If so, branch to see if its a trumpet guard.
+
+NPCWalkAnim:
+LC14B:  LDA CharLeftRight       ;
+LC14D:  AND #$08                ;Add the offset for left or right walking version of NPC.
+LC14F:  ORA GenByte24           ;
+LC151:  STA GenByte24           ;
+
+EndNPCSpclType:
+LC153:  LDA GenByte24           ;Transfer final offset to A.
+LC155:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
 GetPlayerStatPtr:
-LC156:  LDX #$3A
-LC158:  LDA #LVL_30
-LC15A:  STA DisplayedLevel
-LC15C:  LDA ExpLB
-LC15E:  SEC
-LC15F:  SBC LevelUpTbl,X
-LC162:  LDA ExpUB
-LC164:  SBC LevelUpTbl+1,X
-LC167:  BCS $C16F
-LC169:  DEC DisplayedLevel
-LC16B:  DEX
-LC16C:  DEX
-LC16D:  BNE $C15C
-LC16F:  RTS
+LC156:  LDX #$3A                ;Start at level 30 and point to the end of LevelUpTbl.
+LC158:  LDA #LVL_30             ;Work backwards to find the proper level.
+LC15A:  STA DisplayedLevel      ;
+
+PlayerStatLoop:
+LC15C:  LDA ExpLB               ;
+LC15E:  SEC                     ;Subtract entries in LevelUpTbl from player's current exp.
+LC15F:  SBC LevelUpTbl,X        ;
+LC162:  LDA ExpUB               ;
+LC164:  SBC LevelUpTbl+1,X      ;Has the correct level for the player been found?
+LC167:  BCS PlayerStatEnd       ;If so, branch to the exit.
+
+LC169:  DEC DisplayedLevel      ;Move down to the next level and stats table entry.
+LC16B:  DEX                     ;
+LC16C:  DEX                     ;Are there more levels to descend through?
+LC16D:  BNE PlayerStatLoop      ;If so, loop to check next level down.
+
+PlayerStatEnd:
+LC16F:  RTS                     ;End get player stats function.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -1465,259 +1489,37 @@ LC7EB:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-;This function does not appear to be used.  Functions from Dragon Quest.
+;This section appears to be unused code from Dragon Quest.
 
-DQFunc0A:
-LC7EC:  LDA NTBlockY
-LC7EE:  ASL
-LC7EF:  STA DivNum1LB
-LC7F1:  LDA $98
-LC7F3:  CLC
-LC7F4:  ADC #$2C
-LC7F6:  SEC
-LC7F7:  SBC DivNum1LB
-LC7F9:  STA DivNum1LB
-
-LC7FB:  LDA #$1E                ;30 tiles per column.
-LC7FD:  STA DivNum2
-LC7FF:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
-LC802:  LDA DivRemainder
-LC804:  STA $3E
-LC806:  PHA
-LC807:  LDA NTBlockX
-LC809:  ASL
-LC80A:  STA $3C
-LC80C:  LDA $D4
-LC80E:  CLC
-LC80F:  ADC #$10
-LC811:  SEC
-LC812:  SBC $3C
-LC814:  STA $3C
-LC816:  JSR CalcRAMBufAddr      ;($C59E)Calculate RAM buffer address for tile placement.
-LC819:  LDA PPUAddrLB
-LC81B:  STA PalPtrLB
-LC81D:  LDA PPUAddrUB
-LC81F:  STA PalPtrUB
-LC821:  PLA
-LC822:  STA $3E
-LC824:  LDA NTBlockX
-LC826:  ASL
-LC827:  STA $3C
-LC829:  LDA $D2
-LC82B:  CLC
-LC82C:  ADC #$10
-LC82E:  SEC
-LC82F:  SBC $3C
-LC831:  STA $3C
-LC833:  JSR CalcRAMBufAddr      ;($C59E)Calculate RAM buffer address for tile placement.
-LC836:  LDA PPUAddrLB
-LC838:  STA $42
-LC83A:  LDA PPUAddrUB
-LC83C:  STA $43
-LC83E:  RTS
-
-LC83F:  LDA #TL_BLANK_TILE1
-LC841:  STA PPUDataByte
-LC843:  JSR DQFunc09            ;($C4F5)
-LC846:  JMP AddPPUBufEntry      ;($C690)Add data to PPU buffer.
-
-LC849:  LDA #$56
-LC84B:  STA PPUDataByte
-LC84D:  JSR DQFunc09            ;($C4F5)
-LC850:  JMP AddPPUBufEntry      ;($C690)Add data to PPU buffer.
-
-LC853:  LDA #$FF
-LC855:  STA FrameCounter
-
-LC857:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LC85A:  JSR $C83F
-LC85D:  LDA JoypadBtns
-LC85F:  PHA
-LC860:  JSR GetJoypadStatus     ;($C608)Get input button presses.
-LC863:  PLA
-LC864:  BEQ $C871
-LC866:  LDA FrameCounter
-LC868:  AND #$0F
-LC86A:  CMP #$0C
-LC86C:  BEQ $C871
-LC86E:  JMP $C9A9
-LC871:  LDA JoypadBtns
-LC873:  AND #IN_A
-LC875:  BEQ $C893
-LC877:  JSR $C849
-LC87A:  LDA WndCol
-LC87C:  CMP #$01
-LC87E:  BEQ $C884
-LC880:  LDA #$00
-LC882:  STA $D7
-LC884:  LDA WndRow
-LC886:  CLC
-LC887:  ADC $D7
-LC889:  STA $D7
-
-LC88B:  LDA #SFX_MENU_BTN       ;Menu button beep SFX.
-LC88D:  BRK                     ;
-LC88E:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
-
-LC890:  LDA $D7
-LC892:  RTS
-
-LC893:  LDA JoypadBtns
-LC895:  AND #IN_B
-LC897:  BEQ $C8A6
-LC899:  JSR $C849
-
-LC89C:  LDA #SFX_MENU_BTN       ;Menu button beep SFX.
-LC89E:  BRK                     ;
-LC89F:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
-
-LC8A1:  LDA #$FF
-LC8A3:  STA $D7
-LC8A5:  RTS
-LC8A6:  LDA JoypadBtns
-LC8A8:  AND #IN_UP
-LC8AA:  BEQ $C8EE
-LC8AC:  LDA WndCol
-LC8AE:  CMP #$05
-LC8B0:  BEQ $C8CF
-LC8B2:  LDA WndRow
-LC8B4:  BNE $C8B9
-LC8B6:  JMP $C9A9
-LC8B9:  DEC WndRow
-LC8BB:  DEC $98
-LC8BD:  DEC $98
-LC8BF:  LDA $98
-LC8C1:  CMP #$FE
-LC8C3:  BEQ $C8C8
-LC8C5:  JMP $C9A5
-LC8C8:  LDA #$1C
-LC8CA:  STA $98
-LC8CC:  JMP $C9A5
-
-LC8CF:  LDA WndRow
-LC8D1:  BNE $C8D6
-LC8D3:  JMP $C9A9
-
-LC8D6:  LDA #$00
-LC8D8:  STA WndRow
-LC8DA:  LDA $9D
-LC8DC:  STA $97
-LC8DE:  LDA $9E
-LC8E0:  SEC
-LC8E1:  SBC #$02
-LC8E3:  CMP #$FE
-LC8E5:  BNE $C8E9
-LC8E7:  LDA #$1C
-LC8E9:  STA $98
-LC8EB:  JMP $C9A5
-LC8EE:  LDA JoypadBtns
-LC8F0:  AND #IN_DOWN
-LC8F2:  BEQ $C93A
-
-LC8F4:  LDA WndCol
-LC8F6:  CMP #$05
-LC8F8:  BEQ $C91B
-LC8FA:  INC WndRow
-LC8FC:  LDA WndRow
-LC8FE:  CMP $D7
-LC900:  BNE $C907
-LC902:  DEC WndRow
-LC904:  JMP $C9A9
-LC907:  INC $98
-LC909:  INC $98
-LC90B:  LDA $98
-LC90D:  CMP #$1E
-LC90F:  BEQ $C914
-LC911:  JMP $C9A5
-LC914:  LDA #$00
-LC916:  STA $98
-LC918:  JMP $C9A5
-
-LC91B:  LDA #$02
-LC91D:  CMP WndRow
-LC91F:  BNE $C924
-
-LC921:  JMP $C9A9
-
-LC924:  STA WndRow
-LC926:  LDA $9D
-LC928:  STA $97
-LC92A:  LDA $9E
-LC92C:  CLC
-LC92D:  ADC #$02
-LC92F:  CMP #$1E
-LC931:  BNE $C935
-LC933:  LDA #$00
-LC935:  STA $98
-LC937:  JMP $C9A5
-
-LC93A:  LDA JoypadBtns
-LC93C:  AND #IN_LEFT
-LC93E:  BEQ $C972
-LC940:  LDA WndCol
-LC942:  CMP #$05
-LC944:  BEQ $C95A
-LC946:  LDA WndCol
-LC948:  CMP #$01
-LC94A:  BNE $C9A9
-LC94C:  DEC WndCol
-LC94E:  LDA $97
-LC950:  SEC
-LC951:  SBC #$06
-LC953:  AND #$3F
-LC955:  STA $97
-LC957:  JMP $C9A5
-LC95A:  LDA #$03
-LC95C:  CMP WndRow
-LC95E:  BEQ $C9A9
-LC960:  STA WndRow
-LC962:  LDA $9E
-LC964:  STA $98
-LC966:  LDA $9D
-LC968:  SEC
-LC969:  SBC #$02
-LC96B:  AND #$3F
-LC96D:  STA $97
-LC96F:  JMP $C9A5
-
-LC972:  LDA JoypadBtns
-LC974:  AND #IN_RIGHT
-LC976:  BEQ $C9A9
-LC978:  LDA WndCol
-LC97A:  CMP #$05
-LC97C:  BEQ $C990
-
-LC97E:  LDA WndCol
-LC980:  BNE $C9A9
-LC982:  INC WndCol
-LC984:  LDA $97
-LC986:  CLC
-LC987:  ADC #$06
-LC989:  AND #$3F
-LC98B:  STA $97
-LC98D:  JMP $C9A5
-
-LC990:  LDA #$01
-LC992:  CMP WndRow
-LC994:  BEQ $C9A9
-
-LC996:  STA WndRow
-LC998:  LDA $9E
-LC99A:  STA $98
-LC99C:  LDA $9D
-LC99E:  CLC
-LC99F:  ADC #$02
-LC9A1:  AND #$3F
-LC9A3:  STA $97
-
-LC9A5:  LDA #$00
-LC9A7:  STA FrameCounter
-
-LC9A9:  LDA FrameCounter
-LC9AB:  AND #$10
-LC9AD:  BNE $C9B2
-LC9AF:  JSR $C849
-LC9B2:  JMP $C857
+LC7EC: .byte $A5, $4B, $0A, $85, $3C, $A5, $98, $18, $69, $2C, $38, $E5, $3C, $85, $3C, $A9
+LC7FC: .byte $1E, $85, $3E, $20, $F0, $C1, $A5, $40, $85, $3E, $48, $A5, $4A, $0A, $85, $3C
+LC80C: .byte $A5, $D4, $18, $69, $10, $38, $E5, $3C, $85, $3C, $20, $9E, $C5, $A5, $0A, $85
+LC81C: .byte $0C, $A5, $0B, $85, $0D, $68, $85, $3E, $A5, $4A, $0A, $85, $3C, $A5, $D2, $18
+LC82C: .byte $69, $10, $38, $E5, $3C, $85, $3C, $20, $9E, $C5, $A5, $0A, $85, $42, $A5, $0B
+LC83C: .byte $85, $43, $60, $A9, $5F, $85, $08, $20, $F5, $C4, $4C, $90, $C6, $A9, $56, $85
+LC84C: .byte $08, $20, $F5, $C4, $4C, $90, $C6, $A9, $FF, $85, $4F, $20, $74, $FF, $20, $3F
+LC85C: .byte $C8, $A5, $47, $48, $20, $08, $C6, $68, $F0, $0B, $A5, $4F, $29, $0F, $C9, $0C
+LC86C: .byte $F0, $03, $4C, $A9, $C9, $A5, $47, $29, $01, $F0, $1C, $20, $49, $C8, $A5, $D8
+LC87C: .byte $C9, $01, $F0, $04, $A9, $00, $85, $D7, $A5, $D9, $18, $65, $D7, $85, $D7, $A9
+LC88C: .byte $85, $00, $04, $17, $A5, $D7, $60, $A5, $47, $29, $02, $F0, $0D, $20, $49, $C8
+LC89C: .byte $A9, $85, $00, $04, $17, $A9, $FF, $85, $D7, $60, $A5, $47, $29, $10, $F0, $42
+LC8AC: .byte $A5, $D8, $C9, $05, $F0, $1D, $A5, $D9, $D0, $03, $4C, $A9, $C9, $C6, $D9, $C6
+LC8BC: .byte $98, $C6, $98, $A5, $98, $C9, $FE, $F0, $03, $4C, $A5, $C9, $A9, $1C, $85, $98
+LC8CC: .byte $4C, $A5, $C9, $A5, $D9, $D0, $03, $4C, $A9, $C9, $A9, $00, $85, $D9, $A5, $9D
+LC8DC: .byte $85, $97, $A5, $9E, $38, $E9, $02, $C9, $FE, $D0, $02, $A9, $1C, $85, $98, $4C
+LC8EC: .byte $A5, $C9, $A5, $47, $29, $20, $F0, $46, $A5, $D8, $C9, $05, $F0, $21, $E6, $D9
+LC8FC: .byte $A5, $D9, $C5, $D7, $D0, $05, $C6, $D9, $4C, $A9, $C9, $E6, $98, $E6, $98, $A5
+LC90C: .byte $98, $C9, $1E, $F0, $03, $4C, $A5, $C9, $A9, $00, $85, $98, $4C, $A5, $C9, $A9
+LC91C: .byte $02, $C5, $D9, $D0, $03, $4C, $A9, $C9, $85, $D9, $A5, $9D, $85, $97, $A5, $9E
+LC92C: .byte $18, $69, $02, $C9, $1E, $D0, $02, $A9, $00, $85, $98, $4C, $A5, $C9, $A5, $47
+LC93C: .byte $29, $40, $F0, $32, $A5, $D8, $C9, $05, $F0, $14, $A5, $D8, $C9, $01, $D0, $5D
+LC94C: .byte $C6, $D8, $A5, $97, $38, $E9, $06, $29, $3F, $85, $97, $4C, $A5, $C9, $A9, $03
+LC95C: .byte $C5, $D9, $F0, $49, $85, $D9, $A5, $9E, $85, $98, $A5, $9D, $38, $E9, $02, $29
+LC96C: .byte $3F, $85, $97, $4C, $A5, $C9, $A5, $47, $29, $80, $F0, $31, $A5, $D8, $C9, $05
+LC97C: .byte $F0, $12, $A5, $D8, $D0, $27, $E6, $D8, $A5, $97, $18, $69, $06, $29, $3F, $85
+LC98C: .byte $97, $4C, $A5, $C9, $A9, $01, $C5, $D9, $F0, $13, $85, $D9, $A5, $9E, $85, $98
+LC99C: .byte $A5, $9D, $18, $69, $02, $29, $3F, $85, $97, $A9, $00, $85, $4F, $A5, $4F, $29
+LC9AC: .byte $10, $D0, $03, $20, $49, $C8, $4C, $57, $C8
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -2243,9 +2045,10 @@ LCCD6:  LDA #$02
 LCCD8:  STA CharDirection
 LCCDB:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 LCCDE:  LDX #$1E
-LCCE0:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
+
+LCCE0:* JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCCE3:  DEX
-LCCE4:  BNE $CCE0
+LCCE4:  BNE -
 LCCE6:  LDA #$FF
 LCCE8:  STA DisplayedLevel
 LCCEA:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
