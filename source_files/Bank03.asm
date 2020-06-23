@@ -551,449 +551,51 @@ LC287:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-;The following functions do not appear to be used. Functions from Dragon Quest.
+;This section appears to be unused code from Dragon Quest.
 
-DQFunc00:
-LC288:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-
-DQBranch01:
-LC28B:  JSR DQFunc01            ;($C297)
-LC28E:  INC $99                 ;
-LC290:  BNE DQBranch01          ;Unused Dragon's Quest code.
-LC292:  INC $9A                 ;
-LC294:  JMP DQBranch01          ;($C28B)
-
-DQFunc01:
-LC297:  LDA $D6                 ;
-LC299:  BEQ DQBranch02          ;
-LC29B:  DEC $D6                 ;
-LC29D:  LDA $99                 ;Unused Dragon's Quest code.
-LC29F:  DEC $99                 ;
-LC2A1:  TAY                     ;
-LC2A2:  BNE DQBranch02          ;
-LC2A4:  DEC $9A                 ;
-
-DQBranch02:
-LC2A6:  LDY #$00                ;
-LC2A8:  LDA ($99),Y             ;
-LC2AA:  CMP #END_RPT            ;
-LC2AC:  BNE DQBranch03          ;
-LC2AE:  INY                     ;
-LC2AF:  LDA ($99),Y             ;
-LC2B1:  STA $D6                 ;Unused Dragon's Quest code.
-LC2B3:  LDA $99                 ;
-LC2B5:  CLC                     ;
-LC2B6:  ADC #$03                ;
-LC2B8:  STA $99                 ;
-LC2BA:  BCC DQBranch04          ;
-LC2BC:  INC $9A                 ;
-
-DQBranch04:
-LC2BE:  JMP DQFunc01            ;($C297)Unused Dragon's Quest code.
-
-DQBranch03:
-LC2C1:  CMP #$FF                ;
-LC2C3:  BEQ DQBranch05          ;Unused Dragon's Quest code.
-LC2C5:  CMP #$FC                ;
-LC2C7:  BNE DQBranch07          ;
-
-DQFunc02:
-LC2C9:  LDA PalPtrLB            ;
-LC2CB:  CLC                     ;
-LC2CC:  ADC #$40                ;
-LC2CE:  STA PalPtrLB            ;
-LC2D0:  STA $42                 ;
-LC2D2:  LDA PalPtrUB            ;
-LC2D4:  ADC #$00                ;
-LC2D6:  STA PalPtrUB            ;
-LC2D8:  STA $43                 ;
-LC2DA:  LDA $9D                 ;Unused Dragon's Quest code.
-LC2DC:  STA $97                 ;
-LC2DE:  INC $98                 ;
-LC2E0:  INC $98                 ;
-LC2E2:  LDA $98                 ;
-LC2E4:  CMP #$1E                ;
-LC2E6:  BNE DQBranch06          ;
-LC2E8:  LDA #$00                ;
-LC2EA:  STA $98                 ;
-LC2EC:  BEQ DQBranch05          ;
-
-DQBranch06:
-LC2EE:  CMP #$1F                ;
-LC2F0:  BNE DQBranch05          ;Unused Dragon's Quest code.
-LC2F2:  LDA #$01                ;
-LC2F4:  STA $98                 ;
-
-DQBranch05:
-LC2F6:  PLA                     ;
-LC2F7:  PLA                     ;Unused Dragon's Quest code.
-LC2F8:  RTS                     ;
-
-DQBranch07:
-LC2F9:  CMP #$FE                ;
-LC2FB:  BNE DQBranch08          ;Unused Dragon's Quest code.
-LC2FD:  JSR DQFunc02            ;($C2C9)
-
-DQBranch08:
-LC300:  CMP #$FB                ;
-LC302:  BNE DQBranch09          ;
-LC304:  LDA MessageSpeed        ;
-LC306:  ASL                     ;
-LC307:  ASL                     ;
-LC308:  ASL                     ;Unused Dragon's Quest code.
-LC309:  STA $3C                 ;
-LC30B:  ASL                     ;
-LC30C:  ADC $3C                 ;
-LC30E:  ADC #$03                ;
-LC310:  TAX                     ;
-
-DQBranch0B:
-LC311:  LDA #$01                ;Indicate not in NMI.
-LC313:  STA NMIStatus           ;
-
-DQBranch0A:
-LC315:  LDA NMIStatus           ;Wait for NMI to be active.
-LC317:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LC31A:  BNE DQBranch0A          ;Is NMI active? if not, branch to wait.
-LC31C:  JSR GetJoypadStatus     ;($C608)Get input button presses.
-LC31F:  LDA JoypadBtns          ;
-LC321:  AND #IN_START           ;
-LC323:  BNE DQBranch0B          ;Unused Dragon's Quest code.
-LC325:  DEX                     ;
-LC326:  BNE DQBranch0B          ;
-LC328:  RTS                     ;
-
-DQBranch09:
-LC329:  CMP #$FD                ;
-LC32B:  BNE DQBranch0C          ;
-LC32D:  LDA $99                 ;
-LC32F:  STA $9B                 ;
-LC331:  LDA $9A                 ;
-LC333:  STA $9C                 ;Unused Dragon's Quest code.
-LC335:  LDA #$A3                ;
-LC337:  STA $99                 ;
-LC339:  LDA #$00                ;
-LC33B:  STA $9A                 ;
-LC33D:  JMP DQFunc03            ;($C474)
-
-DQBranch0C:
-LC340:  CMP #$FA                ;
-LC342:  BNE DQBranch0D          ;
-LC344:  LDA $9B                 ;
-LC346:  STA $99                 ;Unused Dragon's Quest code.
-LC348:  LDA $9C                 ;
-LC34A:  STA $9A                 ;
-LC34C:  RTS                     ;
-
-DQBranch0D:
-LC34D:  CMP #$F0                ;
-LC34F:  BNE DQBranch0E          ;
-LC351:  INY                     ;
-LC352:  LDA ($99),Y             ;
-LC354:  STA $3E                 ;
-LC356:  INY                     ;
-LC357:  LDA ($99),Y             ;
-LC359:  STA $3F                 ;
-LC35B:  TYA                     ;
-LC35C:  PHA                     ;
-LC35D:  LDY #$00                ;
-LC35F:  STY $3D                 ;
-LC361:  LDA ($3E),Y             ;
-LC363:  STA $3C                 ;Unused Dragon's Quest code.
-LC365:  PLA                     ;
-LC366:  TAY                     ;
-LC367:  JSR DQFunc04            ;($C6C9)
-LC36A:  LDA $99                 ;
-LC36C:  CLC                     ;
-LC36D:  ADC #$02                ;
-LC36F:  STA $9B                 ;
-LC371:  LDA $9A                 ;
-LC373:  ADC #$00                ;
-LC375:  STA $9C                 ;
-LC377:  LDA #$00                ;
-LC379:  STA $9A                 ;
-LC37B:  LDA #$B1                ;
-LC37D:  STA $99                 ;
-LC37F:  JMP DQFunc03            ;($C474)
-
-DQBranch0E:
-LC382:  CMP #$F1                ;
-LC384:  BNE DQBranch11          ;Unused Dragon's Quest code.
-LC386:  JSR DQFunc05            ;($C38C)
-LC389:  JMP DQFunc03            ;($C474)
-
-DQFunc05:
-LC38C:  INY                     ;
-LC38D:  LDA ($99),Y             ;
-LC38F:  STA $3E                 ;
-LC391:  INY                     ;
-LC392:  LDA ($99),Y             ;
-LC394:  STA $3F                 ;
-LC396:  TYA                     ;
-LC397:  PHA                     ;
-LC398:  LDY #$00                ;
-LC39A:  LDA ($3E),Y             ;
-LC39C:  STA $3C                 ;
-LC39E:  INY                     ;
-LC39F:  LDA ($3E),Y             ;
-LC3A1:  STA $3D                 ;
-LC3A3:  PLA                     ;Unused Dragon's Quest code.
-LC3A4:  TAY                     ;
-LC3A5:  JSR DQFunc04            ;($C6C9)
-LC3A8:  LDA $99                 ;
-LC3AA:  CLC                     ;
-LC3AB:  ADC #$02                ;
-LC3AD:  STA $9B                 ;
-LC3AF:  LDA $9A                 ;
-LC3B1:  ADC #$00                ;
-LC3B3:  STA $9C                 ;
-LC3B5:  LDA #$00                ;
-LC3B7:  STA $9A                 ;
-LC3B9:  LDA #$AF                ;
-LC3BB:  STA $99                 ;
-LC3BD:  RTS                     ;
-
-DQBranch11:
-LC3BE:  CMP #$F3                ;
-LC3C0:  BNE DQBranch12          ;Unused Dragon's Quest code.
-LC3C2:  JSR DQFunc05            ;($C38C)
-LC3C5:  LDY #$00                ;
-
-DQFunc06:
-LC3C7:  LDA ($99),Y             ;
-LC3C9:  CMP #TL_BLANK_TILE1     ;
-LC3CB:  BNE DQBranch13          ;Unused Dragon's Quest code.
-LC3CD:  INC $99                 ;
-LC3CF:  JMP DQFunc06            ;($C3C7)
-
-DQBranch13:
-LC3D2:  JMP DQFunc03            ;($C474)Unused Dragon's Quest code.
-
-DQBranch12:
-LC3D5:  CMP #$F2                ;
-LC3D7:  BNE DQBranch14          ;
-LC3D9:  LDA $99                 ;
-LC3DB:  STA $9B                 ;
-LC3DD:  LDA $9A                 ;
-LC3DF:  STA $9C                 ;Unused Dragon's Quest code.
-LC3E1:  LDA #$00                ;
-LC3E3:  STA $9A                 ;
-LC3E5:  LDA #$B5                ;
-LC3E7:  STA $99                 ;
-LC3E9:  JMP DQFunc03            ;($C474)
-
-DQBranch14:
-LC3EC:  CMP #$6D                ;
-LC3EE:  BCC DQBranch15          ;
-LC3F0:  SBC #$6D                ;
-LC3F2:  TAX                     ;
-LC3F3:  INX                     ;Unused Dragon's Quest code.
-LC3F4:  LDA UnusedTblPtr1       ;
-LC3F7:  STA $3C                 ;
-LC3F9:  LDA DescTblPtr-1        ;
-LC3FC:  STA $3D                 ;
-
-DQFunc08:
-LC3FE:  LDY #$00                ;Unused Dragon's Quest code.
-
-DQFunc07:
-LC400:  LDA ($3C),Y             ;
-LC402:  CMP #$FA                ;
-LC404:  BEQ DQBranch16          ;Unused Dragon's Quest code.
-LC406:  INY                     ;
-LC407:  JMP DQFunc07            ;($C400)
-
-DQBranch16:
-LC40A:  DEX                     ;
-LC40B:  BEQ DQBranch17          ;
-LC40D:  TYA                     ;
-LC40E:  SEC                     ;Unused Dragon's Quest code.
-LC40F:  ADC $3C                 ;
-LC411:  STA $3C                 ;
-LC413:  BCC DQBranch18          ;
-LC415:  INC $3D                 ;
-
-DQBranch18:
-LC417:  JMP DQFunc08            ;($C3FE)Unused Dragon's Quest code.
-
-DQBranch17:
-LC41A:  LDA $99                 ;
-LC41C:  STA $9B                 ;
-LC41E:  LDA $9A                 ;
-LC420:  STA $9C                 ;
-LC422:  LDA $3C                 ;Unused Dragon's Quest code.
-LC424:  STA $99                 ;
-LC426:  LDA $3D                 ;
-LC428:  STA $9A                 ;
-LC42A:  JMP DQFunc03            ;($C474)
-
-DQBranch15:
-LC42D:  CMP #$57                ;
-LC42F:  BEQ DQBranch19          ;Unused Dragon's Quest code.
-LC431:  JMP DQFunc03            ;($C474)
-
-DQBranch19:
-LC434:  LDA $D4                 ;
-LC436:  CLC                     ;
-LC437:  ADC #$09                ;
-LC439:  AND #$3F                ;Unused Dragon's Quest code.
-LC43B:  STA $97                 ;
-LC43D:  LDA #$00                ;
-LC43F:  STA FrameCounter        ;
-
-DQBranch1A:
-LC441:  JSR GetJoypadStatus     ;($C608)Get input button presses.
-LC444:  LDA JoypadBtns          ;
-LC446:  AND #IN_A_OR_B          ;Unused Dragon's Quest code.
-LC448:  BEQ DQBranch1C          ;
-
-DQBranch1B:
-LC44A:  LDA #TL_BLANK_TILE1     ;Unused Dragon's Quest code.
-LC44C:  BNE DQBranch1D          ;
-
-DQBranch1C:
-LC44E:  LDA FrameCounter        ;
-LC450:  AND #$10                ;Unused Dragon's Quest code.
-LC452:  BNE DQBranch1B          ;
-LC454:  LDA #$57                ;
-
-DQBranch1D:
-LC456:  STA PPUDataByte         ;
-LC458:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LC45B:  JSR DQFunc09            ;($C4F5)
-LC45E:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
-LC461:  LDA JoypadBtns          ;Unused Dragon's Quest code.
-LC463:  AND #IN_A_OR_B          ;
-LC465:  BEQ DQBranch1A          ;
-
-LC467:  LDA #SFX_MENU_BTN       ;Menu button beep.
-LC469:  BRK                     ;
-LC46A:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
-
-LC46C:  LDA $D4                 ;
-LC46E:  STA $97                 ;Unused Dragon's Quest code.
-LC470:  JSR DQFunc0A            ;($C7EC)
-LC473:  RTS                     ;
-
-DQFunc03:
-LC474:  LDY #$00                ;
-LC476:  LDA ($99),Y             ;
-LC478:  STA PPUDataByte         ;
-LC47A:  LDA $09                 ;
-LC47C:  BEQ DQBranch1E          ;Unused Dragon's Quest code.
-LC47E:  CMP #$01                ;
-LC480:  BEQ DQBranch1E          ;
-LC482:  LDA PPUDataByte         ;
-LC484:  STA ($42),Y             ;
-
-DQBranch1E:
-LC486:  JSR DQFunc09            ;($C4F5)
-LC489:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
-LC48C:  LDY #$01                ;
-LC48E:  LDA ($99),Y             ;
-LC490:  CMP #$F8                ;
-LC492:  BEQ DQBranch1F          ;Unused Dragon's Quest code.
-LC494:  CMP #$F9                ;
-LC496:  BNE DQBranch21          ;
-LC498:  LDA #$52                ;
-LC49A:  STA PPUDataByte         ;
-LC49C:  BNE DQBranch22          ;
-
-DQBranch1F:
-LC49E:  LDA #$51                ;Unused Dragon's Quest code.
-LC4A0:  STA PPUDataByte         ;
-
-DQBranch22:
-LC4A2:  INC $99                 ;
-LC4A4:  BNE DQBranch20          ;Unused Dragon's Quest code.
-LC4A6:  INC $9A                 ;
-
-DQBranch20:
-LC4A8:  LDA $42                 ;
-LC4AA:  CLC                     ;
-LC4AB:  ADC #$E0                ;Unused Dragon's Quest code.
-LC4AD:  STA $42                 ;
-LC4AF:  BCS DQBranch23          ;
-LC4B1:  DEC $43                 ;
-
-DQBranch23:
-LC4B3:  LDA $09                 ;
-LC4B5:  BEQ DQBranch24          ;
-LC4B7:  CMP #$01                ;
-LC4B9:  BEQ DQBranch24          ;Unused Dragon's Quest code.
-LC4BB:  LDA PPUDataByte         ;
-LC4BD:  LDY #$00                ;
-LC4BF:  STA ($42),Y             ;
-
-DQBranch24:
-LC4C1:  LDA $42                 ;
-LC4C3:  CLC                     ;
-LC4C4:  ADC #$20                ;Unused Dragon's Quest code.
-LC4C6:  STA $42                 ;
-LC4C8:  BCC DQBranch25          ;
-LC4CA:  INC $43                 ;
-
-DQBranch25:
-LC4CC:  DEC $98                 ;
-LC4CE:  LDA $98                 ;
-LC4D0:  CMP #$FF                ;Unused Dragon's Quest code.
-LC4D2:  BNE DQBranch26          ;
-LC4D4:  LDA #$1D                ;
-LC4D6:  STA $98                 ;
-
-DQBranch26:
-LC4D8:  JSR DQFunc09            ;($C4F5)
-LC4DB:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
-LC4DE:  INC $98                 ;
-LC4E0:  LDA $98                 ;
-LC4E2:  CMP #$1E                ;Unused Dragon's Quest code.
-LC4E4:  BNE DQBranch21          ;
-LC4E6:  LDA #$00                ;
-LC4E8:  STA $98                 ;
-
-DQBranch21:
-LC4EA:  INC $42                 ;
-LC4EC:  INC $97                 ;
-LC4EE:  LDA $97                 ;Unused Dragon's Quest code.
-LC4F0:  AND #$3F                ;
-LC4F2:  STA $97                 ;
-LC4F4:  RTS                     ;
-
-DQFunc09:
-LC4F5:  LDA PPUDataByte         ;
-LC4F7:  PHA                     ;
-LC4F8:  LDA $09                 ;Unused Dragon's Quest code.
-LC4FA:  CMP #$01                ;
-LC4FC:  BEQ DQBranch27          ;
-
-LC4FE:  LDA $98                 ;
-LC500:  LSR                     ;
-LC501:  BCS DQBranch27          ;Unused Dragon's Quest code.
-LC503:  LDA $97                 ;
-LC505:  LSR                     ;
-LC506:  BCS DQBranch27          ;
-
-LC508:  LDA $97
-LC50A:  STA $3C
-LC50C:  LDA $98
-LC50E:  STA $3E
-
-LC510:  LDA #$00
-LC512:  STA PPUDataByte
-
-LC514:  JSR $C006
-LC517:  JSR ClearAttrib         ;($C273)Set black palette for given tiles.
-
-DQBranch27:
-LC51A:  PLA
-LC51B:  STA PPUDataByte
-
-LC51D:  LDA $97                 ;
-LC51F:  STA $3C                 ;
-LC521:  LDA $98                 ;Unused Dragon's Quest code.
-LC523:  STA $3E                 ;
-LC525:  JSR DoAddrCalc          ;($C5AA)Calculate destination address for GFX data.
-LC528:  RTS                     ;
+LC288: .byte $20, $74, $FF, $20, $97, $C2, $E6, $99, $D0, $F9, $E6, $9A, $4C, $8B, $C2, $A5
+LC298: .byte $D6, $F0, $0B, $C6, $D6, $A5, $99, $C6, $99, $A8, $D0, $02, $C6, $9A, $A0, $00
+LC2A8: .byte $B1, $99, $C9, $F7, $D0, $13, $C8, $B1, $99, $85, $D6, $A5, $99, $18, $69, $03
+LC2B8: .byte $85, $99, $90, $02, $E6, $9A, $4C, $97, $C2, $C9, $FF, $F0, $31, $C9, $FC, $D0
+LC2C8: .byte $30, $A5, $0C, $18, $69, $40, $85, $0C, $85, $42, $A5, $0D, $69, $00, $85, $0D
+LC2D8: .byte $85, $43, $A5, $9D, $85, $97, $E6, $98, $E6, $98, $A5, $98, $C9, $1E, $D0, $06
+LC2E8: .byte $A9, $00, $85, $98, $F0, $08, $C9, $1F, $D0, $04, $A9, $01, $85, $98, $68, $68
+LC2F8: .byte $60, $C9, $FE, $D0, $03, $20, $C9, $C2, $C9, $FB, $D0, $25, $A5, $E5, $0A, $0A
+LC308: .byte $0A, $85, $3C, $0A, $65, $3C, $69, $03, $AA, $A9, $01, $85, $02, $A5, $02, $20
+LC318: .byte $74, $FF, $D0, $F9, $20, $08, $C6, $A5, $47, $29, $08, $D0, $EC, $CA, $D0, $E9
+LC328: .byte $60, $C9, $FD, $D0, $13, $A5, $99, $85, $9B, $A5, $9A, $85, $9C, $A9, $A3, $85
+LC338: .byte $99, $A9, $00, $85, $9A, $4C, $74, $C4, $C9, $FA, $D0, $09, $A5, $9B, $85, $99
+LC348: .byte $A5, $9C, $85, $9A, $60, $C9, $F0, $D0, $31, $C8, $B1, $99, $85, $3E, $C8, $B1
+LC358: .byte $99, $85, $3F, $98, $48, $A0, $00, $84, $3D, $B1, $3E, $85, $3C, $68, $A8, $20
+LC368: .byte $C9, $C6, $A5, $99, $18, $69, $02, $85, $9B, $A5, $9A, $69, $00, $85, $9C, $A9
+LC378: .byte $00, $85, $9A, $A9, $B1, $85, $99, $4C, $74, $C4, $C9, $F1, $D0, $38, $20, $8C
+LC388: .byte $C3, $4C, $74, $C4, $C8, $B1, $99, $85, $3E, $C8, $B1, $99, $85, $3F, $98, $48
+LC398: .byte $A0, $00, $B1, $3E, $85, $3C, $C8, $B1, $3E, $85, $3D, $68, $A8, $20, $C9, $C6
+LC3A8: .byte $A5, $99, $18, $69, $02, $85, $9B, $A5, $9A, $69, $00, $85, $9C, $A9, $00, $85
+LC3B8: .byte $9A, $A9, $AF, $85, $99, $60, $C9, $F3, $D0, $13, $20, $8C, $C3, $A0, $00, $B1
+LC3C8: .byte $99, $C9, $5F, $D0, $05, $E6, $99, $4C, $C7, $C3, $4C, $74, $C4, $C9, $F2, $D0
+LC3D8: .byte $13, $A5, $99, $85, $9B, $A5, $9A, $85, $9C, $A9, $00, $85, $9A, $A9, $B5, $85
+LC3E8: .byte $99, $4C, $74, $C4, $C9, $6D, $90, $3D, $E9, $6D, $AA, $E8, $AD, $50, $F1, $85
+LC3F8: .byte $3C, $AD, $51, $F1, $85, $3D, $A0, $00, $B1, $3C, $C9, $FA, $F0, $04, $C8, $4C
+LC408: .byte $00, $C4, $CA, $F0, $0D, $98, $38, $65, $3C, $85, $3C, $90, $02, $E6, $3D, $4C
+LC418: .byte $FE, $C3, $A5, $99, $85, $9B, $A5, $9A, $85, $9C, $A5, $3C, $85, $99, $A5, $3D
+LC428: .byte $85, $9A, $4C, $74, $C4, $C9, $57, $F0, $03, $4C, $74, $C4, $A5, $D4, $18, $69
+LC438: .byte $09, $29, $3F, $85, $97, $A9, $00, $85, $4F, $20, $08, $C6, $A5, $47, $29, $03
+LC448: .byte $F0, $04, $A9, $5F, $D0, $08, $A5, $4F, $29, $10, $D0, $F6, $A9, $57, $85, $08
+LC458: .byte $20, $74, $FF, $20, $F5, $C4, $20, $90, $C6, $A5, $47, $29, $03, $F0, $DA, $A9
+LC468: .byte $85, $00, $04, $17, $A5, $D4, $85, $97, $20, $EC, $C7, $60, $A0, $00, $B1, $99
+LC478: .byte $85, $08, $A5, $09, $F0, $08, $C9, $01, $F0, $04, $A5, $08, $91, $42, $20, $F5
+LC488: .byte $C4, $20, $90, $C6, $A0, $01, $B1, $99, $C9, $F8, $F0, $0A, $C9, $F9, $D0, $52
+LC498: .byte $A9, $52, $85, $08, $D0, $04, $A9, $51, $85, $08, $E6, $99, $D0, $02, $E6, $9A
+LC4A8: .byte $A5, $42, $18, $69, $E0, $85, $42, $B0, $02, $C6, $43, $A5, $09, $F0, $0A, $C9
+LC4B8: .byte $01, $F0, $06, $A5, $08, $A0, $00, $91, $42, $A5, $42, $18, $69, $20, $85, $42
+LC4C8: .byte $90, $02, $E6, $43, $C6, $98, $A5, $98, $C9, $FF, $D0, $04, $A9, $1D, $85, $98
+LC4D8: .byte $20, $F5, $C4, $20, $90, $C6, $E6, $98, $A5, $98, $C9, $1E, $D0, $04, $A9, $00
+LC4E8: .byte $85, $98, $E6, $42, $E6, $97, $A5, $97, $29, $3F, $85, $97, $60, $A5, $08, $48
+LC4F8: .byte $A5, $09, $C9, $01, $F0, $1C, $A5, $98, $4A, $B0, $17, $A5, $97, $4A, $B0, $12
+LC508: .byte $A5, $97, $85, $3C, $A5, $98, $85, $3E, $A9, $00, $85, $08, $20, $06, $C0, $20
+LC518: .byte $73, $C2, $68, $85, $08, $A5, $97, $85, $3C, $A5, $98, $85, $3E, $20, $AA, $C5
+LC528: .byte $60
 
 ;----------------------------------------------------------------------------------------------------
 
