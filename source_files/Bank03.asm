@@ -452,7 +452,7 @@ LC1E4:  ADC MultRsltUB          ;
 LC1E6:  STA MultRsltUB          ;
 LC1E8:* ASL MultNum2LB          ;
 LC1EA:  ROL MultNum2UB          ;
-LC1EC:  JMP MultiplyLoop        ;($C1CF)
+LC1EC:  JMP MultiplyLoop        ;
 LC1EF:* RTS
 
 ;----------------------------------------------------------------------------------------------------
@@ -996,7 +996,7 @@ LC706:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 AddBlocksToScreen:
-LC707:  LDA BlockClearFlag
+LC707:  LDA TileCounter
 LC709:  BNE $C71A
 
 LC70B:  LDY #$00
@@ -1028,7 +1028,7 @@ LC733:  RTS
 
 LC734:  LDA NTBlockY
 LC736:  ASL
-LC737:  ADC $10
+LC737:  ADC YPosFromCenter
 LC739:  CLC
 LC73A:  ADC #$1E
 LC73C:  STA DivNum1LB
@@ -1041,11 +1041,12 @@ LC749:  STA $49
 LC74B:  LDA NTBlockX
 LC74D:  ASL
 LC74E:  CLC
-LC74F:  ADC $0F
+LC74F:  ADC XPosFromCenter
 LC751:  AND #$3F
 LC753:  STA $3C
 LC755:  STA $48
 LC757:  JSR DoAddrCalc          ;($C5AA)Calculate destination address for GFX data.
+
 LC75A:  LDY #$00
 
 LC75C:  LDA (BlockAddr),Y
@@ -1568,47 +1569,53 @@ LCBF6:  RTS                     ;
 
 CheckForTriggers:
 LCBF7:  LDA StoryFlags          ;Is the dragonlord dead?
-LCBF9:  AND #F_DGNLRD_DEAD      ;If so, branch to check end game trigger.
-LCBFB:  BNE ChkCstlEnd          ;
+LCBF9:  AND #F_DGNLRD_DEAD      ;
+LCBFB:  BNE ChkCstlEnd          ;If so, branch to check end game trigger.
+
 LCBFD:  JMP MovementUpdates     ;($CCF6)Do routine movement checks.
 
 ChkCstlEnd:
-LCC00:  LDA MapNumber
-LCC02:  CMP #MAP_TANTCSTL_GF
-LCC04:  BNE $CC16
-LCC06:  LDA CharYPos
-LCC08:  CMP #$08
-LCC0A:  BNE $CC16
-LCC0C:  LDA CharXPos
-LCC0E:  CMP #$0A
-LCC10:  BEQ $CC19
-LCC12:  CMP #$0B
-LCC14:  BEQ $CC19
-LCC16:  JMP CheckBlockDmg       ;Check to see if current map tile will damage player.
+LCC00:  LDA MapNumber			;Is player on the ground floor of Tantagel castle?
+LCC02:  CMP #MAP_TANTCSTL_GF	;
+LCC04:  BNE +					;If not, branch to check other things.
 
+LCC06:  LDA CharYPos			;Is player in the right Y coordinate to trigger the end game?
+LCC08:  CMP #$08				;
+LCC0A:  BNE +					;If not, branch to check other things.
+
+LCC0C:  LDA CharXPos			;Is player at the first of 2 possible X coordinates to -->
+LCC0E:  CMP #$0A				;trigger the end game?
+LCC10:  BEQ EndGameTriggered	;If not, check second trigger.
+
+LCC12:  CMP #$0B				;Is player at the second of 2 possible X coordinates to -->
+LCC14:  BEQ EndGameTriggered	;trigger the end game? If so, branch to end game sequence.
+
+LCC16:* JMP CheckBlockDmg       ;Check to see if current map tile will damage player.
+
+EndGameTriggered:
 LCC19:  LDA #MSC_NOSOUND        ;Silence music.
 LCC1B:  BRK                     ;
 LCC1C:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LCC1E:  LDA #NPC_STOP
-LCC20:  STA StopNPCMove
+LCC1E:  LDA #NPC_STOP			;Stop the NPCs from moving.
+LCC20:  STA StopNPCMove			;
 
 LCC22:  JSR Dowindow            ;($C6F0)display on-screen window.
 LCC25:  .byte WND_DIALOG        ;Dialog window.
 
-LCC26:  JSR DoDialogHiBlock     ;($C7C5)
-LCC29:  .byte $1B
+LCC26:  JSR DoDialogHiBlock     ;($C7C5)The legends have proven true...
+LCC29:  .byte $1B               ;TextBlock18, entry 11.
 
-LCC2A:  LDA PlayerFlags
-LCC2C:  AND #$02
-LCC2E:  BEQ $CC6A
+LCC2A:  LDA PlayerFlags			;Has the player returned princess Gwaelin?
+LCC2C:  AND #F_RTN_GWAELIN		;
+LCC2E:  BEQ ChkCarryGwaelin		;If not, branch to see if the player is carrying Gwaelin.
 
-LCC30:  LDA #$C7
-LCC32:  STA $8A
-LCC34:  LDA #$27
-LCC36:  STA $8B
-LCC38:  LDA #$00
-LCC3A:  STA $8C
+LCC30:  LDA #$C7				;Set princess Gwaelin at stairs, X position.
+LCC32:  STA GwaelinXPos			;
+LCC34:  LDA #$27				;Set princess Gwaelin at stairs, Y position, facing right.
+LCC36:  STA GwaelinYPos			;
+LCC38:  LDA #$00				;Align princess Gwaelin in stairs before movement.
+LCC3A:  STA GwaelinOffset		;
 
 LCC3C:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCC3F:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
@@ -1616,39 +1623,44 @@ LCC3F:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 LCC42:  JSR DoDialogHiBlock     ;($C7C5)Gwaelin said: please wait...
 LCC45:  .byte $1C               ;TextBlock18, entry 12.
 
+GwaelinMoveLoop:
 LCC46:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCC49:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
-LCC4C:  LDA $8C
-LCC4E:  CLC
-LCC4F:  ADC #$10
-LCC51:  STA $8C
-LCC53:  BCC $CC57
-LCC55:  INC $8A
+LCC4C:  LDA GwaelinOffset		;
+LCC4E:  CLC						;Move Gwaelin 1 pixel right.
+LCC4F:  ADC #$10				;
+LCC51:  STA GwaelinOffset		;Has Gwaelin moved 16 pixels?
+LCC53:  BCC +					;If so, time to increment her X position.
 
-LCC57:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LCC5A:  LDA $8A
-LCC5C:  CMP #$CA
-LCC5E:  BNE $CC46
-LCC60:  LDA #$47
-LCC62:  STA $8B
+LCC55:  INC GwaelinXPos			;increment Gwaelin's xposition.
+
+LCC57:* JSR DoSprites           ;($B6DA)Update player and NPC sprites.
+
+LCC5A:  LDA GwaelinXPos			;Has Gwaelin moved next to the king?
+LCC5C:  CMP #$CA				;
+LCC5E:  BNE GwaelinMoveLoop		;If not, branch to move Gwaelin some more.
+
+LCC60:  LDA #$47				;Change Gwaelin NPC to down facing direction.
+LCC62:  STA GwaelinYPos			;
 LCC64:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LCC67:  JMP $CC8B
+LCC67:  JMP GwaelinJoin			;Jump to Gwaelin dialog.
 
-LCC6A:  LDA PlayerFlags
-LCC6C:  LSR
-LCC6D:  BCC $CCB8
+ChkCarryGwaelin:
+LCC6A:  LDA PlayerFlags			;Is player carrying Gwaelin?
+LCC6C:  LSR						;
+LCC6D:  BCC TaleEnd				;If not, branch to skip Gwaelin ending sequence.
 
-LCC6F:  LDA PlayerFlags
-LCC71:  AND #$FE
-LCC73:  STA PlayerFlags
+LCC6F:  LDA PlayerFlags			;
+LCC71:  AND #$FE				;Clear the flag indicating the player is holding Gwaelin.
+LCC73:  STA PlayerFlags			;
 
-LCC75:  LDA #$CA
-LCC77:  STA $8A
-LCC79:  LDA #$47
-LCC7B:  STA $8B
-LCC7D:  LDA #$00
-LCC7F:  STA $8C
+LCC75:  LDA #$CA				;
+LCC77:  STA GwaelinXPos			;
+LCC79:  LDA #$47				;Place princess Gwaelin next to the king and facing down.
+LCC7B:  STA GwaelinYPos			;
+LCC7D:  LDA #$00				;
+LCC7F:  STA GwaelinOffset		;
 
 LCC81:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCC84:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
@@ -1656,6 +1668,7 @@ LCC84:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 LCC87:  JSR DoDialogHiBlock     ;($C7C5)Gwaelin said: please wait...
 LCC8A:  .byte $1C               ;TextBlock18, entry 12.
 
+GwaelinJoin:
 LCC8B:  JSR DoDialogHiBlock     ;($C7C5)I wish to go with thee...
 LCC8E:  .byte $1D               ;TextBlock18, entry 13.
 
@@ -1677,10 +1690,10 @@ GwaelinAccept:
 LCCA0:  JSR DoDialogLoBlock     ;($C7CB)I'm so happy...
 LCCA3:  .byte $B8               ;TextBlock12, entry 8.
 
-LCCA4:  LDA #$00
-LCCA6:  STA $8A
-LCCA8:  STA $8B
-LCCAA:  STA $8C
+LCCA4:  LDA #$00				;
+LCCA6:  STA GwaelinXPos			;Remove the princess Gwaelin NPC from the screen. -->
+LCCA8:  STA GwaelinYPos			;She will be drawn in the player's arms.
+LCCAA:  STA GwaelinOffset		;
 
 LCCAC:  LDA PlayerFlags         ;
 LCCAE:  ORA #F_GOT_GWAELIN      ;Set flag indicating player is carrying Gwaelin.
@@ -1689,6 +1702,7 @@ LCCB0:  STA PlayerFlags         ;
 LCCB2:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCCB5:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 
+TaleEnd:
 LCCB8:  JSR DoDialogHiBlock     ;($C7C5)And thus the tale comes to an end...
 LCCBB:  .byte $22               ;TextBlock19, entry 2.
 
@@ -1697,25 +1711,27 @@ LCCBE:* JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCCC1:  DEX                     ;Has 120 frames passed?
 LCCC2:  BNE -                   ;If not, branch to wait another frame.
 
-LCCC4:  LDA #WND_DIALOG
+LCCC4:  LDA #WND_DIALOG			;Remove the dialog window.
 LCCC6:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-LCCC9:  LDA #$01
-LCCCB:  STA CharDirection
+
+LCCC9:  LDA #$01				;Show the player facing right.
+LCCCB:  STA CharDirection		;
 LCCCE:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 
 LCCD1:  LDA #$1E                ;Prepare to wait 30 frames(1/2 second).
 LCCD3:  JSR WaitMultiNMIs       ;($C170)Wait for a defined number of frames.
 
-LCCD6:  LDA #$02
-LCCD8:  STA CharDirection
+LCCD6:  LDA #$02				;Draw the player facing down.
+LCCD8:  STA CharDirection		;
 LCCDB:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LCCDE:  LDX #$1E
 
+LCCDE:  LDX #$1E                ;Prepare to wait 30 frames(1/2 second).
 LCCE0:* JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LCCE3:  DEX
-LCCE4:  BNE -
-LCCE6:  LDA #$FF
-LCCE8:  STA DisplayedLevel
+LCCE3:  DEX						;Has 30 frames passed?
+LCCE4:  BNE -					;If not, branch to wait another frame.
+
+LCCE6:  LDA #$FF				;Indicate the guards with trumpets should be shown.
+LCCE8:  STA DisplayedLevel		;
 LCCEA:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 
 LCCED:  BRK                     ;Show end credits.
@@ -1934,10 +1950,10 @@ LCE08:  BNE $CE17
 
 LCE0A:  JSR WaitForNMI          ;($FF74)Three frame pause when walking on hill block.
 LCE0D:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LCE10:  JSR WaitForNMI          ;($FF74)
+LCE10:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
-LCE13:  LDA #BLK_TOWN
-LCE15:  BNE ChkFight2
+LCE13:  LDA #$07				;Twice as likely to get into a fight in the sandy areas!
+LCE15:  BNE ChkFight2			;Branch always to Recheck if a fight will happen.
 
 LCE17:  CMP #BLK_TREES
 LCE19:  BEQ ChkRandomFight      ;($CE5F)Check for enemy encounter.
@@ -1958,13 +1974,13 @@ LCE2D:  BRK                     ;
 LCE2E:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
 LCE30:  LDA #$03
-LCE32:  STA $42
+LCE32:  STA GenByte42
 
 LCE34:* JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCE37:  JSR RedFlashScreen      ;($EE14)Flash the screen red.
 LCE3A:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCE3D:  JSR LoadRegBGPal        ;($EE28)Load the normal background palette.
-LCE40:  DEC $42
+LCE40:  DEC GenByte42
 LCE42:  BNE -
 
 LCE44:  LDA HitPoints

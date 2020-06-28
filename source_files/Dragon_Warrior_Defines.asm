@@ -268,7 +268,6 @@
 .alias BlkRemoveFlgs    $4C     ;Lower nibble is flags for tiles to keep when changing a map block.
                                 ;1-upper left, 2-upper right, 4-lower left, 8-lower right.
 .alias TileCounter      $4D     ;Used to count tiles when modifying blocks.
-.alias BlockClearFlag   $4D     ;Used to indicate block data should be cleared.
 .alias NPCLoopCounter   $4E     ;Counter for controlling NPC update loops.
 .alias FrameCounter     $4F     ;Normally increments every frame. used for timing.
 
@@ -281,6 +280,10 @@
 .alias NPCXPos          $51     ;Through $8A. NPC X block position on current map. Also NPC type.
 .alias NPCYPos          $52     ;Through $8B. NPC Y block position on current map. Also NPC direction.
 .alias NPCMidPos        $53     ;Through $8C. NPC offset from current tile. Used only when moving.
+
+.alias GwaelinXPos      $8A     ;Princess Gwaelin's X position at the end of the game.
+.alias GwaelinYPos      $8B		;Princess Gwaelin's Y position at the end of the game.
+.alias GwaelinOffset    $8C		;Princess Gwaelin's moving offset at the end of the game.
 
 .alias NPCUpdateCntr    $8D     ;Counts 0 to 4. Used to update NPCs.
 .alias _CharXPos        $8E     ;Copy of player's X position.
