@@ -4,6 +4,7 @@
 
 ;--------------------------------------[ Forward declarations ]--------------------------------------
 
+.alias ModAttribBits            $C006
 .alias GetNPCSpriteIndex        $C0F4
 .alias WordMultiply             $C1C9
 .alias ByteDivide               $C1F0
@@ -4284,9 +4285,11 @@ LAEE5:  LDA $49
 LAEE7:  STA $3E
 LAEE9:  LDA ($40),Y
 LAEEB:  STA PPUDataByte
-LAEED:  JSR $C006
+LAEED:  JSR ModAttribBits       ;($C006)Set the attribute table bits for a nametable block.
+
 LAEF0:  LDA PPUHorzVert
 LAEF2:  BNE $AEFE
+
 LAEF4:  LDA PPUAddrUB
 LAEF6:  CLC
 LAEF7:  ADC #$20

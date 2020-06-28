@@ -127,6 +127,8 @@
 
 .alias WndTypeCopy      $23     ;Temporary copy of current window type.
 
+.alias NPCXCheck        $22     ;X position to check for NPC.
+.alias NPCYCheck        $23     ;Y position to check for NPC.
 .alias NPCCounter       $24     ;Counter for finding direction of character sprites.
 .alias NPCOffset        $25     ;Offset to NPC position data.
 .alias NPCNewFace       $25     ;New direction NPC should face to talk to player.
@@ -258,7 +260,7 @@
                                 ;If bit 1 is set   -> max HP is reduced by 10%.
 
 .alias MapNumber        $45     ;Current map player is on.
-
+.alias JoypadBit        $46     ;LSB Contains current bit read from joypad 1.
 .alias JoypadBtns       $47     ;Captured button presses on controller 1.
 
 .alias NTBlockX         $4A     ;Nametable X block position, #$00-#$1F(1/2 X tile position).
@@ -266,6 +268,7 @@
 .alias BlkRemoveFlgs    $4C     ;Lower nibble is flags for tiles to keep when changing a map block.
                                 ;1-upper left, 2-upper right, 4-lower left, 8-lower right.
 .alias TileCounter      $4D     ;Used to count tiles when modifying blocks.
+.alias BlockClearFlag   $4D     ;Used to indicate block data should be cleared.
 .alias NPCLoopCounter   $4E     ;Counter for controlling NPC update loops.
 .alias FrameCounter     $4F     ;Normally increments every frame. used for timing.
 
@@ -1243,6 +1246,11 @@
 .alias MAP_TOWN         $10     ;Town/castle map.
 .alias MAP_DUNGEON      $20     ;Dungeon map.
 
+;Palette addresses.
+.alias PAL_BKG_LB       $00     ;Lower byte starting address of background palettes.
+.alias PAL_SPR_LB       $10     ;Lower byte starting address of sprite palettes.
+.alias PAL_UB           $3F     ;Upper byte address of all palettes.
+
 ;Misc. constants.
 .alias NT_NAMETBL0_LB   $00     ;Nametable 0 base address lower byte.
 .alias NT_NAMETBL0_UB   $20     ;Nametable 0 base address upper byte.
@@ -1262,3 +1270,4 @@
 .alias ITM_TBL_END      $FD     ;End of shop items list.
 .alias PAL_LOAD_BG      $FF     ;Load background palette data.
 .alias PAL_SKIP_BG      $00     ;Skip loading background palette.
+.alias PAL_BLACK        $0F     ;Black background palette value.

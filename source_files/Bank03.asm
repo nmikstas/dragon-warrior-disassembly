@@ -48,36 +48,44 @@
 LC000:  JSR $C5E0               ;Not used.
 LC003:  JMP $C009               ;
 
+;----------------------------------------------------------------------------------------------------
+
+ModAttribBits:
 LC006:  JSR CalcAttribAddr      ;($C5E4)Calculate attribute table address for given nametable byte.
 
-LC009:  TYA
-LC00A:  PHA
-LC00B:  LDA $3E
-LC00D:  AND #$02
-LC00F:  ASL
-LC010:  STA $3D
-LC012:  LDA $3C
-LC014:  AND #$02
-LC016:  CLC
-LC017:  ADC $3D
-LC019:  TAY
-LC01A:  LDA #$FC
-LC01C:  CPY #$00
-LC01E:  BEQ $C027
+LC009:  TYA                     ;Save the value of Y on the stack.
+LC00A:  PHA                     ;
 
-LC020:  SEC
-LC021:  ROL
-LC022:  ASL PPUDataByte
-LC024:  DEY
-LC025:  BNE $C020
+LC00B:  LDA NTYPos              ;
+LC00D:  AND #$02                ;
+LC00F:  ASL                     ;Load bit shift counter with proper index to bit pair to -->
+LC010:  STA GenByte3D           ;change in the attribute table(0, 2, 4 or 6).
+LC012:  LDA NTXPos              ;
+LC014:  AND #$02                ;
+LC016:  CLC                     ;
+LC017:  ADC GenByte3D           ;
+LC019:  TAY                     ;
 
-LC027:  AND (PPUBufPtr),Y
-LC029:  ORA PPUDataByte
-LC02B:  STA (PPUBufPtr),Y
-LC02D:  STA PPUDataByte
-LC02F:  PLA
-LC030:  TAY
-LC031:  RTS
+LC01A:  LDA #$FC                ;Load bitmask for clearing selected nametable bits.
+LC01C:  CPY #$00                ;Is bit counter 0?
+LC01E:  BEQ SetAttribBits       ;If so, branch. No need to do any shifting.
+
+AttribLoop:
+LC020:  SEC                     ;
+LC021:  ROL                     ;This loop shifts the attribute tabe bit pair into position -->
+LC022:  ASL PPUDataByte         ;while decrementing the counter.
+LC024:  DEY                     ;Do attribute table bits still need to be shifted?
+LC025:  BNE AttribLoop          ;If so, branch to shift them 1 more bit.
+
+SetAttribBits:
+LC027:  AND (PPUBufPtr),Y       ;
+LC029:  ORA PPUDataByte         ;Update the attribute table byte in both the PPU buffer and -->
+LC02B:  STA (PPUBufPtr),Y       ;the PPU data byte.
+LC02D:  STA PPUDataByte         ;
+
+LC02F:  PLA                     ;
+LC030:  TAY                     ;Restore the value of Y from the stack and exit.
+LC031:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -106,7 +114,7 @@ LC049:  RTS                     ;Set NPC facing right.
 ;----------------------------------------------------------------------------------------------------
 
 NPCFacePlayer:
-LC04A:  STA NPCNumber           ;Save a copy of the NPC number.
+LC04A:  STA NPCNumber           ;Save a copy of the NPC index.
 LC04C:  TYA                     ;
 LC04D:  PHA                     ;Save a copy of Y and X on the stack.
 LC04E:  TXA                     ;
@@ -117,80 +125,93 @@ LC052:  LDA CharDirection       ;Load player's direction.
 LC055:  JSR NPCNewDir           ;($C032)Get direction NPC should face to talk to player.
 LC058:  STA NPCNewFace          ;Save value of new NPC's direction.
 
-LC05A:  LSR
-LC05B:  ROR
-LC05C:  ROR
-LC05D:  ROR
-LC05E:  STA $24
+LC05A:  LSR                     ;
+LC05B:  ROR                     ;Move NPC facing bits into the proper location(Bits 5 and 6).
+LC05C:  ROR                     ;
+LC05D:  ROR                     ;
+LC05E:  STA GenByte24           ;Save the bits temporarily.
 
-LC060:  LDA NPCYPos,X
-LC062:  AND #$9F
-LC064:  ORA $24
-LC066:  STA NPCYPos,X
+LC060:  LDA NPCYPos,X           ;
+LC062:  AND #$9F                ;Remove existing NPC direction bits.
+LC064:  ORA GenByte24           ;OR in the new direction bits.
+LC066:  STA NPCYPos,X           ;
 
-LC068:  LDA #$00
-LC06A:  STA $27
-LC06C:  LDY $0200
-LC06F:  LDX $0203
+LC068:  LDA #$00                ;Need to loop twice. Once for NPCs right next to player -->
+LC06A:  STA NPCSpriteCntr       ;and once for NPCs behind counters.
 
-LC072:  LDA CharDirection
-LC075:  BNE $C07F
-LC077:  TYA
-LC078:  SEC
-LC079:  SBC #$10
-LC07B:  TAY
-LC07C:  JMP $C09C
+LC06C:  LDY SpriteRAM           ;Get player's Y sprite position.
+LC06F:  LDX SpriteRAM+3         ;Get player's X sprite position.
 
-LC07F:  CMP #DIR_RIGHT
-LC081:  BNE $C08B
+ChkPlyrDirection:
+LC072:  LDA CharDirection       ;Is player facing up?
+LC075:  BNE ChkPlyrRight        ;If not, branch to check other player directions.
 
-LC083:  TXA
-LC084:  CLC
-LC085:  ADC #$10
-LC087:  TAX
-LC088:  JMP $C09C
-LC08B:  CMP #DIR_DOWN
-LC08D:  BNE $C097
+LC077:  TYA                     ;
+LC078:  SEC                     ;Player is facing up. Prepare to search for NPC data -->
+LC079:  SBC #$10                ;that is above player.
+LC07B:  TAY                     ;
+LC07C:  JMP CheckNPCPosition    ;
 
-LC08F:  TYA
-LC090:  CLC
-LC091:  ADC #$10
-LC093:  TAY
-LC094:  JMP $C09C
+ChkPlyrRight:
+LC07F:  CMP #DIR_RIGHT          ;Is player facing right?
+LC081:  BNE ChkPlyrDown         ;If not, branch to check other player directions.
 
-LC097:  TXA
-LC098:  SEC
-LC099:  SBC #$10
-LC09B:  TAX
+LC083:  TXA                     ;
+LC084:  CLC                     ;Player is facing right. Prepare to search for NPC data -->
+LC085:  ADC #$10                ;that is right of player.
+LC087:  TAX                     ;
+LC088:  JMP CheckNPCPosition    ;
 
-LC09C:  STX $22
-LC09E:  STY $23
+ChkPlyrDown:
+LC08B:  CMP #DIR_DOWN           ;Is player facing down?
+LC08D:  BNE PlyrLeft            ;If not, branch. Player must be facing left.
 
-LC0A0:  LDY #$10
+LC08F:  TYA                     ;
+LC090:  CLC                     ;Player is facing down. Prepare to search for NPC data -->
+LC091:  ADC #$10                ;that is below player.
+LC093:  TAY                     ;
+LC094:  JMP CheckNPCPosition    ;
 
-LC0A2:  LDA SpriteRAM,Y
-LC0A5:  CMP $23
-LC0A7:  BNE $C0B0
+PlyrLeft:
+LC097:  TXA                     ;
+LC098:  SEC                     ;Player is facing left. Prepare to search for NPC data -->
+LC099:  SBC #$10                ;that is left of player.
+LC09B:  TAX                     ;
 
-LC0A9:  LDA SpriteRAM+3,Y
-LC0AC:  CMP $22
-LC0AE:  BEQ $C0C6
+CheckNPCPosition:
+LC09C:  STX NPCXCheck           ;Save X and Y position data of NPC to change.
+LC09E:  STY NPCYCheck           ;
 
-LC0B0:  TYA
-LC0B1:  CLC
-LC0B2:  ADC #$10
-LC0B4:  TAY
-LC0B5:  BNE $C0A2
+LC0A0:  LDY #$10                ;Prepare to search the NPC sprites for location.
 
-LC0B7:  LDX $22
-LC0B9:  LDY $23
-LC0BB:  LDA $27
-LC0BD:  BNE $C0EF
-LC0BF:  LDA #$01
-LC0C1:  STA $27
-LC0C3:  JMP $C072
+NPCSearchLoop:
+LC0A2:  LDA SpriteRAM,Y         ;Has the sprite Y data for the desired NPC been found?
+LC0A5:  CMP NPCYCheck           ;
+LC0A7:  BNE +                   ;If not, branch to move the the next NPC sprite data.
 
-LC0C6:  STY NPCSprtRAMInd
+LC0A9:  LDA SpriteRAM+3,Y       ;Has the sprite X data for the desired NPC been found?
+LC0AC:  CMP NPCXCheck           ;
+LC0AE:  BEQ NPCFound            ;If not, branch to move the the next NPC sprite data.
+
+LC0B0:* TYA                     ;This is not the sprite data for the desired NPC. -->
+LC0B1:  CLC                     ;Move to the next set of NPC sprite data. -->
+LC0B2:  ADC #$10                ;4 bytes of data and 4 sprites per NPC = 16 bytes.
+
+LC0B4:  TAY                     ;Has all the sprite data been searched?
+LC0B5:  BNE NPCSearchLoop       ;If not, branch to check more sprite data.
+
+LC0B7:  LDX NPCXCheck           ;Reload the NPC X and Y position data.
+LC0B9:  LDY NPCYCheck           ;
+
+LC0BB:  LDA NPCSpriteCntr       ;Is this the second time through the search loop?
+LC0BD:  BNE NPCDirEnd           ;If so, branch to end. NPC not found.
+
+LC0BF:  LDA #$01                ;Prepare to run the loop a second time.
+LC0C1:  STA NPCSpriteCntr       ;
+LC0C3:  JMP ChkPlyrDirection    ;($C072)Need to check for NPCs behind counters.
+
+NPCFound:
+LC0C6:  STY NPCSprtRAMInd       ;NPC sprites found. Save index to sprites.
 
 LC0C8:  LDA #$04                ;Prepare to process 4 sprites for this NPC.
 LC0CA:  STA NPCSpriteCntr       ;
@@ -222,6 +243,7 @@ LC0EA:  INY                     ;
 LC0EB:  DEC NPCSpriteCntr       ;
 LC0ED:  BNE NPCLoadNxtSprt      ;If not, branch to load more sprite data.
 
+NPCDirEnd:
 LC0EF:  PLA                     ;
 LC0F0:  TAX                     ;
 LC0F1:  PLA                     ;Restore X and Y from the stack.
@@ -600,37 +622,38 @@ LC528: .byte $60
 ;----------------------------------------------------------------------------------------------------
 
 PalFadeIn:
-LC529:  LDA #$30
-LC52B:  STA PalModByte
+LC529:  LDA #$30                ;Prepare to switch through 4 different palettes.
+LC52B:  STA PalModByte          ;This will create a screen fade in effect.
 
 FadeInLoop:
-LC52D:  LDX #$04
+LC52D:  LDX #$04                ;Prepare to pause for 4 frames.
 LC52F:* JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LC532:  DEX
-LC533:  BNE -
+LC532:  DEX                     ;Have 4 frames passed?
+LC533:  BNE -                   ;If not, branch to wait another frame.
 
-LC535:  LDA $3E
-LC537:  STA PalPtrLB
-LC539:  LDA $3F
-LC53B:  STA PalPtrUB
+LC535:  LDA SprtPalPtrLB        ;
+LC537:  STA PalPtrLB            ;Load base address of desired sprite palette data.
+LC539:  LDA SprtPalPtrUB        ;
+LC53B:  STA PalPtrUB            ;
 LC53D:  JSR PrepSPPalLoad       ;($C632)Load sprite palette data into PPU buffer.
 
-LC540:  LDA LoadBGPal
-LC542:  BEQ $C54F
+LC540:  LDA LoadBGPal           ;Does background need to be faded in?
+LC542:  BEQ +                   ;If not, branch to skip.
 
-LC544:  LDA $40
-LC546:  STA PalPtrLB
-LC548:  LDA $41
-LC54A:  STA PalPtrUB
+LC544:  LDA BGPalPtrLB          ;
+LC546:  STA PalPtrLB            ;Load base address of desired background palette data.
+LC548:  LDA BGPalPtrUB          ;
+LC54A:  STA PalPtrUB            ;
 LC54C:  JSR PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
 
-LC54F:  LDA PalModByte
-LC551:  SEC
-LC552:  SBC #$10
-LC554:  STA PalModByte
-LC556:  CMP #$F0
-LC558:  BNE FadeInLoop
-LC55A:  RTS
+LC54F:* LDA PalModByte          ;
+LC551:  SEC                     ;Decrement palette fade in counter.
+LC552:  SBC #$10                ;
+LC554:  STA PalModByte          ;
+
+LC556:  CMP #$F0                ;Is fade in complete?
+LC558:  BNE FadeInLoop          ;If not, branch to continue fade in routine.
+LC55A:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -690,8 +713,8 @@ LC5A2:  STA XPosFromLeft        ;Set MSB to determine target later.
 LC5A4:  BNE DoAddrCalc          ;Branch always.
 
 Block2TileConv:
-LC5A6:  ASL XPosFromLeft
-LC5A8:  ASL YPosFromTop
+LC5A6:  ASL XPosFromLeft        ;*2. Blocks are 2 tiles wide. 
+LC5A8:  ASL YPosFromTop         ;*2. Blocks are 2 tiles tall.
 
 DoAddrCalc:
 LC5AA:  LDA YPosFromTop         ;Put Y position in upper address byte.  This is 8 times the-->
@@ -712,26 +735,28 @@ LC5C2:  CLC                     ;to get the proper offset in the current row.
 LC5C3:  ADC PPUBufPtrLB         ;
 LC5C5:  STA PPUBufPtrLB         ;
 
-LC5C7:  PHP
+LC5C7:  PHP                     ;Save processor status on stack.
 
-LC5C8:  LDA XPosFromLeft
-LC5CA:  BPL $C5D0
+LC5C8:  LDA XPosFromLeft        ;Is data being saved to the RAM buffer?
+LC5CA:  BPL +                   ;If not, branch.
 
-LC5CC:  LDA #$04
-LC5CE:  BNE $C5DA
+LC5CC:  LDA #$04                ;Set upper byte or RAM buffer address.
+LC5CE:  BNE EndPPUCalcAddr      ;Branch always.
 
-LC5D0:  AND #$20
-LC5D2:  BNE $C5D8
+LC5D0:* AND #$20                ;Is data being written to nametable 1?
+LC5D2:  BNE +                   ;If so, branch.
 
-LC5D4:  LDA #NT_NAMETBL0_UB
-LC5D6:  BNE $C5DA
+LC5D4:  LDA #NT_NAMETBL0_UB     ;Load upper address byte of nametable 0.
+LC5D6:  BNE EndPPUCalcAddr      ;Branch always.
 
-LC5D8:  LDA #NT_NAMETBL1_UB
+LC5D8:* LDA #NT_NAMETBL1_UB     ;Load upper address byte of namteable 1.
 
-LC5DA:  PLP
-LC5DB:  ADC PPUAddrUB
-LC5DD:  STA PPUAddrUB
-LC5DF:  RTS
+EndPPUCalcAddr:
+LC5DA:  PLP                     ;Restore processor status from stack.
+
+LC5DB:  ADC PPUAddrUB           ;
+LC5DD:  STA PPUAddrUB           ;Save proper PPU upper address byte and exit.
+LC5DF:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -764,35 +789,42 @@ LC601:  BNE ExitAttribCalc      ;Branch always.
 LC603:* LDA #$07                ;Lower nibble of upper byte(attribute table for nametable 1).
 
 ExitAttribCalc:
-LC605:  STA PPUAddrUB           ;Lower nibble of upper byte(attribute table for nametable 1).
+LC605:  STA PPUAddrUB           ;Store calculated upper byte.
 LC607:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
 GetJoypadStatus:
-LC608:  LDA $3C
-LC60A:  PHA
-LC60B:  LDA $3D
-LC60D:  PHA
+LC608:  LDA GenByte3C           ;
+LC60A:  PHA                     ;Prepare to update the random number by first saving registers -->
+LC60B:  LDA GenByte3D           ;that are affected by the random number calculationa.
+LC60D:  PHA                     ;
+
 LC60E:  JSR UpdateRandNum       ;($C55B)Get random number.
-LC611:  PLA
-LC612:  STA $3D
-LC614:  PLA
-LC615:  STA $3C
-LC617:  LDA #$01
-LC619:  STA CPUJoyPad1
-LC61C:  LDA #$00
-LC61E:  STA CPUJoyPad1
-LC621:  LDY #$08
-LC623:  LDA CPUJoyPad1
-LC626:  STA $46
-LC628:  LSR
-LC629:  ORA $46
-LC62B:  LSR
-LC62C:  ROR JoypadBtns
-LC62E:  DEY
-LC62F:  BNE $C623
-LC631:  RTS
+
+LC611:  PLA                     ;
+LC612:  STA GenByte3D           ;Restore the registers affected by random number calculations.
+LC614:  PLA                     ;
+LC615:  STA GenByte3C           ;
+
+LC617:  LDA #$01                ;
+LC619:  STA CPUJoyPad1          ;Reset controller port 1 in preparation for 8 reads.
+LC61C:  LDA #$00                ;
+LC61E:  STA CPUJoyPad1          ;
+
+LC621:  LDY #$08                ;Prepare to read 8 bits from controller port 1.
+
+JoypadReadLoop:
+LC623:  LDA CPUJoyPad1          ;Read joypad bit from controller hardwars.
+LC626:  STA JoypadBit           ;
+LC628:  LSR                     ;
+LC629:  ORA JoypadBit           ;Read the Famicom expansion bit(not used by NES).
+LC62B:  LSR                     ;
+LC62C:  ROR JoypadBtns          ;Rotate bit into the joypad status register.
+LC62E:  DEY                     ;Have 8 bits been read from the controller?
+LC62F:  BNE JoypadReadLoop      ;If not, branch to get another bit.
+
+LC631:  RTS                     ;Done reading the controller bits.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -800,59 +832,72 @@ PrepSPPalLoad:
 LC632:  LDA #$31                ;Max. 48 buffer spots can be used.
 LC634:  JSR WaitForPPUBufSpace  ;($C587)Wait for space in PPU buffer.
 
-LC637:  LDA #$10
-LC639:  STA PPUAddrLB
-LC63B:  BNE LoadPalData
+LC637:  LDA #PAL_SPR_LB         ;Sprite palettes start at address $3F10.
+LC639:  STA PPUAddrLB           ;
+LC63B:  BNE LoadPalData         ;Branch always.
 
 PrepBGPalLoad:
 LC63D:  LDA #$61                ;Max. 96 buffer spots can be used.
 LC63F:  JSR WaitForPPUBufSpace  ;($C587)Wait for space in PPU buffer.
 
-LC642:  LDA #$00
-LC644:  STA PPUAddrLB
+LC642:  LDA #PAL_BKG_LB         ;Background palettes start at address $3F00.
+LC644:  STA PPUAddrLB           ;
 
 LoadPalData:
-LC646:  LDA #$3F
-LC648:  STA PPUAddrUB
-LC64A:  LDY #$00
-LC64C:  LDA #$0F
-LC64E:  STA PPUDataByte
+LC646:  LDA #PAL_UB             ;Upper byte of palette addresses are all $3F.
+LC648:  STA PPUAddrUB           ;
+
+LC64A:  LDY #$00                ;Prepare to add color data to 4 palettes.
+
+PalDataLoop:
+LC64C:  LDA #PAL_BLACK          ;First color of every palette is always black.
+LC64E:  STA PPUDataByte         ;
+
 LC650:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
-LC653:  JSR $C661
-LC656:  JSR $C661
-LC659:  JSR $C661
-LC65C:  CPY #$0C
-LC65E:  BNE $C64C
-LC660:  RTS
+LC653:  JSR AddPalByte          ;($C661)Add a byte of palette data to the PPU buffer.
+LC656:  JSR AddPalByte          ;($C661)Add a byte of palette data to the PPU buffer.
+LC659:  JSR AddPalByte          ;($C661)Add a byte of palette data to the PPU buffer.
+LC65C:  CPY #$0C                ;Have all the palettes been processed?
+LC65E:  BNE PalDataLoop         ;If not, branch to add color data to another palette.
+LC660:  RTS                     ;
 
-LC661:  LDA PPUAddrLB
-LC663:  CMP #$01
-LC665:  BEQ $C671
-LC667:  CMP #$03
-LC669:  BNE $C680
-LC66B:  LDA EnNumber
-LC66D:  CMP #EN_DRAGONLORD2
-LC66F:  BNE $C680
+AddPalByte:
+LC661:  LDA PPUAddrLB           ;Is this the palette color used for text box borders?
+LC663:  CMP #$01                ;
+LC665:  BEQ ChkLowHPPal         ;If so, branch to see if HP is low for special color.
 
-LC671:  LDA DisplayedMaxHP
-LC673:  LSR
-LC674:  LSR
-LC675:  CLC
-LC676:  ADC #$01
-LC678:  CMP HitPoints
-LC67A:  BCC $C680
-LC67C:  LDA #$26
-LC67E:  BNE $C682
+LC667:  CMP #$03                ;Is this the third palette color?
+LC669:  BNE ChkPalFade          ;If not, branch to move on.
 
-LC680:  LDA (PalPtrLB),Y
-LC682:  SEC
-LC683:  SBC PalModByte
-LC685:  BCS $C689
-LC687:  LDA #$0F
-LC689:  STA PPUDataByte
+LC66B:  LDA EnNumber            ;Is player fighting the final boss?
+LC66D:  CMP #EN_DRAGONLORD2     ;If not, branch to move on.
+LC66F:  BNE ChkPalFade          ;Maybe this was used for a special palette no longer in the game?
+
+ChkLowHPPal:
+LC671:  LDA DisplayedMaxHP      ;
+LC673:  LSR                     ;
+LC674:  LSR                     ;Is player's health less than 1/8 of max HP?
+LC675:  CLC                     ;If so, load red palette color instead of white.
+LC676:  ADC #$01                ;
+LC678:  CMP HitPoints           ;
+LC67A:  BCC ChkPalFade          ;
+
+LC67C:  LDA #$26                ;Load red palette color for low health.
+LC67E:  BNE +                   ;
+
+ChkPalFade:
+LC680:  LDA (PalPtrLB),Y        ;Get current palette color.
+
+LC682:* SEC                     ;If fade in/fade out is currently active, subtract the-->
+LC683:  SBC PalModByte          ;current fade offset value from color to make it darker.
+LC685:  BCS +                   ;
+
+LC687:  LDA #PAL_BLACK          ;Fully faded out. Set all palette colors to black.
+
+LC689:* STA PPUDataByte         ;Save final palette color.
 LC68B:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
-LC68E:  INY
-LC68F:  RTS
+LC68E:  INY                     ;Move to next palette byte.
+LC68F:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -951,29 +996,34 @@ LC706:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 AddBlocksToScreen:
-LC707:  LDA $4D
+LC707:  LDA BlockClearFlag
 LC709:  BNE $C71A
+
 LC70B:  LDY #$00
 LC70D:  LDA (BlockAddr),Y
 LC70F:  CMP #$FF
 LC711:  BEQ $C71A
+
 LC713:  CMP #$FE
 LC715:  BEQ $C71A
+
 LC717:  JMP $C734
 
-LC71A:  LDA #$00
-LC71C:  STA BlkRemoveFlgs
-LC71E:  STA PPUHorzVert
+LC71A:  LDA #$00                ;
+LC71C:  STA BlkRemoveFlgs       ;Remove no tiles from the current block.
+LC71E:  STA PPUHorzVert         ;PPU column write.
+
 LC720:  JSR ModMapBlock         ;($AD66)Change block on map.
+
 LC723:  LDY #$00
 LC725:  LDA #$FF
-LC727:  STA ($99),Y
+LC727:  STA (BlockAddr),Y
 LC729:  INY
-LC72A:  STA ($99),Y
+LC72A:  STA (BlockAddr),Y
 LC72C:  LDY #$20
-LC72E:  STA ($99),Y
+LC72E:  STA (BlockAddr),Y
 LC730:  INY
-LC731:  STA ($99),Y
+LC731:  STA (BlockAddr),Y
 LC733:  RTS
 
 LC734:  LDA NTBlockY
@@ -998,14 +1048,15 @@ LC755:  STA $48
 LC757:  JSR DoAddrCalc          ;($C5AA)Calculate destination address for GFX data.
 LC75A:  LDY #$00
 
-LC75C:  LDA ($99),Y
+LC75C:  LDA (BlockAddr),Y
 LC75E:  STA PPUDataByte
 LC760:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
-LC763:  INY
 
-LC764:  LDA ($99),Y
+LC763:  INY
+LC764:  LDA (BlockAddr),Y
 LC766:  STA PPUDataByte
 LC768:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
+
 LC76B:  LDA PPUAddrLB
 LC76D:  CLC
 LC76E:  ADC #$1E
@@ -1013,13 +1064,15 @@ LC770:  STA PPUAddrLB
 LC772:  BCC $C776
 LC774:  INC PPUAddrUB
 LC776:  LDY #$20
-LC778:  LDA ($99),Y
+LC778:  LDA (BlockAddr),Y
 LC77A:  STA PPUDataByte
 LC77C:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
+
 LC77F:  INY
-LC780:  LDA ($99),Y
+LC780:  LDA (BlockAddr),Y
 LC782:  STA PPUDataByte
 LC784:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
+
 LC787:  LDA $48
 LC789:  STA $3C
 LC78B:  LDA $49
@@ -1028,19 +1081,27 @@ LC78F:  LDY #$00
 LC791:  LDA ($99),Y
 LC793:  CMP #$C1
 LC795:  BCS $C79B
+
 LC797:  LDA #$00
 LC799:  BEQ $C7AD
+
 LC79B:  CMP #$CA
 LC79D:  BCS $C7A3
+
 LC79F:  LDA #$01
 LC7A1:  BNE $C7AD
+
 LC7A3:  CMP #$DE
 LC7A5:  BCS $C7AB
+
 LC7A7:  LDA #$02
 LC7A9:  BNE $C7AD
+
 LC7AB:  LDA #$03
+
 LC7AD:  STA PPUDataByte
-LC7AF:  JSR $C006
+LC7AF:  JSR ModAttribBits       ;($C006)Set the attribute table bits for a nametable block.
+
 LC7B2:  LDA PPUAddrUB
 LC7B4:  CLC
 LC7B5:  ADC #$20
@@ -1485,16 +1546,18 @@ LCBD4:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCBD7:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 LCBDA:  JMP $CBCD
 
+FrameSyncLoop:
 LCBDD:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LCBE0:  LDA FrameCounter
 LCBE2:  AND #$0F
 LCBE4:  CMP #$01
-LCBE6:  BEQ $CBEE
-LCBE8:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LCBEB:  JMP $CBDD
+LCBE6:  BEQ +
 
-LCBEE:  LDA #NPC_STOP           ;Stop NPCs from moving on the screen.
+LCBE8:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
+LCBEB:  JMP FrameSyncLoop       ;($CBDD)Wait for frame 1 before loading dialog windows.
+
+LCBEE:* LDA #NPC_STOP           ;Stop NPCs from moving on the screen.
 LCBF0:  STA StopNPCMove         ;
 
 LCBF2:  JSR Dowindow            ;($C6F0)display on-screen window.
@@ -1505,7 +1568,7 @@ LCBF6:  RTS                     ;
 
 CheckForTriggers:
 LCBF7:  LDA StoryFlags          ;Is the dragonlord dead?
-LCBF9:  AND #F_DGNLRD_DEAD      ;If so, branch to continue checks.
+LCBF9:  AND #F_DGNLRD_DEAD      ;If so, branch to check end game trigger.
 LCBFB:  BNE ChkCstlEnd          ;
 LCBFD:  JMP MovementUpdates     ;($CCF6)Do routine movement checks.
 
@@ -2400,7 +2463,7 @@ LD0FD:  STA GenPtr3CUB          ;
 LD0FF:  JMP PrepTalk            ;($D11C)Do next phase of NPC dialog.
 
 CheckMobNPC:
-LD102:  INY                     ;+2.  Need to check 3rd byte in table entry.
+LD102:  INY                     ;+2. Need to check 3rd byte in table entry.
 LD103:  INY                     ;
 
 LD104:  LDA MapNumber           ;Subtract 4 from the map number and make sure it is-->
