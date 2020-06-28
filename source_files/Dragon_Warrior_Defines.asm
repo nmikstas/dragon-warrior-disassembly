@@ -1266,6 +1266,7 @@
 .alias WND_ABORT        $FF     ;Window cancelled.
 .alias STRT_FULL_HP     $78     ;Restore HP and MP on restart.
 .alias STRT_NO_HP       $AB     ;Do not restore HP and MP on restart.
+.alias IS_CURSED        $C0     ;Bitmask for checking if player is cursed.
 .alias WND_YES          $00     ;Yes selected from Yes/no window.
 .alias WND_NO           $01     ;No selected from Yes/no window.
 .alias WND_BUY          $00     ;Buy selected from Buy/sell window.

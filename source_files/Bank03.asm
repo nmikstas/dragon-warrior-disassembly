@@ -26,6 +26,7 @@
 .alias EnSPPalsPtr              $9A2A
 .alias CombatBckgndGFX          $9C8F
 .alias SpellCostTbl             $9D53
+.alias ClearWinBufRAM           $A788
 .alias RemoveWindow             $A7A2
 .alias GetBlockID               $AC17
 .alias ModMapBlock              $AD66
@@ -945,31 +946,9 @@ LC6C8:  RTS                     ;
 ;The following functions do not appear to be used. Functions from Dragon Quest.
 
 DQFunc04:
-LC6C9:  LDX #$00                ;Unused Dragon's Quest code.
-LC6CB:  LDA #TL_BLANK_TILE1     ;
-
-DQBranch0F:
-LC6CD:  STA $AF,X               ;
-LC6CF:  INX                     ;
-LC6D0:  CPX #$05                ;
-LC6D2:  BNE DQBranch0F          ;Unused Dragon's Quest code.
-LC6D4:  LDA #$FA                ;
-LC6D6:  STA $AF,X               ;
-LC6D8:  DEX                     ;
-
-DQBranch10:
-LC6D9:  LDA #$0A                ;
-LC6DB:  STA DivNum2             ;
-LC6DD:  LDA #$00                ;
-LC6DF:  STA DivNum2NU           ;
-LC6E1:  JSR WordDivide          ;($C1F4)Divide a 16-bit word by an 8-bit byte.
-LC6E4:  LDA $40                 ;
-LC6E6:  STA $AF,X               ;Unused Dragon's Quest code.
-LC6E8:  DEX                     ;
-LC6E9:  LDA DivNum1LB           ;
-LC6EB:  ORA DivNmu1UB           ;
-LC6ED:  BNE DQBranch10          ;
-LC6EF:  RTS                     ;
+LC6C9:  .byte $A2, $00, $A9, $5F, $95, $AF, $E8, $E0, $05, $D0, $F9, $A9, $FA, $95, $AF, $CA
+LC6D9:  .byte $A9, $0A, $85, $3E, $A9, $00, $85, $3F, $20, $F4, $C1, $A5, $40, $95, $AF, $CA
+LC6E9:  .byte $A5, $3C, $05, $3D, $D0, $EA, $60
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -1486,74 +1465,85 @@ LCB62:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCB65:  JSR LoadStats           ;($F050)Update player attributes.
 LCB68:  JSR Bank1ToNT0          ;($FC98)Load CHR ROM bank 1 into nametable 0.
 
-LCB6B:  LDA ModsnSpells
-LCB6D:  AND #$C0
-LCB6F:  BEQ $CB78
+LCB6B:  LDA ModsnSpells         ;Is the player cursed?
+LCB6D:  AND #IS_CURSED          ;
+LCB6F:  BEQ +                   ;If not, branch to move on.
 
-LCB71:  LDA #$01
-LCB73:  STA HitPoints
-LCB75:  JMP $CB96
+LCB71:  LDA #$01                ;
+LCB73:  STA HitPoints           ;Player is cursed. Set starting hit points to 1.
+LCB75:  JMP SetStartPos         ;
 
-LCB78:  LDA ThisStrtStat
-LCB7B:  CMP #STRT_FULL_HP
-LCB7D:  BNE $CB96
+LCB78:* LDA ThisStrtStat        ;Should player's HP and MP be restored on start?
+LCB7B:  CMP #STRT_FULL_HP       ;
+LCB7D:  BNE SetStartPos         ;If not, branch to move on.
 
-LCB7F:  TXA
-LCB80:  PHA
-LCB81:  LDA DisplayedMaxHP
-LCB83:  STA HitPoints
-LCB85:  LDA DisplayedMaxMP
-LCB87:  STA MagicPoints
-LCB89:  LDX SaveNumber
-LCB8C:  LDA #STRT_NO_HP
-LCB8E:  STA StartStatus1,X
-LCB91:  STA ThisStrtStat
-LCB94:  PLA
-LCB95:  TAX
+LCB7F:  TXA                     ;Save X on the stack.
+LCB80:  PHA                     ;
 
-LCB96:  LDA #$03
-LCB98:  STA CharXPos
-LCB9A:  STA _CharXPos
-LCB9C:  LDA #$04
-LCB9E:  STA CharYPos
-LCBA0:  STA _CharYPos
-LCBA2:  LDA #$30
-LCBA4:  STA CharXPixelsLB
-LCBA6:  LDA #$40
-LCBA8:  STA CharYPixelsLB
-LCBAA:  LDA #$00
-LCBAC:  STA RepeatCounter
-LCBAE:  STA RepelTimer
-LCBB0:  STA CharXPixelsUB
-LCBB2:  STA CharYPixelsUB
-LCBB4:  LDA #$08
-LCBB6:  STA NTBlockX
-LCBB8:  LDA #$07
-LCBBA:  STA NTBlockY
-LCBBC:  LDA #MAP_THRONEROOM
-LCBBE:  STA MapNumber
-LCBC0:  JSR $A788
+LCB81:  LDA DisplayedMaxHP      ;
+LCB83:  STA HitPoints           ;Max out HP and MP.
+LCB85:  LDA DisplayedMaxMP      ;
+LCB87:  STA MagicPoints         ;
+
+LCB89:  LDX SaveNumber          ;
+LCB8C:  LDA #STRT_NO_HP         ;Indicate in the save game that the HP and MP -->
+LCB8E:  STA StartStatus1,X      ;should not be maxed out on the next start.
+LCB91:  STA ThisStrtStat        ;
+
+LCB94:  PLA                     ;Restore X from the stack.
+LCB95:  TAX                     ;
+
+SetStartPos:
+LCB96:  LDA #$03                ;
+LCB98:  STA CharXPos            ;Set player's X block position.
+LCB9A:  STA _CharXPos           ;
+
+LCB9C:  LDA #$04                ;
+LCB9E:  STA CharYPos            ;Set player's Y block position.
+LCBA0:  STA _CharYPos           ;
+
+LCBA2:  LDA #$30                ;
+LCBA4:  STA CharXPixelsLB       ;Set player's X and Y map pixel positions.
+LCBA6:  LDA #$40                ;
+LCBA8:  STA CharYPixelsLB       ;
+
+LCBAA:  LDA #$00                ;
+LCBAC:  STA RepeatCounter       ;Clear any active timers and the upper byte --> 
+LCBAE:  STA RepelTimer          ;of the map pixel positions.
+LCBB0:  STA CharXPixelsUB       ;
+LCBB2:  STA CharYPixelsUB       ;
+
+LCBB4:  LDA #$08                ;
+LCBB6:  STA NTBlockX            ;Set nametable X and Y position of the player.
+LCBB8:  LDA #$07                ;
+LCBBA:  STA NTBlockY            ;
+
+LCBBC:  LDA #MAP_THRONEROOM     ;Prepare to load the throne room map.
+LCBBE:  STA MapNumber           ;
+
+LCBC0:  JSR ClearWinBufRAM      ;($A788)Clear RAM buffer used for drawing text windows.
 LCBC3:  JSR MapChngNoSound      ;($B091)Change maps with no stairs sound.
 LCBC6:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
-LCBC9:  LDA #$00
-LCBCB:  STA FrameCounter
+LCBC9:  LDA #$00                ;Reset the frame counter.
+LCBCB:  STA FrameCounter        ;
 
+FirstInputLoop:
 LCBCD:  JSR GetJoypadStatus     ;($C608)Get input button presses.
-LCBD0:  LDA JoypadBtns
-LCBD2:  BNE $CBDD
+LCBD0:  LDA JoypadBtns          ;Has player pressed a button?
+LCBD2:  BNE FrameSyncLoop       ;If not, loop until they do.
 
 LCBD4:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCBD7:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LCBDA:  JMP $CBCD
+LCBDA:  JMP FirstInputLoop      ;Wait for player to press a button.
 
 FrameSyncLoop:
 LCBDD:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
-LCBE0:  LDA FrameCounter
-LCBE2:  AND #$0F
-LCBE4:  CMP #$01
-LCBE6:  BEQ +
+LCBE0:  LDA FrameCounter        ;
+LCBE2:  AND #$0F                ;Make sure the frame counter is synchronized. Actions will -->
+LCBE4:  CMP #$01                ;not occur until frame counter is on frame 1.
+LCBE6:  BEQ +                   ;
 
 LCBE8:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 LCBEB:  JMP FrameSyncLoop       ;($CBDD)Wait for frame 1 before loading dialog windows.
@@ -1943,18 +1933,20 @@ LCE01:  RTS                     ;
 
 ChkBlkSand:
 LCE02:  CMP #BLK_SAND
-LCE04:  BEQ $CE13
+LCE04:  BEQ ChkSandFight
 
 LCE06:  CMP #BLK_HILL
-LCE08:  BNE $CE17
+LCE08:  BNE ChkBlkTrees
 
 LCE0A:  JSR WaitForNMI          ;($FF74)Three frame pause when walking on hill block.
 LCE0D:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCE10:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
+ChkSandFight:
 LCE13:  LDA #$07                ;Twice as likely to get into a fight in the sandy areas!
 LCE15:  BNE ChkFight2           ;Branch always to Recheck if a fight will happen.
 
+ChkBlkTrees:
 LCE17:  CMP #BLK_TREES
 LCE19:  BEQ ChkRandomFight      ;($CE5F)Check for enemy encounter.
 
@@ -1962,7 +1954,7 @@ LCE1B:  CMP #BLK_BRICK
 LCE1D:  BEQ ChkRandomFight      ;($CE5F)Check for enemy encounter.
 
 LCE1F:  CMP #BLK_FFIELD
-LCE21:  BNE $CE63
+LCE21:  BNE ChkFight6
 
 LCE23:  LDA EqippedItems
 LCE25:  AND #AR_ARMOR
@@ -1973,24 +1965,26 @@ LCE2B:  LDA #SFX_FFDAMAGE       ;Force field damage SFX.
 LCE2D:  BRK                     ;
 LCE2E:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LCE30:  LDA #$03
-LCE32:  STA GenByte42
+LCE30:  LDA #$03                ;Prepare to flash the screen red for 3 frames.
+LCE32:  STA GenByte42           ;
 
 LCE34:* JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCE37:  JSR RedFlashScreen      ;($EE14)Flash the screen red.
 LCE3A:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCE3D:  JSR LoadRegBGPal        ;($EE28)Load the normal background palette.
-LCE40:  DEC GenByte42
-LCE42:  BNE -
+LCE40:  DEC GenByte42           ;Has 3 frames passed?
+LCE42:  BNE -                   ;If not, branch to wait another frame.
 
-LCE44:  LDA HitPoints
-LCE46:  SEC
-LCE47:  SBC #$0F
-LCE49:  BCS $CE4F
-LCE4B:  LDA #$00
-LCE4D:  BEQ $CE4F
-LCE4F:  STA HitPoints
-LCE51:  CMP #$00
+LCE44:  LDA HitPoints           ;Player takes 15 points of force field damage.
+LCE46:  SEC                     ;
+LCE47:  SBC #$0F                ;Has the player HP gone negative?
+LCE49:  BCS +                   ;If not, branch to move on.
+
+LCE4B:  LDA #$00                ;Set player HP to 0.
+LCE4D:  BEQ +                   ;Branch always.
+
+LCE4F:* STA HitPoints           ;Is player's HP 0?
+LCE51:  CMP #$00                ;If not, branch to check for a random fight.
 LCE53:  BNE ChkRandomFight      ;($CE5F)Check for enemy encounter.
 LCE55:  JSR LoadRegBGPal        ;($EE28)Load the normal background palette.
 
@@ -2002,9 +1996,10 @@ LCE5C:  JMP InitDeathSequence   ;($EDA7)Player has died.
 ;----------------------------------------------------------------------------------------------------
 
 ChkRandomFight:
-LCE5F:  LDA #$0F                ;Prepare tocheck lower nibble of random number for a random fight.
+LCE5F:  LDA #$0F                ;Prepare to check lower nibble of random number for a random fight.
 LCE61:  BNE ChkFight2           ;Branch always.
 
+ChkFight6:
 LCE63:  LDA CharXPos
 LCE65:  LSR
 LCE66:  BCS ChkFight5
@@ -2024,13 +2019,13 @@ LCE74:  LDA #$1F
 LCE76:* BNE ChkFight2
 
 ChkFight3:
-LCE78:  LDA #$0F                ;Prepare tocheck lower nibble of random number for a random fight.
+LCE78:  LDA #$0F                ;Prepare to check lower nibble of random number for a random fight.
 LCE7A:  BNE -                   ;Branch always.
 
 DoRandomFight:
 LCE7C:  LDA MapNumber
 LCE7E:  CMP #MAP_OVERWORLD
-LCE80:  BNE $CED8
+LCE80:  BNE ChkDungeonFights
 
 LCE82:  LDA CharYPos
 LCE84:  STA DivNum1LB
@@ -2080,6 +2075,7 @@ LCED3:  AND #$01
 LCED5:  BEQ $CF04
 LCED7:  RTS
 
+ChkDungeonFights:
 LCED8:  CMP #MAP_DLCSTL_GF
 LCEDA:  BNE $CEE0
 LCEDC:  LDA #$10
@@ -6703,7 +6699,7 @@ LE8C3:  STA EnNumber
 LE8C5:  JSR PrepSPPalLoad       ;($C632)Load sprite palette data into PPU buffer.
 LE8C8:  JSR PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
 LE8CB:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LE8CE:  JSR $A788
+LE8CE:  JSR ClearWinBufRAM      ;($A788)Clear RAM buffer used for drawing text windows.
 LE8D1:  JMP MapChngNoSound      ;($B091)Change maps with no stairs sound.
 
 LE8D4:  LDA MapNumber
@@ -7489,10 +7485,11 @@ LEDB1:  JSR _DoWindow           ;($C703)Show dialog window.
 LEDB4:  JSR DoDialogLoBlock     ;($C7CB)Thou art dead...
 LEDB7:  .byte $01               ;TextBlock1, entry 1.
 
-LEDB8:  LDA #STRT_FULL_HP
-LEDBA:  STA ThisStrtStat
-LEDBD:  LDA #$00
-LEDBF:  STA CharDirection
+LEDB8:  LDA #STRT_FULL_HP       ;Player's HP and MP should be maxed out on next start.
+LEDBA:  STA ThisStrtStat        ;
+
+LEDBD:  LDA #$00                ;Character will be facing up on next restart.
+LEDBF:  STA CharDirection       ;
 
 LEDC2:* JSR GetJoypadStatus     ;($C608)Get input button presses.
 LEDC5:  LDA JoypadBtns

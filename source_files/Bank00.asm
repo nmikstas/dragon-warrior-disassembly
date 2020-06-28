@@ -3065,7 +3065,7 @@ LA760:  LDA OverworldPalPtr+1
 LA763:  ADC #$00
 LA765:  STA $41
 LA767:  JSR PalFadeOut          ;($C212)Fade out both background and sprite palettes.
-LA76A:  JMP $A788
+LA76A:  JMP ClearWinBufRAM      ;($A788)Clear RAM buffer used for drawing text windows.
 
 LA76D:  LDA #$FF
 LA76F:  STA LoadBGPal
@@ -3079,22 +3079,25 @@ LA780:  LDA EndBossPal2Ptr+1
 LA783:  STA $3F
 LA785:  JSR PalFadeOut          ;($C212)Fade out both background and sprite palettes.
 
-LA788:  LDA #$00
-LA78A:  STA $3C
-LA78C:  LDA #$04
-LA78E:  STA $3D
-LA790:  LDY #$00
-LA792:  LDA #$FF
+ClearWinBufRAM:
+LA788:  LDA #$00                ;
+LA78A:  STA GenPtr3CLB          ;Set base address to $0400(start of window buffer RAM).
+LA78C:  LDA #$04                ;
+LA78E:  STA GenPtr3CUB          ;
 
-LA794:  STA ($3C),Y
-LA796:  INY
-LA797:  BNE $A794
+WinBufRAMLoop:
+LA790:  LDY #$00                ;Initialize offset.
+LA792:  LDA #$FF                ;Indicates window tile is empty.
 
-LA799:  INC $3D
-LA79B:  LDA $3D
-LA79D:  CMP #$08
-LA79F:  BNE $A790
-LA7A1:  RTS
+LA794:* STA (GenPtr3C),Y        ;Have 256 bytes been cleared?
+LA796:  INY                     ;
+LA797:  BNE -                   ;If not, branch to clear another byte.
+
+LA799:  INC GenPtr3CUB          ;
+LA79B:  LDA GenPtr3CUB          ;
+LA79D:  CMP #$08                ;Has all the window RAM buffer been cleared?
+LA79F:  BNE WinBufRAMLoop       ;If not, branch to clear another 256 bytes.
+LA7A1:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
