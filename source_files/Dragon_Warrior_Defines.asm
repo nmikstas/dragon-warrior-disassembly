@@ -282,8 +282,8 @@
 .alias NPCMidPos        $53     ;Through $8C. NPC offset from current tile. Used only when moving.
 
 .alias GwaelinXPos      $8A     ;Princess Gwaelin's X position at the end of the game.
-.alias GwaelinYPos      $8B		;Princess Gwaelin's Y position at the end of the game.
-.alias GwaelinOffset    $8C		;Princess Gwaelin's moving offset at the end of the game.
+.alias GwaelinYPos      $8B     ;Princess Gwaelin's Y position at the end of the game.
+.alias GwaelinOffset    $8C     ;Princess Gwaelin's moving offset at the end of the game.
 
 .alias NPCUpdateCntr    $8D     ;Counts 0 to 4. Used to update NPCs.
 .alias _CharXPos        $8E     ;Copy of player's X position.
