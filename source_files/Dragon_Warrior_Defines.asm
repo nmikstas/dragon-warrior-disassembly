@@ -263,11 +263,15 @@
 .alias JoypadBit        $46     ;LSB Contains current bit read from joypad 1.
 .alias JoypadBtns       $47     ;Captured button presses on controller 1.
 
+.alias XFromLeftTemp    $48     ;Temporary storage for XPosFromLeft.
+.alias YFromTopTemp     $49     ;Temporary storage for YPosFromTop.
+
 .alias NTBlockX         $4A     ;Nametable X block position, #$00-#$1F(1/2 X tile position).
 .alias NTBlockY         $4B     ;Nametable Y block position, #$00-#$0E(1/2 y tile position).
 .alias BlkRemoveFlgs    $4C     ;Lower nibble is flags for tiles to keep when changing a map block.
                                 ;1-upper left, 2-upper right, 4-lower left, 8-lower right.
 .alias TileCounter      $4D     ;Used to count tiles when modifying blocks.
+.alias BlockClear       $4D     ;Is always 0. Maybe had some other function in Dragon's Quest.
 .alias NPCLoopCounter   $4E     ;Counter for controlling NPC update loops.
 .alias FrameCounter     $4F     ;Normally increments every frame. used for timing.
 

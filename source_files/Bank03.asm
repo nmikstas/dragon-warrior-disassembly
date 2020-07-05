@@ -975,119 +975,135 @@ LC706:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 AddBlocksToScreen:
-LC707:  LDA TileCounter
-LC709:  BNE $C71A
+LC707:  LDA BlockClear          ;Will always be 0.
+LC709:  BNE BlankBlock          ;Branch never.
 
-LC70B:  LDY #$00
-LC70D:  LDA (BlockAddr),Y
-LC70F:  CMP #$FF
-LC711:  BEQ $C71A
+LC70B:  LDY #$00                ;
+LC70D:  LDA (BlockAddr),Y       ;Is the block data blank?
+LC70F:  CMP #$FF                ;
+LC711:  BEQ BlankBlock          ;If so, branch.
 
-LC713:  CMP #$FE
-LC715:  BEQ $C71A
+LC713:  CMP #$FE                ;Is the block data blank?
+LC715:  BEQ BlankBlock          ;If so, branch.
 
-LC717:  JMP $C734
+LC717:  JMP BattleBlock         ;Branch always.
 
+;This portion of code should never run under normal circumstances.
+
+BlankBlock:
 LC71A:  LDA #$00                ;
 LC71C:  STA BlkRemoveFlgs       ;Remove no tiles from the current block.
 LC71E:  STA PPUHorzVert         ;PPU column write.
 
 LC720:  JSR ModMapBlock         ;($AD66)Change block on map.
 
-LC723:  LDY #$00
+LC723:  LDY #$00                ;Prepare to clear the block data.
 LC725:  LDA #$FF
-LC727:  STA (BlockAddr),Y
-LC729:  INY
-LC72A:  STA (BlockAddr),Y
-LC72C:  LDY #$20
-LC72E:  STA (BlockAddr),Y
-LC730:  INY
-LC731:  STA (BlockAddr),Y
-LC733:  RTS
 
-LC734:  LDA NTBlockY
-LC736:  ASL
-LC737:  ADC YPosFromCenter
-LC739:  CLC
-LC73A:  ADC #$1E
-LC73C:  STA DivNum1LB
-LC73E:  LDA #$1E
-LC740:  STA DivNum2
+LC727:  STA (BlockAddr),Y       ;
+LC729:  INY                     ;Clear top row of block.
+LC72A:  STA (BlockAddr),Y       ;
+
+LC72C:  LDY #$20                ;Move to next row in block.
+
+LC72E:  STA (BlockAddr),Y       ;
+LC730:  INY                     ;Clear bottom row of block.
+LC731:  STA (BlockAddr),Y       ;
+LC733:  RTS                     ;
+
+BattleBlock:
+LC734:  LDA NTBlockY			;
+LC736:  ASL						;
+LC737:  ADC YPosFromCenter		;Get the target tile Y position and convert from a -->
+LC739:  CLC						;signed value to an unsigned value and store the results.
+LC73A:  ADC #$1E				;
+LC73C:  STA DivNum1LB			;
+LC73E:  LDA #$1E				;
+LC740:  STA DivNum2				;
 LC742:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
-LC745:  LDA DivRemainder
-LC747:  STA DivNum2
-LC749:  STA $49
-LC74B:  LDA NTBlockX
-LC74D:  ASL
-LC74E:  CLC
-LC74F:  ADC XPosFromCenter
-LC751:  AND #$3F
-LC753:  STA $3C
-LC755:  STA $48
+LC745:  LDA DivRemainder		;
+LC747:  STA YPosFromTop			;
+LC749:  STA YFromTopTemp		;
+
+LC74B:  LDA NTBlockX			;
+LC74D:  ASL						;
+LC74E:  CLC						;Get the target tile X position and convert from a -->
+LC74F:  ADC XPosFromCenter		;signed value to an unsigned value and store the results.
+LC751:  AND #$3F				;
+LC753:  STA XPosFromLeft		;
+LC755:  STA XFromLeftTemp		;
 LC757:  JSR DoAddrCalc          ;($C5AA)Calculate destination address for GFX data.
 
-LC75A:  LDY #$00
+LC75A:  LDY #$00				;Zero out index.
 
-LC75C:  LDA (BlockAddr),Y
-LC75E:  STA PPUDataByte
+LC75C:  LDA (BlockAddr),Y       ;Get upper left tile of block.
+LC75E:  STA PPUDataByte         ;
 LC760:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
-LC763:  INY
-LC764:  LDA (BlockAddr),Y
-LC766:  STA PPUDataByte
+LC763:  INY                     ;Move to next tile.
+
+LC764:  LDA (BlockAddr),Y       ;Get upper right tile of block.
+LC766:  STA PPUDataByte         ;
 LC768:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
-LC76B:  LDA PPUAddrLB
-LC76D:  CLC
-LC76E:  ADC #$1E
-LC770:  STA PPUAddrLB
-LC772:  BCC $C776
-LC774:  INC PPUAddrUB
-LC776:  LDY #$20
-LC778:  LDA (BlockAddr),Y
-LC77A:  STA PPUDataByte
+LC76B:  LDA PPUAddrLB           ;
+LC76D:  CLC                     ;
+LC76E:  ADC #$1E                ;Move to the next row of the block.
+LC770:  STA PPUAddrLB           ;
+LC772:  BCC +                   ;
+LC774:  INC PPUAddrUB           ;
+
+LC776:* LDY #$20                ;Move to next tile in next row down.
+
+LC778:  LDA (BlockAddr),Y       ;Get lower left tile of block.
+LC77A:  STA PPUDataByte         ;
 LC77C:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
-LC77F:  INY
-LC780:  LDA (BlockAddr),Y
-LC782:  STA PPUDataByte
+LC77F:  INY                     ;Move to next tile.
+
+LC780:  LDA (BlockAddr),Y       ;Get lower right tile of block.
+LC782:  STA PPUDataByte         ;
 LC784:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
-LC787:  LDA $48
-LC789:  STA $3C
-LC78B:  LDA $49
-LC78D:  STA $3E
-LC78F:  LDY #$00
-LC791:  LDA ($99),Y
-LC793:  CMP #$C1
-LC795:  BCS $C79B
+LC787:  LDA XFromLeftTemp		;
+LC789:  STA XPosFromLeft		;Restore the X and Y position variables.
+LC78B:  LDA YFromTopTemp		;
+LC78D:  STA YPosFromTop			;
 
-LC797:  LDA #$00
-LC799:  BEQ $C7AD
+LC78F:  LDY #$00				;Zero out index.
 
-LC79B:  CMP #$CA
-LC79D:  BCS $C7A3
+LC791:  LDA (BlockAddr),Y		;Sets attribute table value for each block based on its -->
+LC793:  CMP #$C1				;position in the pattern table.
+LC795:  BCS +					;Is this a sky tile in the battle scene? If not, branch.
 
-LC79F:  LDA #$01
-LC7A1:  BNE $C7AD
+LC797:  LDA #$00				;Set attribute table value for battle scene sky tiles.
+LC799:  BEQ SetAttribVals		;
 
-LC7A3:  CMP #$DE
-LC7A5:  BCS $C7AB
+LC79B:* CMP #$CA				;Is this a green covered mountain tile in the battle scene?
+LC79D:  BCS +					;If not, branch.
 
-LC7A7:  LDA #$02
-LC7A9:  BNE $C7AD
+LC79F:  LDA #$01				;Set attribute table value for battle scene green covered -->
+LC7A1:  BNE SetAttribVals		;mountain tiles. Branch always.
 
-LC7AB:  LDA #$03
+LC7A3:* CMP #$DE				;Is this a foreground tile in the battle scene?
+LC7A5:  BCS +					;If not, branch.
 
-LC7AD:  STA PPUDataByte
+LC7A7:  LDA #$02				;Set attribute table value for battle scene foreground tiles.
+LC7A9:  BNE SetAttribVals		;Branch always.
+
+LC7AB:* LDA #$03				;Set attribute table values for battle scene horizon tiles. 
+
+SetAttribVals:
+LC7AD:  STA PPUDataByte         ;Store attribute table data.
 LC7AF:  JSR ModAttribBits       ;($C006)Set the attribute table bits for a nametable block.
 
-LC7B2:  LDA PPUAddrUB
-LC7B4:  CLC
-LC7B5:  ADC #$20
-LC7B7:  STA PPUAddrUB
+LC7B2:  LDA PPUAddrUB			;
+LC7B4:  CLC						;Move to the next position in the column.
+LC7B5:  ADC #$20				;
+LC7B7:  STA PPUAddrUB			;
+
 LC7B9:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
-LC7BC:  RTS
+LC7BC:  RTS						;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -5903,9 +5919,9 @@ LE3CF:  CMP #EN_DRAGONLORD2     ;Is this the final boss?
 LE3D1:  BNE +                   ;If so, skip drawing the background.
 LE3D3:  RTS                     ;
 
-LE3D4:* LDX #$00
-LE3D6:  STX $4D
-LE3D8:  STX BlockCounter
+LE3D4:* LDX #$00                ;
+LE3D6:  STX BlockClear          ;Initialize variables.
+LE3D8:  STX BlockCounter        ;
 
 LE3DA:  LDA #$0A                ;
 LE3DC:  STA GenPtr3CLB          ;Buffer combat background graphics in 

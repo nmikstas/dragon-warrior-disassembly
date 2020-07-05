@@ -3079,6 +3079,8 @@ LA780:  LDA EndBossPal2Ptr+1
 LA783:  STA $3F
 LA785:  JSR PalFadeOut          ;($C212)Fade out both background and sprite palettes.
 
+;----------------------------------------------------------------------------------------------------
+
 ClearWinBufRAM:
 LA788:  LDA #$00                ;
 LA78A:  STA GenPtr3CLB          ;Set base address to $0400(start of window buffer RAM).
