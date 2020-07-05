@@ -210,6 +210,8 @@
 .alias DivQuotient      $3C     ;Divide results, quotient.
 .alias DivRemainder     $40     ;Divide results, remainder.
 
+.alias EnemyOffset      $3E     ;Offset used to get enemy from EnemyGroupsTbl.
+
 .alias SprtPalPtr       $3E     ;Pointer to sprite palette data.
 .alias SprtPalPtrLB     $3E     ;Pointer to sprite palette data, lower byte.
 .alias SprtPalPtrUB     $3F     ;Pointer to sprite palette data, upper byte.

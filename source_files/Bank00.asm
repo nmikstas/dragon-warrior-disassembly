@@ -3065,7 +3065,7 @@ LA760:  LDA OverworldPalPtr+1
 LA763:  ADC #$00
 LA765:  STA $41
 LA767:  JSR PalFadeOut          ;($C212)Fade out both background and sprite palettes.
-LA76A:  JMP ClearWinBufRAM      ;($A788)Clear RAM buffer used for drawing text windows.
+LA76A:  JMP ClearWinBufRAM2     ;($A788)Clear RAM buffer used for drawing text windows.
 
 LA76D:  LDA #$FF
 LA76F:  STA LoadBGPal
@@ -3081,7 +3081,7 @@ LA785:  JSR PalFadeOut          ;($C212)Fade out both background and sprite pale
 
 ;----------------------------------------------------------------------------------------------------
 
-ClearWinBufRAM:
+ClearWinBufRAM2:
 LA788:  LDA #$00                ;
 LA78A:  STA GenPtr3CLB          ;Set base address to $0400(start of window buffer RAM).
 LA78C:  LDA #$04                ;

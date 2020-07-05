@@ -26,7 +26,7 @@
 .alias EnSPPalsPtr              $9A2A
 .alias CombatBckgndGFX          $9C8F
 .alias SpellCostTbl             $9D53
-.alias ClearWinBufRAM           $A788
+.alias ClearWinBufRAM2          $A788
 .alias RemoveWindow             $A7A2
 .alias GetBlockID               $AC17
 .alias ModMapBlock              $AD66
@@ -1537,7 +1537,7 @@ LCBBA:  STA NTBlockY            ;
 LCBBC:  LDA #MAP_THRONEROOM     ;Prepare to load the throne room map.
 LCBBE:  STA MapNumber           ;
 
-LCBC0:  JSR ClearWinBufRAM      ;($A788)Clear RAM buffer used for drawing text windows.
+LCBC0:  JSR ClearWinBufRAM2     ;($A788)Clear RAM buffer used for drawing text windows.
 LCBC3:  JSR MapChngNoSound      ;($B091)Change maps with no stairs sound.
 LCBC6:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
@@ -1948,11 +1948,11 @@ LCDFF:  BEQ DoRandomFight       ;If so, branch to start a random fight.
 LCE01:  RTS                     ;
 
 ChkBlkSand:
-LCE02:  CMP #BLK_SAND
-LCE04:  BEQ ChkSandFight
+LCE02:  CMP #BLK_SAND           ;Is the player on a sand block?
+LCE04:  BEQ ChkSandFight        ;If so, branch to check for a fight.
 
-LCE06:  CMP #BLK_HILL
-LCE08:  BNE ChkBlkTrees
+LCE06:  CMP #BLK_HILL           ;Is the player on a hill block?
+LCE08:  BNE ChkBlkTrees         ;If not, branch to check for other block types.
 
 LCE0A:  JSR WaitForNMI          ;($FF74)Three frame pause when walking on hill block.
 LCE0D:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
@@ -1963,18 +1963,18 @@ LCE13:  LDA #$07                ;Twice as likely to get into a fight in the sand
 LCE15:  BNE ChkFight2           ;Branch always to Recheck if a fight will happen.
 
 ChkBlkTrees:
-LCE17:  CMP #BLK_TREES
-LCE19:  BEQ ChkRandomFight      ;($CE5F)Check for enemy encounter.
+LCE17:  CMP #BLK_TREES          ;Is player on a tree block?     
+LCE19:  BEQ ChkRandomFight      ;if so, branch to check for enemy encounter.
 
-LCE1B:  CMP #BLK_BRICK
-LCE1D:  BEQ ChkRandomFight      ;($CE5F)Check for enemy encounter.
+LCE1B:  CMP #BLK_BRICK          ;Is player on a brick block?
+LCE1D:  BEQ ChkRandomFight      ;if so, branch to check for enemy encounter.
 
-LCE1F:  CMP #BLK_FFIELD
-LCE21:  BNE ChkFight6
+LCE1F:  CMP #BLK_FFIELD         ;Is player on a force field block?
+LCE21:  BNE ChkFight6           ;If not, branch to check for a random fight.
 
-LCE23:  LDA EqippedItems
-LCE25:  AND #AR_ARMOR
-LCE27:  CMP #AR_ERDK_ARMR
+LCE23:  LDA EqippedItems        ;Player is on a force field blck.
+LCE25:  AND #AR_ARMOR           ;Is player wearing Erdrick's armor?
+LCE27:  CMP #AR_ERDK_ARMR       ;If not, branch to do force field damage to player.
 LCE29:  BEQ ChkRandomFight      ;($CE5F)Check for enemy encounter.
 
 LCE2B:  LDA #SFX_FFDAMAGE       ;Force field damage SFX.
@@ -2016,131 +2016,161 @@ LCE5F:  LDA #$0F                ;Prepare to check lower nibble of random number 
 LCE61:  BNE ChkFight2           ;Branch always.
 
 ChkFight6:
-LCE63:  LDA CharXPos
-LCE65:  LSR
-LCE66:  BCS ChkFight5
+LCE63:  LDA CharXPos            ;Is character on an odd X map position?
+LCE65:  LSR                     ;
+LCE66:  BCS ChkFight5           ;If not, branch to check for normal chance for a fight.
 
-LCE68:  LDA CharYPos
-LCE6A:  LSR
-LCE6B:  BCC ChkFight4
-LCE6D:  BCS ChkFight3
+LCE68:  LDA CharYPos            ;Is character on an odd Y map position?
+LCE6A:  LSR                     ;
+LCE6B:  BCC HighFightChance     ;Even X and even Y map location is higher fight chance.
+LCE6D:  BCS NormFightChance     ;Odd Y position. Check for normal fight chance.
 
 ChkFight5:
-LCE6F:  LDA CharYPos
-LCE71:  LSR
-LCE72:  BCC ChkFight3
+LCE6F:  LDA CharYPos            ;Is character on an odd Y map position?
+LCE71:  LSR                     ;If not, branch for normal fight chance.
+LCE72:  BCC NormFightChance     ;Odd X and odd Y map location is higher fight chance.
 
-ChkFight4:
-LCE74:  LDA #$1F
-LCE76:* BNE ChkFight2
+HighFightChance:
+LCE74:  LDA #$1F                ;Higher chance for fight. Check 5 bits instead of 4.
+LCE76:* BNE ChkFight2           ;Branch always.
 
-ChkFight3:
-LCE78:  LDA #$0F                ;Prepare to check lower nibble of random number for a random fight.
+NormFightChance:
+LCE78:  LDA #$0F                ;Prepare to check lower nibble of random number for a fight.
 LCE7A:  BNE -                   ;Branch always.
 
+;At this point, the player had initiated a fight. Need to check which map and where.
+
 DoRandomFight:
-LCE7C:  LDA MapNumber
-LCE7E:  CMP #MAP_OVERWORLD
-LCE80:  BNE ChkDungeonFights
+LCE7C:  LDA MapNumber           ;Is player on the overworld map?
+LCE7E:  CMP #MAP_OVERWORLD      ;
+LCE80:  BNE ChkDungeonFights    ;If not, branch to check other maps.
 
-LCE82:  LDA CharYPos
-LCE84:  STA DivNum1LB
-LCE86:  LDA #$0F
-LCE88:  STA DivNum2
+;This section of code calculates the proper enemies for the player's world map position.
+
+LCE82:  LDA CharYPos            ;Divide player's Y location on overworkd map by 15. -->
+LCE84:  STA DivNum1LB           ;This gives a number ranging from 0 to 7. -->
+LCE86:  LDA #$0F                ;The enemy zones on the overworld map are an 8X8 grid.
+LCE88:  STA DivNum2             ;
 LCE8A:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
-LCE8D:  LDA $3C
-LCE8F:  STA $42
-LCE91:  LDA CharXPos
-LCE93:  STA DivNum1LB
-LCE95:  LDA #$0F
-LCE97:  STA DivNum2
+
+LCE8D:  LDA DivNum1LB           ;Save Y data for enemy zone calculation.
+LCE8F:  STA GenByte42           ;
+
+LCE91:  LDA CharXPos            ;Divide player's X location on overworkd map by 15. -->
+LCE93:  STA DivNum1LB           ;This gives a number ranging from 0 to 7. -->
+LCE95:  LDA #$0F                ;The enemy zones on the overworld map are an 8X8 grid.
+LCE97:  STA DivNum2             ;
 LCE99:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
-LCE9C:  LDA $42
-LCE9E:  ASL
-LCE9F:  ASL
-LCEA0:  STA $3E
-LCEA2:  LDA $3C
-LCEA4:  LSR
-LCEA5:  CLC
-LCEA6:  ADC $3E
-LCEA8:  TAX
-LCEA9:  LDA OvrWrldEnGrid,X
-LCEAC:  STA $3E
-LCEAE:  LDA $3C
-LCEB0:  LSR
-LCEB1:  BCS $CEBB
-LCEB3:  LSR $3E
-LCEB5:  LSR $3E
-LCEB7:  LSR $3E
-LCEB9:  LSR $3E
-LCEBB:  LDA $3E
-LCEBD:  AND #$0F
-LCEBF:  BNE $CF04
+
+LCE9C:  LDA GenByte42           ;*4. 4 bytes per row in overworld enemy grid.
+LCE9E:  ASL                     ;
+LCE9F:  ASL                     ;The proper row in OvrWrldEnGrid is now known. -->
+LCEA0:  STA EnemyOffset         ;Next, calculate the desired byte from the row.
+
+LCEA2:  LDA DivNum1LB           ;Get the X position again for the overworld enemy grid.
+LCEA4:  LSR                     ;/2 at the enemy data is stored in nibble wide data.
+LCEA5:  CLC                     ;Add value to the Y position calculation.
+LCEA6:  ADC EnemyOffset         ;
+LCEA8:  TAX                     ;We now have the proper byte index into OvrWrldEnGrid.
+
+LCEA9:  LDA OvrWrldEnGrid,X     ;Get the enemy zone data from OvrWrldEnGrid.
+LCEAC:  STA EnemyOffset         ;
+
+LCEAE:  LDA DivNum1LB           ;Since the enemy zone data is stored in nibbles, we need -->
+LCEB0:  LSR                     ;to get the right nibble in the byte. Is this the right -->
+LCEB1:  BCS +                   ;byte? If so, branch.
+
+LCEB3:  LSR EnemyOffset         ;
+LCEB5:  LSR EnemyOffset         ;Transfer upper nibble into the lower nibble.
+LCEB7:  LSR EnemyOffset         ;
+LCEB9:  LSR EnemyOffset         ;
+
+LCEBB:* LDA EnemyOffset         ;Keep only the lower nibble. We now have the proper -->
+LCEBD:  AND #$0F                ;data from OvrWrldEnGrid.
+LCEBF:  BNE GetEnemyRow         ;
+
 LCEC1:  JSR UpdateRandNum       ;($C55B)Get random number.
-LCEC4:  LDA ThisTile
-LCEC6:  CMP #BLK_HILL
-LCEC8:  BNE $CED1
 
-LCECA:  LDA RandNumUB
-LCECC:  AND #$03
-LCECE:  BEQ $CF04
-LCED0:  RTS
+LCEC4:  LDA ThisTile            ;Is player in hilly terrain?
+LCEC6:  CMP #BLK_HILL           ;If not, branch. Another check will be done to avoid a -->
+LCEC8:  BNE NormFightModifier   ;fight. 50% chance the fight may not happen.
 
-LCED1:  LDA RandNumUB
-LCED3:  AND #$01
-LCED5:  BEQ $CF04
-LCED7:  RTS
+HighFightModifier:
+LCECA:  LDA RandNumUB           ;Player is in hilly terrain. Increased chance of fight!
+LCECC:  AND #$03                ;Do another check to avoid the fight. 25% chance the fight -->
+LCECE:  BEQ GetEnemyRow         ;may not happen. Is fight going to happen?
+LCED0:  RTS                     ;If so, branch to calculate which enemy.
+
+NormFightModifier:
+LCED1:  LDA RandNumUB           ;Player is not on hilly terrain.
+LCED3:  AND #$01                ;Do another check to avoid the fight. 50% chance the fight -->
+LCED5:  BEQ GetEnemyRow         ;may not happen. Is fight going to happen?
+LCED7:  RTS                     ;If so, branch to calculate which enemy.
+
+;This section of code calculates the proper enemies for the player's dungeon map position.
 
 ChkDungeonFights:
-LCED8:  CMP #MAP_DLCSTL_GF
-LCEDA:  BNE $CEE0
-LCEDC:  LDA #$10
-LCEDE:  BNE $CF04
+LCED8:  CMP #MAP_DLCSTL_GF      ;Is player on ground floor of the dragonlord's castle?
+LCEDA:  BNE ChkHauksnessFight   ;
+LCEDC:  LDA #$10                ;If so, load proper offset to enemy data row in EnemyGroupsTbl.
+LCEDE:  BNE GetEnemyRow         ;Branch always.
 
-LCEE0:  CMP #MAP_HAUKSNESS
-LCEE2:  BNE $CEE8
-LCEE4:  LDA #$0D
-LCEE6:  BNE $CF04
+ChkHauksnessFight:
+LCEE0:  CMP #MAP_HAUKSNESS      ;Is player in Hauksness?
+LCEE2:  BNE ChkDLCastleFight    ;
+LCEE4:  LDA #$0D                ;If so, load proper offset to enemy data row in EnemyGroupsTbl.
+LCEE6:  BNE GetEnemyRow         ;Branch always.
 
-LCEE8:  CMP #MAP_DLCSTL_BF
-LCEEA:  BNE $CEF0
-LCEEC:  LDA #$12
-LCEEE:  BNE $CF04
+ChkDLCastleFight:
+LCEE8:  CMP #MAP_DLCSTL_BF      ;Is player on bottom floor of the dragonlord's castle?
+LCEEA:  BNE ChkErdrickFight     ;
+LCEEC:  LDA #$12                ;If so, load proper offset to enemy data row in EnemyGroupsTbl.
+LCEEE:  BNE GetEnemyRow         ;Branch always.
 
-LCEF0:  CMP #MAP_ERDRCK_B1
-LCEF2:  BCS $CEFA
+ChkErdrickFight:
+LCEF0:  CMP #MAP_ERDRCK_B1      ;Is player in Erdrick's cave?
+LCEF2:  BCS NoEnemyMap          ;If so, branch to exit. No enemies here.
 
-LCEF4:  LDA MapType
-LCEF6:  CMP #MAP_DUNGEON
-LCEF8:  BEQ $CEFB
-LCEFA:  RTS
+LCEF4:  LDA MapType             ;Is player in any one of the other dungeons?
+LCEF6:  CMP #MAP_DUNGEON        ;If so, branch to calculate proper enemy row.
+LCEF8:  BEQ DoDungeonEnemy      ;
 
-LCEFB:  LDA MapNumber
-LCEFD:  SEC
-LCEFE:  SBC #$0F
-LCF00:  TAX
-LCF01:  LDA CaveEnIndexTbl,X
+NoEnemyMap:
+LCEFA:  RTS                     ;No enemies on this map. Return without a fight.
 
-LCF04:  STA $3E
-LCF06:  ASL
-LCF07:  ASL
-LCF08:  CLC
-LCF09:  ADC $3E
-LCF0B:  STA $3E
+DoDungeonEnemy:
+LCEFB:  LDA MapNumber           ;
+LCEFD:  SEC                     ;Convert map number into a value that can be used to find -->
+LCEFE:  SBC #$0F                ;the index to the enemy data.
+LCF00:  TAX                     ;
+LCF01:  LDA CaveEnIndexTbl,X    ;Get enemy index data byte. points to a row in EnemyGroupsTbl.
 
+GetEnemyRow:
+LCF04:  STA EnemyOffset         ;This calculates the proper row of enemies to -->
+LCF06:  ASL                     ;choose a fight from in EnemyGroupsTbl.
+LCF07:  ASL                     ;
+LCF08:  CLC                     ;
+LCF09:  ADC EnemyOffset         ;EnemyOffset * 5. 5 enemy entries per row.
+LCF0B:  STA EnemyOffset         ;
+
+;All chances to evade the enemy has failed(except repel). Figure out which enemy to fight.
+;At this point, we have the index to the row of enemies in EnemyGroupsTbl.
+
+GetEnemyInRow:
 LCF0D:  JSR UpdateRandNum       ;($C55B)Get random number.
-LCF10:  LDA RandNumUB
-LCF12:  AND #$07
-LCF14:  CMP #$05
-LCF16:  BCS $CF0D
+LCF10:  LDA RandNumUB           ;
+LCF12:  AND #$07                ;Keep only 3 LSBs. Is number between 0 and 4? If not, branch -->
+LCF14:  CMP #$05                ;to get another random number as there are only 2 enemy slots -->
+LCF16:  BCS GetEnemyInRow       ;per enemy zone.
 
-LCF18:  ADC $3E
-LCF1A:  TAX
-LCF1B:  LDA EnemyGroupsTbl,X
-LCF1E:  STA _EnNumber
-LCF20:  LDA MapNumber
-LCF22:  CMP #MAP_OVERWORLD
-LCF24:  BNE ReadyFight
+LCF18:  ADC EnemyOffset         ;Add offset to the enemy row to get the specific enemy.
+LCF1A:  TAX                     ;
+LCF1B:  LDA EnemyGroupsTbl,X    ;
+LCF1E:  STA _EnNumber           ;Store the enemy number and continue the fight preparations.
+
+LCF20:  LDA MapNumber           ;Is player on the overworld map?
+LCF22:  CMP #MAP_OVERWORLD      ;If so, there is a chance the fight can be repelled.
+LCF24:  BNE ReadyFight          ;If not, branch to prepare the fight.
 
 ChkFightRepel:
 LCF26:  LDA RepelTimer          ;Is the repel spell active?
@@ -6715,7 +6745,7 @@ LE8C3:  STA EnNumber
 LE8C5:  JSR PrepSPPalLoad       ;($C632)Load sprite palette data into PPU buffer.
 LE8C8:  JSR PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
 LE8CB:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LE8CE:  JSR ClearWinBufRAM      ;($A788)Clear RAM buffer used for drawing text windows.
+LE8CE:  JSR ClearWinBufRAM2     ;($A788)Clear RAM buffer used for drawing text windows.
 LE8D1:  JMP MapChngNoSound      ;($B091)Change maps with no stairs sound.
 
 LE8D4:  LDA MapNumber
@@ -8480,6 +8510,7 @@ LF586:  .byte EN_WKNIGHT,     EN_KNIGHT,      EN_MAGIWYVERN,  EN_DKNIGHT,     EN
 LF58B:  .byte EN_KNIGHT,      EN_MAGIWYVERN,  EN_DKNIGHT,     EN_WEREWOLF,    EN_STARWYVERN
 LF590:  .byte EN_WEREWOLF,    EN_GDRAGON,     EN_STARWYVERN,  EN_STARWYVERN,  EN_WIZARD
 
+;These are dungeon enemy zones.
 LF595:  .byte EN_POLTERGEIST, EN_DROLL,       EN_DRAKEEMA,    EN_SKELETON,    EN_WARLOCK
 LF59A:  .byte EN_SPECTER,     EN_WOLFLORD,    EN_DRUINLORD,   EN_DROLLMAGI,   EN_WKNIGHT
 LF59F:  .byte EN_WEREWOLF,    EN_GDRAGON,     EN_STARWYVERN,  EN_WIZARD,      EN_AXEKNIGHT
