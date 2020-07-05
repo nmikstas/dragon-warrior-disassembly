@@ -1012,29 +1012,29 @@ LC731:  STA (BlockAddr),Y       ;
 LC733:  RTS                     ;
 
 BattleBlock:
-LC734:  LDA NTBlockY			;
-LC736:  ASL						;
-LC737:  ADC YPosFromCenter		;Get the target tile Y position and convert from a -->
-LC739:  CLC						;signed value to an unsigned value and store the results.
-LC73A:  ADC #$1E				;
-LC73C:  STA DivNum1LB			;
-LC73E:  LDA #$1E				;
-LC740:  STA DivNum2				;
+LC734:  LDA NTBlockY            ;
+LC736:  ASL                     ;
+LC737:  ADC YPosFromCenter      ;Get the target tile Y position and convert from a -->
+LC739:  CLC                     ;signed value to an unsigned value and store the results.
+LC73A:  ADC #$1E                ;
+LC73C:  STA DivNum1LB           ;
+LC73E:  LDA #$1E                ;
+LC740:  STA DivNum2             ;
 LC742:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
-LC745:  LDA DivRemainder		;
-LC747:  STA YPosFromTop			;
-LC749:  STA YFromTopTemp		;
+LC745:  LDA DivRemainder        ;
+LC747:  STA YPosFromTop         ;
+LC749:  STA YFromTopTemp        ;
 
-LC74B:  LDA NTBlockX			;
-LC74D:  ASL						;
-LC74E:  CLC						;Get the target tile X position and convert from a -->
-LC74F:  ADC XPosFromCenter		;signed value to an unsigned value and store the results.
-LC751:  AND #$3F				;
-LC753:  STA XPosFromLeft		;
-LC755:  STA XFromLeftTemp		;
+LC74B:  LDA NTBlockX            ;
+LC74D:  ASL                     ;
+LC74E:  CLC                     ;Get the target tile X position and convert from a -->
+LC74F:  ADC XPosFromCenter      ;signed value to an unsigned value and store the results.
+LC751:  AND #$3F                ;
+LC753:  STA XPosFromLeft        ;
+LC755:  STA XFromLeftTemp       ;
 LC757:  JSR DoAddrCalc          ;($C5AA)Calculate destination address for GFX data.
 
-LC75A:  LDY #$00				;Zero out index.
+LC75A:  LDY #$00                ;Zero out index.
 
 LC75C:  LDA (BlockAddr),Y       ;Get upper left tile of block.
 LC75E:  STA PPUDataByte         ;
@@ -1065,45 +1065,45 @@ LC780:  LDA (BlockAddr),Y       ;Get lower right tile of block.
 LC782:  STA PPUDataByte         ;
 LC784:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
-LC787:  LDA XFromLeftTemp		;
-LC789:  STA XPosFromLeft		;Restore the X and Y position variables.
-LC78B:  LDA YFromTopTemp		;
-LC78D:  STA YPosFromTop			;
+LC787:  LDA XFromLeftTemp       ;
+LC789:  STA XPosFromLeft        ;Restore the X and Y position variables.
+LC78B:  LDA YFromTopTemp        ;
+LC78D:  STA YPosFromTop         ;
 
-LC78F:  LDY #$00				;Zero out index.
+LC78F:  LDY #$00                ;Zero out index.
 
-LC791:  LDA (BlockAddr),Y		;Sets attribute table value for each block based on its -->
-LC793:  CMP #$C1				;position in the pattern table.
-LC795:  BCS +					;Is this a sky tile in the battle scene? If not, branch.
+LC791:  LDA (BlockAddr),Y       ;Sets attribute table value for each block based on its -->
+LC793:  CMP #$C1                ;position in the pattern table.
+LC795:  BCS +                   ;Is this a sky tile in the battle scene? If not, branch.
 
-LC797:  LDA #$00				;Set attribute table value for battle scene sky tiles.
-LC799:  BEQ SetAttribVals		;
+LC797:  LDA #$00                ;Set attribute table value for battle scene sky tiles.
+LC799:  BEQ SetAttribVals       ;
 
-LC79B:* CMP #$CA				;Is this a green covered mountain tile in the battle scene?
-LC79D:  BCS +					;If not, branch.
+LC79B:* CMP #$CA                ;Is this a green covered mountain tile in the battle scene?
+LC79D:  BCS +                   ;If not, branch.
 
-LC79F:  LDA #$01				;Set attribute table value for battle scene green covered -->
-LC7A1:  BNE SetAttribVals		;mountain tiles. Branch always.
+LC79F:  LDA #$01                ;Set attribute table value for battle scene green covered -->
+LC7A1:  BNE SetAttribVals       ;mountain tiles. Branch always.
 
-LC7A3:* CMP #$DE				;Is this a foreground tile in the battle scene?
-LC7A5:  BCS +					;If not, branch.
+LC7A3:* CMP #$DE                ;Is this a foreground tile in the battle scene?
+LC7A5:  BCS +                   ;If not, branch.
 
-LC7A7:  LDA #$02				;Set attribute table value for battle scene foreground tiles.
-LC7A9:  BNE SetAttribVals		;Branch always.
+LC7A7:  LDA #$02                ;Set attribute table value for battle scene foreground tiles.
+LC7A9:  BNE SetAttribVals       ;Branch always.
 
-LC7AB:* LDA #$03				;Set attribute table values for battle scene horizon tiles. 
+LC7AB:* LDA #$03                ;Set attribute table values for battle scene horizon tiles. 
 
 SetAttribVals:
 LC7AD:  STA PPUDataByte         ;Store attribute table data.
 LC7AF:  JSR ModAttribBits       ;($C006)Set the attribute table bits for a nametable block.
 
-LC7B2:  LDA PPUAddrUB			;
-LC7B4:  CLC						;Move to the next position in the column.
-LC7B5:  ADC #$20				;
-LC7B7:  STA PPUAddrUB			;
+LC7B2:  LDA PPUAddrUB           ;
+LC7B4:  CLC                     ;Move to the next position in the column.
+LC7B5:  ADC #$20                ;
+LC7B7:  STA PPUAddrUB           ;
 
 LC7B9:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
-LC7BC:  RTS						;
+LC7BC:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
