@@ -212,6 +212,9 @@
 
 .alias EnemyOffset      $3E     ;Offset used to get enemy from EnemyGroupsTbl.
 
+.alias SpellFlagsLB     $3E     ;Stores bit flags for first 8 spells.
+.alias SpellFlagsUB     $3F     ;Stores bit flags for last 2 spells in the LSBs.
+
 .alias SprtPalPtr       $3E     ;Pointer to sprite palette data.
 .alias SprtPalPtrLB     $3E     ;Pointer to sprite palette data, lower byte.
 .alias SprtPalPtrUB     $3F     ;Pointer to sprite palette data, upper byte.
@@ -220,6 +223,8 @@
 .alias NPCXPixelsUB     $3F     ;NPC X pixel coordinates, upper byte.
 .alias NPCYPixelsLB     $40     ;NPC Y pixel coordinates, lower byte.
 .alias NPCYPixelsUB     $41     ;NPC Y pixel coordinates, upper byte.
+
+.alias SpellDescByte    $40     ;#$00-#$0A represents each one of the spells in ascending order.
 
 .alias BGPalPtr         $40     ;Pointer to background palette data.
 .alias BGPalPtrLB       $40     ;Pointer to background palette data, lower byte.
@@ -1164,6 +1169,7 @@
 .alias DSC_REPEL        $1B     ;Repel spell text.
 .alias DSC_HEALMORE     $1C     ;Healmore spell text.
 .alias DSC_HURTMORE     $1D     ;Hurtmore spell text.
+.alias DSC_END          $FF     ;Marks the end of the description buffer.
 
 ;Window border constants.
 .alias NULL             $0000   ;Null pointer.

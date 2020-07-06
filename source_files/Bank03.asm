@@ -37,6 +37,7 @@
 .alias ChkSpecialLoc            $B219
 .alias CheckMapExit             $B228
 .alias DoJoyRight               $B252
+.alias PostMoveUpdate           $B30E
 .alias DoJoyLeft                $B34C
 .alias DoJoyDown                $B3D8
 .alias DoJoyUp                  $B504
@@ -4159,18 +4160,19 @@ LD912:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 ;----------------------------------------------------------------------------------------------------
 
 GetRegPalPtrs:
-LD915:  LDA RegSPPalPtr
-LD918:  STA $3E
-LD91A:  LDA RegSPPalPtr+1
-LD91D:  STA $3F
+LD915:  LDA RegSPPalPtr         ;
+LD918:  STA SprtPalPtrLB        ;Get a pointer to the standard sprite palettes.
+LD91A:  LDA RegSPPalPtr+1       ;
+LD91D:  STA SprtPalPtrUB        ;
 
-LD91F:  LDA TownPalPtr
-LD922:  STA $40
-LD924:  LDA TownPalPtr+1
-LD927:  STA $41
-LD929:  LDA #PAL_LOAD_BG
-LD92B:  STA LoadBGPal
-LD92D:  RTS
+LD91F:  LDA TownPalPtr          ;
+LD922:  STA BGPalPtrLB          ;Get a pointer to the standard background palettes.
+LD924:  LDA TownPalPtr+1        ;
+LD927:  STA BGPalPtrUB          ;
+
+LD929:  LDA #PAL_LOAD_BG        ;
+LD92B:  STA LoadBGPal           ;Indicate background palette data should be loaded.
+LD92D:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4178,71 +4180,91 @@ IncDescBuffer:
 LD92E:  LDX #$00                ;Prepare to write incrementing numbers-->
 LD930:  LDA #$01                ;to the description buffer.
 
-LD932:  STA DescBuf,X
-LD934:  INX
-LD935:  CLC
-LD936:  ADC #$01
-LD938:  CPX #$0B
-LD93A:  BNE $D932
-LD93C:  RTS
+LD932:* STA DescBuf,X           ;
+LD934:  INX                     ;Write the values #$01 to #$0A to the description buffer.
+LD935:  CLC                     ;
+LD936:  ADC #$01                ;
+LD938:  CPX #$0B                ;Have all the bytes been written?
+LD93A:  BNE -                   ;If not, branch to write another byte.
+LD93C:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-LD93D:  LDA #$00
-LD93F:  BEQ $D943
+StairDownFound:
+LD93D:  LDA #$00                ;Indicate player came down stairs. Always faces right.
+LD93F:  BEQ +                   ;Branch always.
 
 CalcNextMap:
-LD941:  LDA #$01
+LD941:  LDA #$01                ;Indicate player new facing direction is table lookup.
 
-LD943:  STA $2C
-LD945:  LDX #$00
-LD947:  LDY #$00
+LD943:* STA GenByte2C           ;Store player direction source flag.
 
-LD949:  LDA MapNumber
-LD94B:  CMP MapEntryTbl,X
-LD94E:  BNE $D99C
-LD950:  LDA CharXPos
-LD952:  CMP MapEntryTbl+1,X
-LD955:  BNE $D99C
-LD957:  LDA CharYPos
-LD959:  CMP MapEntryTbl+2,X
-LD95C:  BNE $D99C
-LD95E:  LDA MapTargetTbl,X
-LD961:  STA MapNumber
-LD963:  LDA MapTargetTbl+1,X
-LD966:  STA CharXPos
-LD968:  STA _CharXPos
-LD96A:  STA CharXPixelsLB
-LD96C:  LDA MapTargetTbl+2,X
-LD96F:  STA CharYPos
-LD971:  STA _CharYPos
-LD973:  STA CharYPixelsLB
-LD975:  LDA $2C
-LD977:  BEQ $D97F
-LD979:  LDA MapEntryDirTbl,Y
-LD97C:  JMP $D981
+LD945:  LDX #$00                ;Zero out indexes.
+LD947:  LDY #$00                ;
 
-LD97F:  LDA #$01
+MapCheckLoop1:
+LD949:  LDA MapNumber           ;Has the right map been found in the table?
+LD94B:  CMP MapEntryTbl,X       ;
+LD94E:  BNE NextMapEntry1       ;If not, branch to check next table entry.
 
-LD981:  AND #$03
-LD983:  STA CharDirection
-LD986:  LDA #$00
-LD988:  STA CharXPixelsUB
-LD98A:  STA CharYPixelsUB
-LD98C:  LDX #$04
-LD98E:  ASL CharXPixelsLB
-LD990:  ROL CharXPixelsUB
-LD992:  ASL CharYPixelsLB
-LD994:  ROL CharYPixelsUB
-LD996:  DEX
-LD997:  BNE $D98E
+LD950:  LDA CharXPos            ;Does the X position in the table match the player's position?
+LD952:  CMP MapEntryTbl+1,X     ;
+LD955:  BNE NextMapEntry1       ;If not, branch to check next table entry.
+
+LD957:  LDA CharYPos            ;Does the Y position in the table match the player's position?
+LD959:  CMP MapEntryTbl+2,X     ;
+LD95C:  BNE NextMapEntry1       ;If not, branch to check next table entry.
+
+LD95E:  LDA MapTargetTbl,X      ;Set the player's new map.
+LD961:  STA MapNumber           ;
+
+LD963:  LDA MapTargetTbl+1,X    ;
+LD966:  STA CharXPos            ;Set player's new X position.
+LD968:  STA _CharXPos           ;
+LD96A:  STA CharXPixelsLB       ;Pixel value will be processed more later.
+
+LD96C:  LDA MapTargetTbl+2,X    ;
+LD96F:  STA CharYPos            ;Set player's new Y position.
+LD971:  STA _CharYPos           ;
+LD973:  STA CharYPixelsLB       ;Pixel value will be processed more later.
+
+LD975:  LDA GenByte2C           ;Did player just come down stairs?
+LD977:  BEQ StairsFaceRight     ;If so, branch to make player face right.
+
+LD979:  LDA MapEntryDirTbl,Y    ;Get player's new facing direction from table.
+LD97C:  JMP SetPlyrPixelLoc     ;($D981)Set player's X and Y pixel location.
+
+StairsFaceRight:
+LD97F:  LDA #DIR_RIGHT          ;Came down stairs. Player always faces right.
+
+SetPlyrPixelLoc:
+LD981:  AND #$03                ;Save the bits representing the player's facing direction.
+LD983:  STA CharDirection       ;
+
+LD986:  LDA #$00                ;
+LD988:  STA CharXPixelsUB       ;Clear out upper byte of player's pixel location.
+LD98A:  STA CharYPixelsUB       ;
+
+LD98C:  LDX #$04                ;Prepare to loop 4 times.
+
+LD98E:* ASL CharXPixelsLB       ;
+LD990:  ROL CharXPixelsUB       ;Multiply given pixel position by 16 as the block position -->
+LD992:  ASL CharYPixelsLB       ;has been given. Each block is 16X16 pixels.
+LD994:  ROL CharYPixelsUB       ;
+LD996:  DEX                     ;Done multiplying?
+LD997:  BNE -                   ;If not, branch to shift again.
+
 LD999:  JMP MapChngWithSound    ;($B097)Change maps with stairs sound.
-LD99C:  INX
-LD99D:  INX
-LD99E:  INX
-LD99F:  INY
-LD9A0:  CPX #$99
-LD9A2:  BNE $D949
+
+NextMapEntry1:
+LD99C:  INX                     ;
+LD99D:  INX                     ;Increment to next entry in MapEntryTbl.
+LD99E:  INX                     ;
+
+LD99F:  INY                     ;Increment to next entry in MapEntryDirTbl.
+
+LD9A0:  CPX #$99                ;Have all the entries been checked?
+LD9A2:  BNE MapCheckLoop1       ;If not, loop to check another entry.
 
 LD9A4:  JSR Dowindow            ;($C6F0)display on-screen window.
 LD9A7:  .byte WND_DIALOG        ;Dialog window.
@@ -4252,56 +4274,72 @@ LD9AB:  .byte $0E               ;TextBlock 1, entry 14.
 
 LD9AC:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
-;----------------------------------------------------------------------------------------------------
-
 CheckStairs:
-LD9AF:  LDA CharXPos
-LD9B1:  STA $3C
-LD9B3:  LDA CharYPos
-LD9B5:  STA $3E
+LD9AF:  LDA CharXPos            ;
+LD9B1:  STA XTarget             ;Get X and Y location of block player is standing on.
+LD9B3:  LDA CharYPos            ;
+LD9B5:  STA YTarget             ;
 LD9B7:  JSR GetBlockID          ;($AC17)Get description of block.
-LD9BA:  LDA $3C
-LD9BC:  CMP #$05
-LD9BE:  BNE $D9C3
-LD9C0:  JMP $D93D
 
-LD9C3:  CMP #$03
-LD9C5:  BNE $DA06
-LD9C7:  LDX #$00
-LD9C9:  LDY #$00
-LD9CB:  LDA MapNumber
-LD9CD:  CMP MapTargetTbl,X
-LD9D0:  BNE $D9FE
-LD9D2:  LDA CharXPos
-LD9D4:  CMP MapTargetTbl+1,X
-LD9D7:  BNE $D9FE
-LD9D9:  LDA CharYPos
-LD9DB:  CMP MapTargetTbl+2,X
-LD9DE:  BNE $D9FE
-LD9E0:  LDA #$03
+LD9BA:  LDA TargetResults       ;Is player standing on a stair down block?
+LD9BC:  CMP #BLK_STAIR_DN       ;
+LD9BE:  BNE ChkStairsUp         ;If not, branch to check for a stair up block.
+
+LD9C0:  JMP StairDownFound      ;Jump to go down stairs.
+
+ChkStairsUp:
+LD9C3:  CMP #BLK_STAIR_UP       ;Is player standing on stair up block?
+LD9C5:  BNE NoStairsFound       ;If not, branch to tell player no stairs are here.
+
+StairUpFound:
+LD9C7:  LDX #$00                ;Zero out indexes.
+LD9C9:  LDY #$00                ;
+
+MapCheckLoop2:
+LD9CB:  LDA MapNumber           ;Has the right map been found in the table?
+LD9CD:  CMP MapTargetTbl,X      ;
+LD9D0:  BNE NextMapEntry2       ;If not, branch to check next table entry.
+
+LD9D2:  LDA CharXPos            ;Does the X position in the table match the player's position?
+LD9D4:  CMP MapTargetTbl+1,X    ;
+LD9D7:  BNE NextMapEntry2       ;If not, branch to check next table entry.
+
+LD9D9:  LDA CharYPos            ;Does the Y position in the table match the player's position?
+LD9DB:  CMP MapTargetTbl+2,X    ;
+LD9DE:  BNE NextMapEntry2       ;If not, branch to check next table entry.
+
+LD9E0:  LDA #DIR_LEFT           ;Came up stairs. Player always faces left.
 
 ChangeMaps:
-LD9E2:  PHA
-LD9E3:  LDA MapEntryTbl,X
-LD9E6:  STA MapNumber
-LD9E8:  LDA MapEntryTbl+1,X
-LD9EB:  STA CharXPos
-LD9ED:  STA _CharXPos
-LD9EF:  STA CharXPixelsLB
-LD9F1:  LDA MapEntryTbl+2,X
-LD9F4:  STA CharYPos
-LD9F6:  STA _CharYPos
-LD9F8:  STA CharYPixelsLB
-LD9FA:  PLA
-LD9FB:  JMP $D981
+LD9E2:  PHA                     ;Save A on stack.
 
-LD9FE:  INX
-LD9FF:  INX
-LDA00:  INX
-LDA01:  INY
-LDA02:  CPX #$99
-LDA04:  BNE $D9CB
+LD9E3:  LDA MapEntryTbl,X       ;Set the player's new map.
+LD9E6:  STA MapNumber           ;
 
+LD9E8:  LDA MapEntryTbl+1,X     ;
+LD9EB:  STA CharXPos            ;Set player's new X position.
+LD9ED:  STA _CharXPos           ;
+LD9EF:  STA CharXPixelsLB       ;Pixel value will be processed more later.
+
+LD9F1:  LDA MapEntryTbl+2,X     ;
+LD9F4:  STA CharYPos            ;Set player's new Y position.
+LD9F6:  STA _CharYPos           ;
+LD9F8:  STA CharYPixelsLB       ;Pixel value will be processed more later.
+
+LD9FA:  PLA                     ;Restore A from stack.
+LD9FB:  JMP SetPlyrPixelLoc     ;($D981)Set player's X and Y pixel location.
+
+NextMapEntry2:
+LD9FE:  INX                     ;
+LD9FF:  INX                     ;Increment to next entry in MapTargetTbl.
+LDA00:  INX                     ;
+
+LDA01:  INY                     ;Increment to next entry in MapEntryDirTbl.
+
+LDA02:  CPX #$99                ;Have all the entries been checked?
+LDA04:  BNE MapCheckLoop2       ;If not, loop to check another entry.
+
+NoStairsFound:
 LDA06:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDA09:  .byte WND_DIALOG        ;Dialog window.
 
@@ -4312,14 +4350,17 @@ LDA0E:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
 ;----------------------------------------------------------------------------------------------------
 
+;These functions handle non-combat spell casting.
+
 DoSpell:
-LDA11:  LDA SpellFlags
-LDA13:  STA $3E
-LDA15:  LDA ModsnSpells
-LDA17:  AND #$03
-LDA19:  STA $3F
-LDA1B:  ORA $3E
-LDA1D:  BNE $DA2A
+LDA11:  LDA SpellFlags          ;
+LDA13:  STA SpellFlagsLB        ;Get a copy of all the spells the player has.
+LDA15:  LDA ModsnSpells         ;
+LDA17:  AND #$03                ;
+LDA19:  STA SpellFlagsUB        ;
+
+LDA1B:  ORA SpellFlagsLB        ;Does the player have any spells at all?
+LDA1D:  BNE +                   ;If so, branch to bring up spell window.
 
 LDA1F:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDA22:  .byte WND_DIALOG        ;Dialog window.
@@ -4329,13 +4370,14 @@ LDA26:  .byte $31               ;TextBlock4, entry 1.
 
 LDA27:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
-LDA2A:  JSR $DB56
+LDA2A:* JSR ShowSpells          ;($DB56)Bring up the spell window.
 
-LDA2D:  CMP #$FF
-LDA2F:  BNE $DA34
+LDA2D:  CMP #WND_ABORT          ;Was the spell cancelled?
+LDA2F:  BNE +                   ;If not, branch.
+
 LDA31:  JMP ClrNCCmdWnd         ;($CF6A)Remove non-combat command window from screen.
 
-LDA34:  PHA
+LDA34:* PHA                     ;Save the spell cast on the stack for now.
 
 LDA35:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDA38:  .byte WND_DIALOG        ;Dialog window.
@@ -4360,96 +4402,131 @@ ChkHurt:
 LDA51:  CMP #SPL_HURT           ;Was hurt spell cast?
 LDA53:  BNE +                   ;If not, branch to move on.
 
+SpellFizzle:
 LDA55:  JSR DoDialogLoBlock     ;($C7CB)But nothing happened...
 LDA58:  .byte $33               ;TextBlock4, entry 3.
 
 LDA59:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
-LDA5C:* CMP #SPL_SLEEP
-LDA5E:  BEQ $DA55
-LDA60:  CMP #SPL_RADIANT
-LDA62:  BNE $DA94
-LDA64:  LDA MapType
-LDA66:  CMP #MAP_DUNGEON
-LDA68:  BNE $DA55
-LDA6A:  LDA #$50
-LDA6C:  STA RadiantTimer
+LDA5C:* CMP #SPL_SLEEP          ;Was sleep spell cast?
+LDA5E:  BEQ SpellFizzle         ;If so, branch to indicate nothing happened.
 
-LDA6E:  LDA #WND_DIALOG
+LDA60:  CMP #SPL_RADIANT        ;Was radiant spell cast?
+LDA62:  BNE ChkRepel            ;If not, branch to move on.
+
+LDA64:  LDA MapType             ;Is the player in a dungeon?
+LDA66:  CMP #MAP_DUNGEON        ;
+LDA68:  BNE SpellFizzle         ;If not, branch to indicate nothing happened.
+
+LDA6A:  LDA #$50                ;Set the radiant timer.
+LDA6C:  STA RadiantTimer        ;
+
+LDA6E:  LDA #WND_DIALOG         ;Remove the dialog window from the screen.
 LDA70:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-LDA73:  LDA #WND_CMD_NONCMB
+LDA73:  LDA #WND_CMD_NONCMB     ;Remove the command window from the screen.
 LDA75:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-LDA78:  LDA #WND_POPUP
+LDA78:  LDA #WND_POPUP          ;Remove the pop-up window from the screen.
 LDA7A:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
 
-LDA7D:  LDA LightDiameter
-LDA7F:  CMP #$07
-LDA81:  BNE $DA84
-LDA83:  RTS
+LightIncreaseLoop:
+LDA7D:  LDA LightDiameter       ;Radiant cast. Is the radiant diameter already maxed?
+LDA7F:  CMP #$07                ;
+LDA81:  BNE +                   ;If not, branch to increase the light diameter.
+LDA83:  RTS                     ;Else exit.
 
-LDA84:  CLC
-LDA85:  ADC #$02
-LDA87:  STA LightDiameter
+LDA84:* CLC                     ;
+LDA85:  ADC #$02                ;Increase the light diameter by 2 blocks.
+LDA87:  STA LightDiameter       ;
 
 LDA89:  LDA #SFX_RADIANT        ;Radiant spell SFX.
 LDA8B:  BRK                     ;
 LDA8C:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LDA8E:  JSR $B30E
-LDA91:  JMP $DA7D
-LDA94:  CMP #SPL_REPEL
-LDA96:  BNE $DA9F
-LDA98:  LDA #$FF
-LDA9A:  STA RepelTimer
+LDA8E:  JSR PostMoveUpdate      ;($B30E)Update nametables after player moves.
+LDA91:  JMP LightIncreaseLoop   ;Loop to keep increasing light diameter to maximum.
+
+ChkRepel:
+LDA94:  CMP #SPL_REPEL          ;Was repel cast?
+LDA96:  BNE ChkOutside          ;If not, branch to move on.
+
+LDA98:  LDA #$FF                ;Max out the repel timer.
+LDA9A:  STA RepelTimer          ;
 LDA9C:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
-LDA9F:  CMP #SPL_OUTSIDE
-LDAA1:  BNE $DAE3
-LDAA3:  LDA MapNumber
-LDAA5:  CMP #MAP_ERDRCK_B1
-LDAA7:  BCC $DAB0
-LDAA9:  LDX #$27
-LDAAB:  LDA #$02
+ChkOutside:
+LDA9F:  CMP #SPL_OUTSIDE        ;Was outside cast?
+LDAA1:  BNE ChkHealmore         ;If not, branch to move on.
+
+ChkErdricksCave:
+LDAA3:  LDA MapNumber           ;
+LDAA5:  CMP #MAP_ERDRCK_B1      ;Is player in Erdrick's cave?
+LDAA7:  BCC ChkGarinhamCave     ;If not, branch.
+
+LDAA9:  LDX #$27                ;Overworld at Erdrick's cave entrance.
+LDAAB:  LDA #DIR_DOWN           ;Player will be facing down.
 LDAAD:  JMP ChangeMaps          ;($D9E2)Load a new map.
-LDAB0:* CMP #$18
-LDAB2:  BCC $DABB
-LDAB4:  LDX #$39
-LDAB6:  LDA #$02
+
+ChkGarinhamCave:
+LDAB0:* CMP #MAP_CVGAR_B1       ;Is player in Garinham cave?
+LDAB2:  BCC ChkRockMtn          ;If not, branch.
+
+LDAB4:  LDX #$39                ;Overworld at Garinham cave entrance.
+LDAB6:  LDA #DIR_DOWN           ;Player will be facing down.
 LDAB8:  JMP ChangeMaps          ;($D9E2)Load a new map.
-LDABB:  CMP #$16
-LDABD:  BCC $DAC6
-LDABF:  LDX #$18
-LDAC1:  LDA #$02
+
+ChkRockMtn:
+LDABB:  CMP #MAP_RCKMTN_B1      ;Is player in the rock mountain cave?
+LDABD:  BCC ChkSwampCave        ;If not, branch.
+
+LDABF:  LDX #$18                ;Overworld at rock mountain cave entrance.
+LDAC1:  LDA #DIR_DOWN           ;Player will be facing down.
 LDAC3:  JMP ChangeMaps          ;($D9E2)Load a new map.
-LDAC6:  CMP #$15
-LDAC8:  BNE $DAD1
-LDACA:  LDX #$0F
-LDACC:  LDA #$02
+
+ChkSwampCave:
+LDAC6:  CMP #MAP_SWAMPCAVE      ;Is player in the swamp cave?
+LDAC8:  BNE ChkDLCastle         ;If not, branch.
+
+LDACA:  LDX #$0F                ;Overworld at swamp cave entrance.
+LDACC:  LDA #DIR_DOWN           ;Player will be facing down.
 LDACE:  JMP ChangeMaps          ;($D9E2)Load a new map.
-LDAD1:  CMP #$0F
-LDAD3:  BCS $DADC
-LDAD5:  CMP #$06
-LDAD7:  BEQ $DADC
-LDAD9:  JMP $DA55
-LDADC:  LDX #$12
-LDADE:  LDA #$02
+
+ChkDLCastle:
+LDAD1:  CMP #MAP_DLCSTL_SL1     ;Is player in the Dragon Lord's castle?
+LDAD3:  BCS OutsideDLCastle     ;If so, branch to exit castle.
+
+LDAD5:  CMP #MAP_DLCSTL_BF      ;Is player in the basement of the Dragon Lord's castle?
+LDAD7:  BEQ OutsideDLCastle     ;If so, branch to exit castle.
+
+LDAD9:  JMP SpellFizzle         ;($DA55)Print text indicating spell did not work.
+
+OutsideDLCastle:
+LDADC:  LDX #$12                ;Overworld at dragon lord's castle.
+LDADE:  LDA #$02                ;Player will be facing down.
 LDAE0:  JMP ChangeMaps          ;($D9E2)Load a new map.
 
+ChkHealmore:
 LDAE3:  CMP #SPL_HEALMORE       ;Was healmore spell cast?
-LDAE5:  BNE +                   ;If not, branch to move on.
+LDAE5:  BNE ChkReturn           ;If not, branch to move on.
 
 LDAE7:  JSR DoHealmore          ;($DBD7)Increase health from healmore spell.
 LDAEA:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
-LDAED:* CMP #SPL_RETURN
-LDAEF:  BNE $DB34
-LDAF1:  LDA MapType
-LDAF3:  CMP #MAP_DUNGEON
-LDAF5:  BEQ $DAFD
-LDAF7:  LDA MapNumber
-LDAF9:  CMP #MAP_DLCSTL_BF
-LDAFB:  BNE $DB00
-LDAFD:  JMP $DA55
+ChkReturn:
+LDAED:  CMP #SPL_RETURN         ;Was return spell cast?
+LDAEF:  BNE UnknownSpell        ;If not, branch to exit. Unknown spell. Something went wrong.
+
+LDAF1:  LDA MapType             ;Is the player in a dungeon?
+LDAF3:  CMP #MAP_DUNGEON        ;
+LDAF5:  BEQ ReturnFail          ;If so, branch. Spell fails.
+
+LDAF7:  LDA MapNumber           ;Is the player in the bottom of the Dragon Lord's castle?
+LDAF9:  CMP #MAP_DLCSTL_BF      ;
+LDAFB:  BNE DoReturn            ;If so, branch. Spell fails.  
+
+ReturnFail:
+LDAFD:  JMP SpellFizzle         ;($DA55)Print text indicating spell did not work.
+
+DoReturn:
 LDB00:  LDA #MAP_OVERWORLD
 LDB02:  STA MapNumber
 LDB04:  LDA #$2A
@@ -4479,7 +4556,8 @@ LDB2C:  LDA #$02
 LDB2E:  STA CharDirection
 LDB31:  JMP MapChngNoFadeOut    ;($B08D)Change map with no fade out or stairs sound.
 
-LDB34:  JMP $DA55
+UnknownSpell:
+LDB34:  JMP SpellFizzle         ;($DA55)Print text indicating spell did not work.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4504,33 +4582,45 @@ LDB55:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
+ShowSpells:
 LDB56:  JSR IncDescBuffer       ;($D92E)Write #$01-#$0A to the description buffer.
-LDB59:  LDA #$02
-LDB5B:  STA $40
-LDB5D:  LDX #$01
-LDB5F:  LSR $3F
-LDB61:  ROR $3E
-LDB63:  BCC $DB6A
-LDB65:  LDA $40
-LDB67:  STA DescBuf,X
-LDB69:  INX
-LDB6A:  INC $40
-LDB6C:  LDA $40
-LDB6E:  CMP #$0C
-LDB70:  BNE $DB5F
-LDB72:  LDA #$FF
-LDB74:  STA DescBuf,X
+LDB59:  LDA #$02                ;Start description bytes for spells at #$02. 2 will be -->
+LDB5B:  STA SpellDescByte       ;subtracted before the function returns.
+LDB5D:  LDX #$01                ;Start at index 1 in the description buffer.
+
+GetSpellsLoop:
+LDB5F:  LSR SpellFlagsUB        ;Rotate spell flags through the carry bit to see if the -->
+LDB61:  ROR SpellFlagsLB        ;player has a given spell. Does the player have the spell?
+LDB63:  BCC nextSpell           ;If not, branch to check the next spell.
+
+LDB65:  LDA SpellDescByte       ;
+LDB67:  STA DescBuf,X           ;Player has the spell. Put it in the description buffer.
+LDB69:  INX                     ;
+
+nextSpell:
+LDB6A:  INC SpellDescByte       ;Increment to next spell description byte.
+LDB6C:  LDA SpellDescByte       ;
+LDB6E:  CMP #$0C                ;Have all the spells been checked?
+LDB70:  BNE GetSpellsLoop       ;If not, branch to check the next spell.
+
+LDB72:  LDA #DSC_END            ;Mark the end of the description buffer.
+LDB74:  STA DescBuf,X           ;
 
 LDB76:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDB79:  .byte WND_SPELL2        ;Spell window.
 
-LDB7A:  CMP #$FF
-LDB7C:  BEQ $DB84
-LDB7E:  TAX
-LDB7F:  LDA DescBuf+1,X
-LDB81:  SEC
-LDB82:  SBC #$02
-LDB84:  RTS
+LDB7A:  CMP #WND_ABORT          ;Did the player abort the spell selection?
+LDB7C:  BEQ ShowSpellEnd        ;If so, branch to exit.
+
+LDB7E:  TAX                     ;
+LDB7F:  LDA DescBuf+1,X         ;The value from the description buffer needs to have 2 -->
+LDB81:  SEC                     ;subtracted from it to get the proper value for the spell -->
+LDB82:  SBC #$02                ;description text. Do that here.
+
+ShowSpellEnd:
+LDB84:  RTS                     ;Exit with the spell chosen in the accumulator.
+
+;----------------------------------------------------------------------------------------------------
 
 CheckMP:
 LDB85:  STA SpellToCast
@@ -4621,6 +4711,7 @@ LDBFA:  LDA DescTblPtr+1
 LDBFD:  STA $3D
 
 LDBFF:  LDY #$00
+
 LDC01:* LDA ($3C),Y
 LDC03:  INC $3C
 LDC05:  BNE $DC09
@@ -4680,7 +4771,7 @@ LDC46:  LDA CharYPos
 LDC48:  STA $3E
 LDC4A:  DEC $3E
 LDC4C:  JSR GetBlockID          ;($AC17)Get description of block.
-LDC4F:  LDA $3C
+LDC4F:  LDA TargetResults
 LDC51:  CMP #BLK_DOOR
 LDC53:  BEQ $DC99
 LDC55:  LDA CharXPos
@@ -4689,7 +4780,7 @@ LDC59:  LDA CharYPos
 LDC5B:  STA $3E
 LDC5D:  INC $3E
 LDC5F:  JSR GetBlockID          ;($AC17)Get description of block.
-LDC62:  LDA $3C
+LDC62:  LDA TargetResults
 LDC64:  CMP #BLK_DOOR
 LDC66:  BEQ $DC99
 LDC68:  LDA CharXPos
@@ -4698,7 +4789,7 @@ LDC6C:  LDA CharYPos
 LDC6E:  STA $3E
 LDC70:  DEC $3C
 LDC72:  JSR GetBlockID          ;($AC17)Get description of block.
-LDC75:  LDA $3C
+LDC75:  LDA TargetResults
 LDC77:  CMP #BLK_DOOR
 LDC79:  BEQ $DC99
 LDC7B:  LDA CharXPos
@@ -4707,7 +4798,7 @@ LDC7F:  LDA CharYPos
 LDC81:  STA $3E
 LDC83:  INC $3C
 LDC85:  JSR GetBlockID          ;($AC17)Get description of block.
-LDC88:  LDA $3C
+LDC88:  LDA TargetResults
 LDC8A:  CMP #BLK_DOOR
 LDC8C:  BEQ $DC99
 
@@ -4719,8 +4810,8 @@ LDC95:  .byte $0B               ;TextBlock17, entry 11.
 
 LDC96:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
-LDC99:  LDA InventoryKeys
-LDC9B:  BNE $DCA8
+LDC99:  LDA InventoryKeys       ;Does the player have a key to use?
+LDC9B:  BNE UseKey              ;If so, branch.
 
 LDC9D:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDCA0:  .byte WND_DIALOG        ;Dialog window.
@@ -4730,6 +4821,7 @@ LDCA4:  .byte $0C               ;TextBlock17, entry 12.
 
 LDCA5:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
+UseKey:
 LDCA8:  DEC InventoryKeys
 LDCAA:  LDX #$00
 LDCAC:  LDA DoorXPos,X
@@ -4838,7 +4930,7 @@ LDD4B:  LDA #SFX_RADIANT        ;Radiant spell SFX.
 LDD4D:  BRK                     ;
 LDD4E:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LDD50:  JMP $B30E
+LDD50:  JMP PostMoveUpdate      ;($B30E)Update nametables after player moves.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4886,7 +4978,7 @@ LDD8B:  JSR DoDialogLoBlock     ;($C7CB)TextBlock4, entry 9.
 LDD8E:  .byte $39               ;Player threw the wings into the air...
 
 LDD8F:  JSR BWScreenFlash       ;($DB37)Flash screen in black and white.
-LDD92:  JMP $DB00
+LDD92:  JMP DoReturn            ;($DB00)Return player back to the castle.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4903,8 +4995,8 @@ LDDA0:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 ;----------------------------------------------------------------------------------------------------
 
 ChkFryFlt:
-LDDA3:  CMP #INV_FLUTE
-LDDA5:  BNE ChkFghtrRng
+LDDA3:  CMP #INV_FLUTE          ;Did player use the fairy's flute?
+LDDA5:  BNE ChkFghtrRng         ;If not, branch.
 
 LDDA7:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDDAA:  .byte WND_DIALOG        ;Dialog window.
@@ -5625,7 +5717,7 @@ LE1CA:  STA $3C
 LE1CC:  LDA CharYPos
 LE1CE:  STA $3E
 LE1D0:  JSR GetBlockID          ;($AC17)Get description of block.
-LE1D3:  LDA $3C
+LE1D3:  LDA TargetResults
 LE1D5:  CMP #$0C
 LE1D7:  BNE $E1DE
 
@@ -6437,11 +6529,11 @@ LE6B6:  CMP #$02
 LE6B8:  BEQ $E6BD
 LE6BA:  JMP $E7A2
 LE6BD:  LDA SpellFlags
-LE6BF:  STA $3E
+LE6BF:  STA SpellFlagsLB
 LE6C1:  LDA ModsnSpells
 LE6C3:  AND #$03
-LE6C5:  STA $3F
-LE6C7:  ORA $3E
+LE6C5:  STA SpellFlagsUB
+LE6C7:  ORA SpellFlagsLB
 LE6C9:  BNE $E6D7
 LE6CB:  LDA #WND_CMD_CMB
 LE6CD:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
@@ -6451,9 +6543,10 @@ LE6D3:  .byte $31               ;TextBlock4, entry 1.
 
 LE6D4:  JMP StartPlayerTurn     ;($E5CE)It's the player's turn to attack.
 
-LE6D7:  JSR $DB56
-LE6DA:  CMP #$FF
+LE6D7:  JSR ShowSpells          ;($DB56)Bring up the spell window.
+LE6DA:  CMP #WND_ABORT
 LE6DC:  BNE $E6E6
+
 LE6DE:  LDA #WND_CMD_CMB
 LE6E0:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
 LE6E3:  JMP StartPlayerTurn     ;($E5CE)It's the player's turn to attack.
