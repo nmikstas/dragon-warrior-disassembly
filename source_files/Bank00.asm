@@ -3162,16 +3162,16 @@ LA7FE:  STA $9A
 LA800:  LDA WndTypeCopy
 LA802:  BEQ $A818
 
-LA804:  CMP #$02
+LA804:  CMP #WND_DIALOG
 LA806:  BEQ $A818
 
-LA808:  CMP #$03
+LA808:  CMP #WND_CMD_NONCMB
 LA80A:  BEQ $A818
 
-LA80C:  CMP #$04
+LA80C:  CMP #WND_CMD_CMB
 LA80E:  BEQ $A818
 
-LA810:  CMP #$0B
+LA810:  CMP #WND_ALPHBT
 LA812:  BEQ $A818
 
 LA814:  LDA #$00
@@ -3187,6 +3187,7 @@ LA822:  LDA $9D
 LA824:  STA $0F
 LA826:  LDA $9E
 LA828:  STA $97
+
 LA82A:  JSR $A880
 LA82D:  LDA $99
 LA82F:  CLC
@@ -3246,10 +3247,12 @@ LA88A:  BEQ $A893
 LA88C:  CMP #$FE
 LA88E:  BEQ $A893
 LA890:  JMP $A8AD
+
 LA893:  LDA #$00
 LA895:  STA BlkRemoveFlgs
 LA897:  STA PPUHorzVert
 LA899:  JSR $A921
+
 LA89C:  LDY #$00
 LA89E:  LDA #$FF
 LA8A0:  STA ($99),Y
@@ -3819,9 +3822,9 @@ LAC16:  RTS                     ;
 
 GetBlockID:
 LAC17:  LDA XTarget             ;
-LAC19:  STA GenByte42           ;Store a copy of the target coordinates.
+LAC19:  STA _TargetX            ;Store a copy of the target coordinates.
 LAC1B:  LDA YTarget             ;
-LAC1D:  STA GenByte43           ;
+LAC1D:  STA _TargetY            ;
 
 LAC1F:  LDA MapWidth            ;Is the target X coordinate within the map bounds?
 LAC21:  CMP XTarget             ;
@@ -5783,7 +5786,7 @@ LB76A:  BEQ UpdateNPCs1         ;If so, branch to update NPCs.
 
 LB76C:  JMP UpdateNPCCounter    ;($B9FB)Update NPC counter and exit.
 
-;This code calculates the movement of 2 NPC whenever its entered. Which 2 NPCs is based on
+;This code calculates the movement of 2 NPCs whenever its entered. Which 2 NPCs is based on
 ;NPCUpdateCntr.  There are a max of 20 NPCs but only 10 can move. Valid ranges for NPCUpdateCntr
 ;are 0 to 4.  There are 3 bytes of data per NPC.
 

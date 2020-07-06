@@ -862,6 +862,14 @@
 .alias INV_SCALE        $07     ;Dragon's scale.
 .alias INV_FLUTE        $08     ;Fairy flute.
 .alias INV_RING         $09     ;Fighter's ring.
+.alias INV_TOKEN        $0A     ;Erdrick's token.
+.alias INV_LOVE         $0B     ;Gwaelin's love.
+.alias INV_BELT         $0C     ;Cursed belt.
+.alias INV_HARP         $0D     ;Silver harp.
+.alias INV_NECKLACE     $0E     ;Death necklace.
+.alias INV_STONES       $0F     ;Stones of sunlight.
+.alias INV_STAFF        $10     ;Staff of rain.
+.alias INV_DROP         $11     ;Rainbow drop.
 
 ;Controller bits.
 .alias IN_A             $01     ;A button.

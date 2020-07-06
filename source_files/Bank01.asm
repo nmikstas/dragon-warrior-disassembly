@@ -4598,6 +4598,7 @@ LA0AB:  .byte $5A, $4B, $64, $57, $FF, $F0, $00, $00, $31, $3A, $0C, $0E, $0C, $
 LA0BB:  .byte $8C, $C8, $82, $0E, $FF, $F0, $00, $00, $31, $3A, $0C, $0E, $0C, $FA, $FA, $FA
 
 ;----------------------------------------------------------------------------------------------------
+
 ;The table below provides the base stats per level.  The bytes represent the following stats:
 ;Byte 1-Strength, byte 2-Agility, byte 3-Max HP, byte 4-Max MP, byte 5-Healmore and Hurtmore
 ;spell flags, byte 6-All other spell flags.

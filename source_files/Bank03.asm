@@ -4780,47 +4780,54 @@ LDC39:  LDA DescBuf+1,X         ;
 ;----------------------------------------------------------------------------------------------------
 
 ChkKey:
-LDC3B:  CMP #INV_KEY
-LDC3D:  BEQ CheckDoor
+LDC3B:  CMP #INV_KEY            ;Did player select a key?
+LDC3D:  BEQ CheckDoor           ;If so, branch to check if a door is near.
 LDC3F:  JMP ChkHerb             ;($DCEA)Check if player used an herb.
 
 CheckDoor:
-LDC42:  LDA CharXPos
-LDC44:  STA $3C
-LDC46:  LDA CharYPos
-LDC48:  STA $3E
-LDC4A:  DEC $3E
+LDC42:  LDA CharXPos            ;
+LDC44:  STA XTarget             ;
+LDC46:  LDA CharYPos            ;Check for a door above the player.
+LDC48:  STA YTarget             ;
+LDC4A:  DEC YTarget             ;
 LDC4C:  JSR GetBlockID          ;($AC17)Get description of block.
-LDC4F:  LDA TargetResults
-LDC51:  CMP #BLK_DOOR
-LDC53:  BEQ $DC99
-LDC55:  LDA CharXPos
-LDC57:  STA $3C
-LDC59:  LDA CharYPos
-LDC5B:  STA $3E
-LDC5D:  INC $3E
+
+LDC4F:  LDA TargetResults       ;Is there a door above the player?
+LDC51:  CMP #BLK_DOOR           ;
+LDC53:  BEQ DoorFound           ;If so, branch.
+
+LDC55:  LDA CharXPos            ;
+LDC57:  STA XTarget             ;
+LDC59:  LDA CharYPos            ;Check for a door below the player.
+LDC5B:  STA YTarget             ;
+LDC5D:  INC YTarget             ;
 LDC5F:  JSR GetBlockID          ;($AC17)Get description of block.
-LDC62:  LDA TargetResults
-LDC64:  CMP #BLK_DOOR
-LDC66:  BEQ $DC99
-LDC68:  LDA CharXPos
-LDC6A:  STA $3C
-LDC6C:  LDA CharYPos
-LDC6E:  STA $3E
-LDC70:  DEC $3C
+
+LDC62:  LDA TargetResults       ;Is there a door below the player?
+LDC64:  CMP #BLK_DOOR           ;
+LDC66:  BEQ DoorFound           ;If so, branch.
+
+LDC68:  LDA CharXPos            ;
+LDC6A:  STA XTarget             ;
+LDC6C:  LDA CharYPos            ;Check for a door to the left of the player.
+LDC6E:  STA YTarget             ;
+LDC70:  DEC XTarget             ;
 LDC72:  JSR GetBlockID          ;($AC17)Get description of block.
-LDC75:  LDA TargetResults
-LDC77:  CMP #BLK_DOOR
-LDC79:  BEQ $DC99
-LDC7B:  LDA CharXPos
-LDC7D:  STA $3C
-LDC7F:  LDA CharYPos
-LDC81:  STA $3E
-LDC83:  INC $3C
+
+LDC75:  LDA TargetResults       ;Id there a door to the left of the player?
+LDC77:  CMP #BLK_DOOR           ;
+LDC79:  BEQ DoorFound           ;If so, branch.
+
+LDC7B:  LDA CharXPos            ;
+LDC7D:  STA XTarget             ;
+LDC7F:  LDA CharYPos            ;Check for a door to the right of the player.
+LDC81:  STA YTarget             ;
+LDC83:  INC XTarget             ;
 LDC85:  JSR GetBlockID          ;($AC17)Get description of block.
-LDC88:  LDA TargetResults
-LDC8A:  CMP #BLK_DOOR
-LDC8C:  BEQ $DC99
+
+LDC88:  LDA TargetResults       ;Is there a door to the right of the player?
+LDC8A:  CMP #BLK_DOOR           ;
+LDC8C:  BEQ DoorFound           ;If so, branch.
 
 LDC8E:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDC91:  .byte WND_DIALOG        ;Dialog window.
@@ -4830,6 +4837,7 @@ LDC95:  .byte $0B               ;TextBlock17, entry 11.
 
 LDC96:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
+DoorFound:
 LDC99:  LDA InventoryKeys       ;Does the player have a key to use?
 LDC9B:  BNE UseKey              ;If so, branch.
 
@@ -4842,32 +4850,41 @@ LDCA4:  .byte $0C               ;TextBlock17, entry 12.
 LDCA5:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
 UseKey:
-LDCA8:  DEC InventoryKeys
-LDCAA:  LDX #$00
-LDCAC:  LDA DoorXPos,X
-LDCAF:  BEQ $DCBA
-LDCB1:  INX
-LDCB2:  INX
-LDCB3:  CPX #$10
-LDCB5:  BNE $DCAC
-LDCB7:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
-LDCBA:  LDA $42
-LDCBC:  STA DoorXPos,X
-LDCBF:  LDA $43
-LDCC1:  STA DoorYPos,X
-LDCC4:  LDA $42
-LDCC6:  SEC
-LDCC7:  SBC CharXPos
-LDCC9:  ASL
-LDCCA:  STA $0F
-LDCCC:  LDA $43
-LDCCE:  SEC
-LDCCF:  SBC CharYPos
-LDCD1:  ASL
-LDCD2:  STA $10
+LDCA8:  DEC InventoryKeys       ;Remove a key from the player's inventory.
 
-LDCD4:  LDA #$00
-LDCD6:  STA BlkRemoveFlgs
+LDCAA:  LDX #$00                ;Zero out the index.
+
+DoorCheckLoop:
+LDCAC:  LDA DoorXPos,X          ;Is this an empty spot to record the opened door?
+LDCAF:  BEQ DoorOpened          ;If so, branch.
+
+LDCB1:  INX                     ;Move to next open door slot.
+LDCB2:  INX                     ;
+LDCB3:  CPX #$10                ;Have 5 slots been searched?
+LDCB5:  BNE DoorCheckLoop       ;If not, branch to check next door slot.
+
+LDCB7:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
+
+DoorOpened:
+LDCBA:  LDA _TargetX            ;
+LDCBC:  STA DoorXPos,X          ;Save the position of the door to indicate it has been opened.
+LDCBF:  LDA _TargetY            ;
+LDCC1:  STA DoorYPos,X          ;
+
+LDCC4:  LDA _TargetX            ;
+LDCC6:  SEC                     ;
+LDCC7:  SBC CharXPos            ;Calculate the block X position to remove the door. 
+LDCC9:  ASL                     ;
+LDCCA:  STA XPosFromCenter      ;
+
+LDCCC:  LDA _TargetY            ;
+LDCCE:  SEC                     ;
+LDCCF:  SBC CharYPos            ;Calculate the block Y position to remove the door. 
+LDCD1:  ASL                     ;
+LDCD2:  STA YPosFromCenter      ;
+
+LDCD4:  LDA #$00                ;Remove no tiles from the changed block.
+LDCD6:  STA BlkRemoveFlgs       ;
 
 LDCD8:  LDA #SFX_DOOR           ;Door SFX.
 LDCDA:  BRK                     ;
@@ -4893,20 +4910,27 @@ LDCF1:  .byte WND_DIALOG        ;Dialog window.
 LDCF2:  JSR DoDialogLoBlock     ;($C7CB)Player used the herb.
 LDCF5:  .byte $F7               ;TextBlock16, entry 7.
 
-LDCF6:  DEC InventoryHerbs
-LDCF8:  JSR $DCFE
+LDCF6:  DEC InventoryHerbs      ;Remove an herb from the player's inventory.
+
+LDCF8:  JSR HerbHeal            ;($DCFE)Heal player from an herb.
 LDCFB:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
+HerbHeal:
 LDCFE:  JSR UpdateRandNum       ;($C55B)Get random number.
-LDD01:  LDA RandNumUB
-LDD03:  AND #$07
-LDD05:  CLC
-LDD06:  ADC #$17
-LDD08:  ADC HitPoints
-LDD0A:  CMP DisplayedMaxHP
-LDD0C:  BCC $DD10
-LDD0E:  LDA DisplayedMaxHP
-LDD10:  STA HitPoints
+
+LDD01:  LDA RandNumUB           ;Get lower 3 bits of a random number.
+LDD03:  AND #$07                ;
+
+LDD05:  CLC                     ;
+LDD06:  ADC #$17                ;Herb will heal 23-30 HP.
+LDD08:  ADC HitPoints           ;
+
+LDD0A:  CMP DisplayedMaxHP      ;Did the player's HP exceed the maximum?
+LDD0C:  BCC +                   ;If not, banch.
+
+LDD0E:  LDA DisplayedMaxHP      ;Max out player's HP.
+
+LDD10:* STA HitPoints           ;Update player's HP.
 LDD12:  JSR LoadRegBGPal        ;($EE28)Load the normal background palette.
 
 LDD15:  JSR Dowindow            ;($C6F0)display on-screen window.
@@ -4916,12 +4940,12 @@ LDD19:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 ChkTorch:
-LDD1A:  CMP #INV_TORCH
-LDD1C:  BNE ChkFryWtr
+LDD1A:  CMP #INV_TORCH          ;Did player use a torch?
+LDD1C:  BNE ChkFryWtr           ;If not, branch.
 
-LDD1E:  LDA MapType
-LDD20:  CMP #MAP_DUNGEON
-LDD22:  BEQ $DD2F
+LDD1E:  LDA MapType             ;Is the player in a dungeon?
+LDD20:  CMP #MAP_DUNGEON        ;
+LDD22:  BEQ UseTorch            ;if so, branch.
 
 LDD24:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDD27:  .byte WND_DIALOG        ;Dialog window.
@@ -4931,20 +4955,22 @@ LDD2B:  .byte $35               ;TextBlock4, entry 5.
 
 LDD2C:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
+UseTorch:
 LDD2F:  LDA #ITM_TORCH          ;Remove torch from inventory.
 LDD31:  JSR RemoveInvItem       ;($E04B)Remove item from inventory.
 
-LDD34:  LDA #$00
-LDD36:  STA RadiantTimer
+LDD34:  LDA #$00                ;Clear any remaining time in the radiant timer.
+LDD36:  STA RadiantTimer        ;
 
-LDD38:  LDA #WND_DIALOG
+LDD38:  LDA #WND_DIALOG         ;Remove the dialog window.
 LDD3A:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-LDD3D:  LDA #WND_CMD_NONCMB
+LDD3D:  LDA #WND_CMD_NONCMB     ;Remove command window.
 LDD3F:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-LDD42:  LDA #WND_POPUP
+LDD42:  LDA #WND_POPUP          ;Remove pop-up window.
 LDD44:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-LDD47:  LDA #$03
-LDD49:  STA LightDiameter
+
+LDD47:  LDA #$03                ;Set the light diameter to 3 blocks.
+LDD49:  STA LightDiameter       ;
 
 LDD4B:  LDA #SFX_RADIANT        ;Radiant spell SFX.
 LDD4D:  BRK                     ;
@@ -4964,10 +4990,11 @@ LDD5A:  .byte WND_DIALOG        ;Dialog window.
 LDD5B:  JSR DoDialogLoBlock     ;($C7CB)Player sprinkled the fairy water over his body...
 LDD5E:  .byte $36               ;TextBlock4, entry 6.
 
-LDD5F:  LDA #$02
+LDD5F:  LDA #ITM_FRY_WATER      ;Remove the fairy water from the player's inventory.
 LDD61:  JSR RemoveInvItem       ;($E04B)Remove item from inventory.
-LDD64:  LDA #$FE
-LDD66:  STA RepelTimer
+
+LDD64:  LDA #$FE                ;Set the repel timer.
+LDD66:  STA RepelTimer          ;
 LDD68:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
 ;----------------------------------------------------------------------------------------------------
@@ -4979,18 +5006,21 @@ LDD6D:  BNE ChkDrgnScl          ;If not, branch.
 LDD6F:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDD72:  .byte WND_DIALOG        ;Dialog window.
 
-LDD73:  LDA MapType
-LDD75:  CMP #MAP_DUNGEON
-LDD77:  BEQ $DD7F
-LDD79:  LDA MapNumber
-LDD7B:  CMP #MAP_DLCSTL_BF
-LDD7D:  BNE $DD86
+LDD73:  LDA MapType             ;Is player in a dungeon?
+LDD75:  CMP #MAP_DUNGEON        ;
+LDD77:  BEQ WingsFail           ;If so, branch to not use the wing.
 
+LDD79:  LDA MapNumber           ;Is player in basement of the dragon lord's castle?
+LDD7B:  CMP #MAP_DLCSTL_BF      ;
+LDD7D:  BNE UseWings            ;If not, branch to use the wing.
+
+WingsFail:
 LDD7F:  JSR DoDialogLoBlock     ;($C7CB)TextBlock4, entry 8.
 LDD82:  .byte $38               ;The wings cannot be used here...
 
 LDD83:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
+UseWings:
 LDD86:  LDA #ITM_WINGS          ;Remove wings from inventory.
 LDD88:  JSR RemoveInvItem       ;($E04B)Remove item from inventory.
 
@@ -5009,7 +5039,7 @@ LDD97:  BNE ChkFryFlt           ;If not, branch.
 LDD99:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDD9C:  .byte WND_DIALOG        ;Dialog window.
 
-LDD9D:  JSR $DFB9
+LDD9D:  JSR ChkDragonScale      ;($DFB9)Check if player is wearing the dragon's scale.
 LDDA0:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
 ;----------------------------------------------------------------------------------------------------
@@ -5044,24 +5074,27 @@ LDDC3:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 ;----------------------------------------------------------------------------------------------------
 
 ChkFghtrRng:
-LDDC6:  CMP #INV_RING
-LDDC8:  BNE $DDD4
+LDDC6:  CMP #INV_RING           ;Did player use the fighter's ring?
+LDDC8:  BNE ChkToken            ;If not, branch.
 
 LDDCA:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDDCD:  .byte WND_DIALOG        ;Dialog window.
 
-LDDCE:  JSR $DFD1
+LDDCE:  JSR ChkRing             ;($DFD1)Check if player is wearing the ring.
 LDDD1:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
 ;----------------------------------------------------------------------------------------------------
 
-LDDD4:  CMP #$0A
-LDDD6:  BNE $DDEC
+ChkToken:
+LDDD4:  CMP #INV_TOKEN          ;Did the player use Erdrick's token?
+LDDD6:  BNE ChkStones           ;If not, branch.
 
 LDDD8:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDDDB:  .byte WND_DIALOG        ;Dialog window.
 
-LDDDC:  LDA #$38
+LDDDC:  LDA #$38                ;Index to Erdrick's token description.
+
+DoItemDescription:
 LDDDE:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
 
 LDDE1:  JSR DoDialogLoBlock     ;($C7CB)Player held the item tightly...
@@ -5074,30 +5107,33 @@ LDDE9:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
 ;----------------------------------------------------------------------------------------------------
 
-LDDEC:  CMP #$0F
-LDDEE:  BNE $DDF8
+ChkStones:
+LDDEC:  CMP #INV_STONES         ;Did the player use the stones of sunlight?
+LDDEE:  BNE ChkStaff            ;If not, branch.
 
 LDDF0:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDDF3:  .byte WND_DIALOG        ;Dialog window.
 
-LDDF4:  LDA #$3D
-LDDF6:  BNE $DDDE
+LDDF4:  LDA #$3D                ;Index to stones of sunlight description.
+LDDF6:  BNE DoItemDescription   ;Branch always.
 
 ;----------------------------------------------------------------------------------------------------
 
-LDDF8:  CMP #$10
-LDDFA:  BNE $DE04
+ChkStaff:
+LDDF8:  CMP #INV_STAFF          ;Did the player use the staff of rain?
+LDDFA:  BNE ChkHarp             ;If not, branch.
 
 LDDFC:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDDFF:  .byte WND_DIALOG        ;Dialog window.
 
-LDE00:  LDA #$3E
-LDE02:  BNE $DDDE
+LDE00:  LDA #$3E                ;Index to staff of rain description.
+LDE02:  BNE DoItemDescription   ;Branch always.
 
 ;----------------------------------------------------------------------------------------------------
 
-LDE04:  CMP #$0D
-LDE06:  BNE $DE50
+ChkHarp:
+LDE04:  CMP #INV_HARP
+LDE06:  BNE ChkBelt
 
 LDE08:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDE0B:  .byte WND_DIALOG        ;Dialog window.
@@ -5142,7 +5178,10 @@ LDE4C:  .byte $33               ;TextBox4, entry 3.
 
 LDE4D:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
-LDE50:  CMP #$0C
+;----------------------------------------------------------------------------------------------------
+
+ChkBelt:
+LDE50:  CMP #INV_BELT
 LDE52:  BNE $DE66
 
 LDE54:  JSR Dowindow            ;($C6F0)display on-screen window.
@@ -5157,8 +5196,10 @@ LDE61:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
 LDE63:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
-LDE66:  CMP #$0E
-LDE68:  BNE $DE7C
+;----------------------------------------------------------------------------------------------------
+
+LDE66:  CMP #INV_NECKLACE
+LDE68:  BNE ChkDrop
 
 LDE6A:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDE6D:  .byte WND_DIALOG        ;Dialog window.
@@ -5171,7 +5212,11 @@ LDE76:  BRK                     ;
 LDE77:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
 LDE79:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
-LDE7C:  CMP #$11
+
+;----------------------------------------------------------------------------------------------------
+
+ChkDrop:
+LDE7C:  CMP #INV_DROP
 LDE7E:  BEQ $DE83
 LDE80:  JMP $DF0D
 
@@ -5220,11 +5265,11 @@ LDEC7:  STA BlkRemoveFlgs
 LDEC9:  LDA #$21
 LDECB:  STA PPUDataByte
 
-LDECD:  JSR WaitForNMI          ;($FF74)
-LDED0:  JSR WaitForNMI          ;($FF74)
+LDECD:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
+LDED0:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LDED3:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LDED6:  JSR WaitForNMI          ;($FF74)
-LDED9:  JSR WaitForNMI          ;($FF74)
+LDED6:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
+LDED9:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LDEDC:  LDA #$03
 LDEDE:  STA PPUAddrLB
@@ -5256,7 +5301,9 @@ LDF05:  JMP ModMapBlock         ;($AD66)Change block on map.
 LDF08:  LDA #$05                ;TextBlock1, entry 5.
 LDF0A:  JMP DoFinalDialog       ;($D242)But no rainbow appeared here...
 
-LDF0D:  CMP #$0B
+;----------------------------------------------------------------------------------------------------
+
+LDF0D:  CMP #INV_LOVE
 LDF0F:  BNE $DF74
 
 LDF11:  JSR Dowindow            ;($C6F0)display on-screen window.
@@ -5376,6 +5423,7 @@ LDFB8:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
+ChkDragonScale:
 LDFB9:  LDA ModsnSpells         ;Is player alreay wearing the dragon scale?
 LDFBB:  AND #F_DRGSCALE         ;
 LDFBD:  BNE DrgScaleDialog      ;If so, branch.
@@ -5394,6 +5442,7 @@ LDFCC:  JSR DoDialogLoBlock     ;($C7CB)Thou art already wearing the scale...
 LDFCF:  .byte $3B               ;TextBlock4, entry 11.
 LDFD0:  RTS                     ;
 
+ChkRing:
 LDFD1:  LDA ModsnSpells         ;
 LDFD3:  AND #F_FTR_RING         ;Check if already wearing the fighter's ring.
 LDFD5:  BNE AlreadyWearingRing  ;If so, branch to adjustment message.
@@ -6787,12 +6836,12 @@ LE847:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
 LE84A:  CMP #$07
 LE84C:  BNE $E854
-LE84E:  JSR $DFB9
+LE84E:  JSR ChkDragonScale      ;($DFB9)Check if player is wearing the dragon's scale.
 LE851:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
 LE854:  CMP #$09
 LE856:  BNE $E85E
-LE858:  JSR $DFD1
+LE858:  JSR ChkRing             ;($DFD1)Check if player is wearing the ring.
 LE85B:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
 LE85E:  CMP #$0C
