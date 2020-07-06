@@ -4527,33 +4527,38 @@ ReturnFail:
 LDAFD:  JMP SpellFizzle         ;($DA55)Print text indicating spell did not work.
 
 DoReturn:
-LDB00:  LDA #MAP_OVERWORLD
-LDB02:  STA MapNumber
-LDB04:  LDA #$2A
-LDB06:  STA CharXPos
-LDB08:  STA _CharXPos
-LDB0A:  STA CharXPixelsLB
-LDB0C:  LDA #$2B
-LDB0E:  STA CharYPos
-LDB10:  STA _CharYPos
-LDB12:  STA CharYPixelsLB
-LDB14:  LDA #$00
-LDB16:  STA CharXPixelsUB
-LDB18:  STA CharYPixelsUB
-LDB1A:  LDX #$04
-LDB1C:  ASL CharXPixelsLB
-LDB1E:  ROL CharXPixelsUB
-LDB20:  ASL CharYPixelsLB
-LDB22:  ROL CharYPixelsUB
-LDB24:  DEX
-LDB25:  BNE $DB1C
+LDB00:  LDA #MAP_OVERWORLD      ;Set player's current map as the overworld map.
+LDB02:  STA MapNumber           ;
+
+LDB04:  LDA #$2A                ;Set player's new X position right next to the castle.
+LDB06:  STA CharXPos            ;
+LDB08:  STA _CharXPos           ;
+LDB0A:  STA CharXPixelsLB       ;Pixel value will be processed more later.
+
+LDB0C:  LDA #$2B                ;Set player's new Y position right next to the castle.
+LDB0E:  STA CharYPos            ;
+LDB10:  STA _CharYPos           ;
+LDB12:  STA CharYPixelsLB       ;Pixel value will be processed more later.
+
+LDB14:  LDA #$00                ;
+LDB16:  STA CharXPixelsUB       ;Clear out upper byte of player's pixel location.
+LDB18:  STA CharYPixelsUB       ;
+
+LDB1A:  LDX #$04                ;Prepare to loop 4 times.
+
+LDB1C:* ASL CharXPixelsLB       ;
+LDB1E:  ROL CharXPixelsUB       ;Multiply given pixel position by 16 as the block position -->
+LDB20:  ASL CharYPixelsLB       ;has been given. Each block is 16X16 pixels.
+LDB22:  ROL CharYPixelsUB       ;
+LDB24:  DEX                     ;Done multiplying?
+LDB25:  BNE -                   ;If not, branch to shift again.
 
 LDB27:  LDA #SFX_WVRN_WNG       ;Wyvern wing SFX.
 LDB29:  BRK                     ;
 LDB2A:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LDB2C:  LDA #$02
-LDB2E:  STA CharDirection
+LDB2C:  LDA #DIR_DOWN           ;Set player facing direction to down.
+LDB2E:  STA CharDirection       ;
 LDB31:  JMP MapChngNoFadeOut    ;($B08D)Change map with no fade out or stairs sound.
 
 UnknownSpell:
@@ -4564,14 +4569,14 @@ LDB34:  JMP SpellFizzle         ;($DA55)Print text indicating spell did not work
 BWScreenFlash:
 LDB37:  LDX #$08                ;Prepare to flash screen 8 times.
 LDB39:* JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LDB3C:  JSR WaitForNMI          ;($FF74)
+LDB3C:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LDB3F:  LDA #%00011001          ;Change screen to greyscale colors.
 LDB41:  STA PPUControl1         ;
 
-LDB44:  JSR WaitForNMI          ;($FF74)
+LDB44:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LDB47:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LDB4A:  JSR WaitForNMI          ;($FF74)
+LDB4A:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LDB4D:  LDA #%00011000          ;Change screen to RGB colors.
 LDB4F:  STA PPUControl1         ;
@@ -4623,20 +4628,22 @@ LDB84:  RTS                     ;Exit with the spell chosen in the accumulator.
 ;----------------------------------------------------------------------------------------------------
 
 CheckMP:
-LDB85:  STA SpellToCast
-LDB87:  LDX SpellToCast
-LDB89:  LDA MagicPoints
-LDB8B:  CMP SpellCostTbl,X
-LDB8E:  BCS $DB93
-LDB90:  LDA #$32
-LDB92:  RTS
+LDB85:  STA SpellToCast         ;
+LDB87:  LDX SpellToCast         ;Does player have enough MP to cast the spell?
+LDB89:  LDA MagicPoints         ;
+LDB8B:  CMP SpellCostTbl,X      ;
+LDB8E:  BCS PlyrCastSpell       ;If so, branch.
 
-LDB93:  SBC SpellCostTbl,X
-LDB96:  STA MagicPoints
-LDB98:  LDA SpellToCast
-LDB9A:  CLC
+LDB90:  LDA #$32                ;TextBlock4, entry 2.
+LDB92:  RTS                     ;Player does not have enough MP. Return.
 
-LDB9B:  ADC #$10
+PlyrCastSpell:
+LDB93:  SBC SpellCostTbl,X      ;Subtract the spell's required MP from player's MP.
+LDB96:  STA MagicPoints         ;
+
+LDB98:  LDA SpellToCast         ;
+LDB9A:  CLC                     ;Add offset to find spell description.
+LDB9B:  ADC #$10                ;
 LDB9D:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
 
 LDBA0:  JSR DoDialogLoBlock     ;($C7CB)Player chanted the spell...
@@ -4651,14 +4658,14 @@ LDBA9:  JSR BWScreenFlash       ;($DB37)Flash screen in black and white.
 LDBAC:  BRK                     ;Wait for the music clip to end.
 LDBAD:  .byte $03, $17          ;($815E)WaitForMusicEnd, bank 1.
 
-LDBAF:  LDA SpellToCast
-LDBB1:  PHA
+LDBAF:  LDA SpellToCast         ;Save the cast spell number on the stack.
+LDBB1:  PHA                     ;
 
 LDBB2:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDBB5:  .byte WND_POPUP         ;Pop-up window.
 
-LDBB6:  PLA
-LDBB7:  RTS
+LDBB6:  PLA                     ;Return with the cast spell number in the accumulator.
+LDBB7:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4669,13 +4676,18 @@ LDBBD:  AND #$07                ;Keep lower 3 bits.
 LDBBF:  CLC                     ;Add to 10.
 LDBC0:  ADC #$0A                ;Heal adds 10 to 17 points to HP.
 
-LDBC2:  CLC
-LDBC3:  ADC HitPoints
-LDBC5:  BCS $DBCB
-LDBC7:  CMP DisplayedMaxHP
-LDBC9:  BCC $DBCD
-LDBCB:  LDA DisplayedMaxHP
-LDBCD:  STA HitPoints
+PlyrAddHP:
+LDBC2:  CLC                     ;Did HP value roll over to 0?
+LDBC3:  ADC HitPoints           ;
+LDBC5:  BCS PlyrMaxHP           ;If so, branch to set maxHP.
+
+LDBC7:  CMP DisplayedMaxHP      ;Did HP value exceed player's max HP?
+LDBC9:  BCC +                   ;If not, branch to update HP.
+
+PlyrMaxHP:
+LDBCB:  LDA DisplayedMaxHP      ;Max out player's HP.
+
+LDBCD:* STA HitPoints           ;Store player's new HP value.
 LDBCF:  JSR LoadRegBGPal        ;($EE28)Load the normal background palette.
 
 LDBD2:  JSR Dowindow            ;($C6F0)display on-screen window.
@@ -4688,46 +4700,54 @@ LDBDA:  LDA RandNumUB           ;
 LDBDC:  AND #$0F                ;Keep lower 4 bits.
 LDBDE:  CLC                     ;
 LDBDF:  ADC #$55                ;Add to 85
-LDBE1:  JMP $DBC2               ;Healmore adds 85 to 100 points to HP.
+LDBE1:  JMP PlyrAddHP           ;Healmore adds 85 to 100 points to HP.
 
 ;----------------------------------------------------------------------------------------------------
 
 CopyEnUpperBytes:
-LDBE4:  LDA #$08
-LDBE6:  STA $3C
-LDBE8:  LDA #$01
-LDBEA:  STA $3D
-LDBEC:  LDY #$00
-LDBEE:  BEQ $DC10
+LDBE4:  LDA #$08                ;
+LDBE6:  STA $3C                 ;Copy the unused enemy bytes into the description buffer.
+LDBE8:  LDA #$01                ;
+LDBEA:  STA $3D                 ;
+
+LDBEC:  LDY #$00                ;Index is always 0.
+LDBEE:  BEQ GetThisDescLoop     ;Branch always.
 
 GetDescriptionByte:
-LDBF0:  CLC
-LDBF1:  ADC #$03
-LDBF3:  TAX
-LDBF4:  INX
-LDBF5:  LDA DescTblPtr
-LDBF8:  STA $3C
-LDBFA:  LDA DescTblPtr+1
-LDBFD:  STA $3D
+LDBF0:  CLC                     ;
+LDBF1:  ADC #$03                ;Add 4 to the item description entry number and save in X.
+LDBF3:  TAX                     ;
+LDBF4:  INX                     ;
 
-LDBFF:  LDY #$00
+LDBF5:  LDA DescTblPtr          ;
+LDBF8:  STA GenPtr3CLB          ;Get the base address of the description table.
+LDBFA:  LDA DescTblPtr+1        ;
+LDBFD:  STA GenPtr3CUB          ;
 
-LDC01:* LDA ($3C),Y
-LDC03:  INC $3C
-LDC05:  BNE $DC09
-LDC07:  INC $3D
-LDC09:* CMP #$FA
-LDC0B:  BNE $DC01
+LDBFF:  LDY #$00                ;Index is always 0. Increment pointer address instead.
 
-LDC0D:  DEX
-LDC0E:  BNE $DC01
+DescriptionLoop:
+LDC01:  LDA (GenPtr3C),Y        ;
+LDC03:  INC GenPtr3CLB          ;Increment through the current description data looking -->
+LDC05:  BNE +                   ;for the end marker.
+LDC07:  INC GenPtr3CUB          ;
 
-LDC10:* LDA ($3C),Y
-LDC12:  STA _DescBuf,Y
-LDC15:  INY
-LDC16:  CMP #$FA
-LDC18:  BNE $DC10
-LDC1A:  RTS
+LDC09:* CMP #TXT_SUBEND         ;Has the end marker been found?
+LDC0B:  BNE DescriptionLoop     ;If not, branch to get another byte of the description.
+
+LDC0D:  DEX                     ;Found the end of the current description. Are we now aligned -->
+LDC0E:  BNE DescriptionLoop     ;with the desired description? If not, branch.
+
+;At this point, the pointer is pointed at the description byte.
+;The byte now needs to be transferred into the description buffer.
+
+GetThisDescLoop:
+LDC10:  LDA (GenPtr3C),Y        ;
+LDC12:  STA _DescBuf,Y          ;
+LDC15:  INY                     ;Get a byte of the desired description.
+LDC16:  CMP #TXT_SUBEND         ;
+LDC18:  BNE GetThisDescLoop     ;Have we found the end marker for the description entry?
+LDC1A:  RTS                     ;If not, branch to get next byte in the description.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -6494,6 +6514,7 @@ LE67E:  SEC
 LE67F:  SBC #$01
 LE681:  CMP RandNumUB
 LE683:  BCC $E69A
+
 LE685:  JSR CopyEnUpperBytes    ;($DBE4)Copy enemy upper bytes to description RAM.
 
 LE688:  LDA #SFX_MISSED1        ;Player missed 1 SFX.
