@@ -5132,14 +5132,14 @@ LDE02:  BNE DoItemDescription   ;Branch always.
 ;----------------------------------------------------------------------------------------------------
 
 ChkHarp:
-LDE04:  CMP #INV_HARP
-LDE06:  BNE ChkBelt
+LDE04:  CMP #INV_HARP           ;Did the player use the harp?
+LDE06:  BNE ChkBelt             ;If not, branch.
 
 LDE08:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDE0B:  .byte WND_DIALOG        ;Dialog window.
 
-LDE0C:  JSR DoDialogLoBlock     ;($C7CB)
-LDE0F:  .byte $41 
+LDE0C:  JSR DoDialogLoBlock     ;($C7CB)Player played a sweet melody on the harp...
+LDE0F:  .byte $41               ;TextBox5, entry 1.
 
 LDE10:  LDA #MSC_SILV_HARP      ;Silver harp music.
 LDE12:  BRK                     ;
@@ -5148,26 +5148,32 @@ LDE13:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 LDE15:  BRK                     ;Wait for the music clip to end.
 LDE16:  .byte $03, $17          ;($815E)WaitForMusicEnd, bank 1.
 
-LDE18:  LDA MapNumber
-LDE1A:  CMP #MAP_OVERWORLD
-LDE1C:  BNE $DE41
+LDE18:  LDA MapNumber           ;Is the player on the overworld map?
+LDE1A:  CMP #MAP_OVERWORLD      ;
+LDE1C:  BNE HarpFail            ;If not, branch. Harp only work in the overworld.
+
+HarpRNGLoop:
 LDE1E:  JSR UpdateRandNum       ;($C55B)Get random number.
-LDE21:  LDA RandNumUB
-LDE23:  AND #$07
-LDE25:  CMP #$05
-LDE27:  BEQ $DE1E
-LDE29:  CMP #$07
-LDE2B:  BEQ $DE1E
-LDE2D:  PHA
-LDE2E:  LDA #WND_DIALOG
+LDE21:  LDA RandNumUB           ;
+LDE23:  AND #$07                ;Choose a random number that is 0, 1, 2, 3, 4 or 6.
+LDE25:  CMP #$05                ;
+LDE27:  BEQ HarpRNGLoop         ;The harp will summon either a slime, red slime, drakee -->
+LDE29:  CMP #$07                ;ghost, magician or scorpion.
+LDE2B:  BEQ HarpRNGLoop         ;Work even after the dragon lord is dead.
+
+LDE2D:  PHA                     ;Store the random enemy number on the stack.
+
+LDE2E:  LDA #WND_DIALOG         ;Remove the dialog window.
 LDE30:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-LDE33:  LDA #WND_CMD_NONCMB
+LDE33:  LDA #WND_CMD_NONCMB     ;Remove the command window.
 LDE35:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-LDE38:  LDA #WND_POPUP
+LDE38:  LDA #WND_POPUP          ;Remove the popup window.
 LDE3A:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-LDE3D:  PLA
+
+LDE3D:  PLA                     ;Restore the enemy number back to A.
 LDE3E:  JMP InitFight           ;($E4DF)Begin fight sequence.
 
+HarpFail:
 LDE41:  LDX MapNumber           ;Get current map number.
 LDE43:  LDA ResumeMusicTbl,X    ;Use current map number to resume music.
 LDE46:  BRK                     ;
@@ -5181,13 +5187,13 @@ LDE4D:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 ;----------------------------------------------------------------------------------------------------
 
 ChkBelt:
-LDE50:  CMP #INV_BELT
-LDE52:  BNE $DE66
+LDE50:  CMP #INV_BELT           ;Did the player use the cursed belt?
+LDE52:  BNE ChkNecklace         ;If not, branch.
 
 LDE54:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDE57:  .byte WND_DIALOG        ;Dialog window.
 
-LDE58:  JSR $DFE7
+LDE58:  JSR WearCursedItem      ;($DFE7)Player puts on cursed item.
 
 LDE5B:  LDX MapNumber           ;Get current map number.
 LDE5D:  LDA ResumeMusicTbl,X    ;Use current map number to resume music.
@@ -5198,13 +5204,14 @@ LDE63:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
 ;----------------------------------------------------------------------------------------------------
 
-LDE66:  CMP #INV_NECKLACE
-LDE68:  BNE ChkDrop
+ChkNecklace:
+LDE66:  CMP #INV_NECKLACE       ;Did the player use the death necklace?
+LDE68:  BNE ChkDrop             ;If not, branch.
 
 LDE6A:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDE6D:  .byte WND_DIALOG        ;Dialog window.
 
-LDE6E:  JSR $E00A
+LDE6E:  JSR ChkDeathNecklace    ;($E00A)Check if player is wearking the death necklace.
 
 LDE71:  LDX MapNumber           ;Get current map number.
 LDE73:  LDA ResumeMusicTbl,X    ;Use current map number to resume music.
@@ -5216,36 +5223,38 @@ LDE79:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 ;----------------------------------------------------------------------------------------------------
 
 ChkDrop:
-LDE7C:  CMP #INV_DROP
-LDE7E:  BEQ $DE83
-LDE80:  JMP $DF0D
+LDE7C:  CMP #INV_DROP           ;Did the player use the rainbow drop?
+LDE7E:  BEQ +                   ;If so, branch.
 
-LDE83:  JSR Dowindow            ;($C6F0)display on-screen window.
+LDE80:  JMP ChkLove             ;Jump to see if player used Gwaelin's love.
+
+LDE83:* JSR Dowindow            ;($C6F0)display on-screen window.
 LDE86:  .byte WND_DIALOG        ;Dialog window.
 
-LDE87:  JSR DoDialogLoBlock     ;($C7CB)
-LDE8A:  .byte $04
+LDE87:  JSR DoDialogLoBlock     ;($C7CB)Player held the rainbow drop toward the sky...
+LDE8A:  .byte $04               ;TextBox1, entry 4.
 
-LDE8B:  LDA MapNumber
-LDE8D:  CMP #MAP_OVERWORLD
-LDE8F:  BNE $DF08
-LDE91:  LDA CharXPos
-LDE93:  CMP #$41
-LDE95:  BNE $DF08
-LDE97:  LDA CharYPos
-LDE99:  CMP #$31
-LDE9B:  BNE $DF08
-LDE9D:  LDA ModsnSpells
-LDE9F:  AND #F_RNBW_BRDG
-LDEA1:  BNE $DF08
+LDE8B:  LDA MapNumber           ;Is the player on the overworld map?
+LDE8D:  CMP #MAP_OVERWORLD      ;
+LDE8F:  BNE RainbowFail         ;If not, branch. The rainbow bridge creation failed.
 
-LDEA3:  LDA #WND_DIALOG
+LDE91:  LDA CharXPos            ;Is the player in the correct X position?
+LDE93:  CMP #$41                ;
+LDE95:  BNE RainbowFail         ;If not, branch. The rainbow bridge creation failed.
+
+LDE97:  LDA CharYPos            ;Is the player in the correct Y position?
+LDE99:  CMP #$31                ;
+LDE9B:  BNE RainbowFail         ;If not, branch. The rainbow bridge creation failed.
+
+LDE9D:  LDA ModsnSpells         ;Has the rainbow bridge already been built?
+LDE9F:  AND #F_RNBW_BRDG        ;
+LDEA1:  BNE RainbowFail         ;If not, branch. The rainbow bridge creation failed.
+
+LDEA3:  LDA #WND_DIALOG         ;Remove the dialog window.
 LDEA5:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-
-LDEA8:  LDA #WND_CMD_NONCMB
+LDEA8:  LDA #WND_CMD_NONCMB     ;Remove the command window.
 LDEAA:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-
-LDEAD:  LDA #WND_POPUP
+LDEAD:  LDA #WND_POPUP          ;remove the pop-up window.
 LDEAF:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
 
 LDEB2:  LDA #MSC_RNBW_BRDG      ;Rainbow bridge music.
@@ -5256,39 +5265,49 @@ LDEB7:  LDA ModsnSpells         ;
 LDEB9:  ORA #F_RNBW_BRDG        ;Indicate rainbow bridge has been made.
 LDEBB:  STA ModsnSpells         ;
 
-LDEBD:  LDA #$FE
-LDEBF:  STA XPosFromCenter
-LDEC1:  LDA #$00
-LDEC3:  STA YPosFromCenter
-LDEC5:  LDA #$04
-LDEC7:  STA BlkRemoveFlgs
-LDEC9:  LDA #$21
-LDECB:  STA PPUDataByte
+LDEBD:  LDA #$FE                ;
+LDEBF:  STA XPosFromCenter      ;Prepare to create the rainbow bridge 2 -->
+LDEC1:  LDA #$00                ;tiles to the left of the player.
+LDEC3:  STA YPosFromCenter      ;
 
+LDEC5:  LDA #$04                ;Prepare to cycle the rainbow flash colors 4 times.
+LDEC7:  STA BridgeFlashCntr     ;
+
+BuildBridgeLoop2:
+LDEC9:  LDA #$21                ;Load the initial color for rainbow flash.
+LDECB:  STA PPUDataByte         ;
+
+BuildBridgeLoop1:
 LDECD:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LDED0:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LDED3:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LDED6:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LDED9:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
-LDEDC:  LDA #$03
-LDEDE:  STA PPUAddrLB
-LDEE0:  LDA #$3F
-LDEE2:  STA PPUAddrUB
+LDEDC:  LDA #$03                ;Prepare to change a background palette color. -->
+LDEDE:  STA PPUAddrLB           ;This is the palette location that creates the -->
+LDEE0:  LDA #$3F                ;multicolor water effect when the rainbow bridge -->
+LDEE2:  STA PPUAddrUB           ;animation is occurring.
 
 LDEE4:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
-LDEE7:  INC PPUDataByte
-LDEE9:  LDA PPUDataByte
-LDEEB:  CMP #$12
-LDEED:  BEQ $DEFD
-LDEEF:  CMP #$2D
-LDEF1:  BNE $DECD
-LDEF3:  DEC BlkRemoveFlgs
-LDEF5:  BNE $DEC9
-LDEF7:  LDA #$11
-LDEF9:  STA PPUDataByte
-LDEFB:  BNE $DECD
 
+LDEE7:  INC PPUDataByte         ;Increment to next palette color.
+
+LDEE9:  LDA PPUDataByte         ;Has the last palette color ben shown?
+LDEEB:  CMP #$12                ;
+LDEED:  BEQ BridgeAnimDone      ;If so, branch to end the animation.
+
+LDEEF:  CMP #$2D                ;Has the last palette color in the flash cycle completed?
+LDEF1:  BNE BuildBridgeLoop1    ;If not, branch to do the next color.
+
+LDEF3:  DEC BridgeFlashCntr     ;Has 4 cycles of flashing colors finished?
+LDEF5:  BNE BuildBridgeLoop2    ;If not, branch to do another cycle.
+
+LDEF7:  LDA #$11                ;Move to the next colors in the palette.
+LDEF9:  STA PPUDataByte         ;
+LDEFB:  BNE BuildBridgeLoop1    ;Branch always.
+
+BridgeAnimDone:
 LDEFD:  BRK                     ;Wait for the music clip to end.
 LDEFE:  .byte $03, $17          ;($815E)WaitForMusicEnd, bank 1.
 
@@ -5298,34 +5317,38 @@ LDF03:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
 LDF05:  JMP ModMapBlock         ;($AD66)Change block on map.
 
+RainbowFail:
 LDF08:  LDA #$05                ;TextBlock1, entry 5.
 LDF0A:  JMP DoFinalDialog       ;($D242)But no rainbow appeared here...
 
 ;----------------------------------------------------------------------------------------------------
 
-LDF0D:  CMP #INV_LOVE
-LDF0F:  BNE $DF74
+ChkLove:
+LDF0D:  CMP #INV_LOVE           ;Did player use Gwaelin's love?
+LDF0F:  BNE EndItemChecks       ;If not, branch to end. No more items to check.
 
 LDF11:  JSR Dowindow            ;($C6F0)display on-screen window.
 LDF14:  .byte WND_DIALOG        ;Dialog window.
 
-LDF15:  LDA DisplayedLevel
-LDF17:  CMP #LVL_30
-LDF19:  BNE $DF22
+LDF15:  LDA DisplayedLevel      ;Is player at the max level?
+LDF17:  CMP #LVL_30             ;
+LDF19:  BNE DoLoveExp           ;If so, branch to skip showing experience for next level.
 
 LDF1B:  JSR DoDialogHiBlock     ;($C7C5)Know thou hast reached the final level...
 LDF1E:  .byte $05               ;TextBlock17, entry 5.
 
-LDF1F:  JMP $DF29
+LDF1F:  JMP ChkLoveMap          ;Max level already reached. Skip experience dialog.
 
+DoLoveExp:
 LDF22:  JSR GetExpRemaining     ;($F134)Calculate experience needed for next level.
 
 LDF25:  JSR DoDialogLoBlock     ;($C7CB)To reach the next level...
 LDF28:  .byte $DB               ;TextBlock14, entry 11.
 
-LDF29:  LDA MapNumber
-LDF2B:  CMP #MAP_OVERWORLD
-LDF2D:  BNE $DF6F
+ChkLoveMap:
+LDF29:  LDA MapNumber           ;Is player not on the overworld?
+LDF2B:  CMP #MAP_OVERWORLD      ;
+LDF2D:  BNE LastLoveDialog      ;If not, branch to skip showing distance to castle.
 
 LDF2F:  JSR DoDialogLoBlock     ;($C7CB)From where thou art now, my castle lies...
 LDF32:  .byte $DC               ;TextBlock14, entry 12.
@@ -5333,40 +5356,55 @@ LDF32:  .byte $DC               ;TextBlock14, entry 12.
 LDF33:  JSR DoDialogLoBlock     ;($C7CB)Empty text.
 LDF36:  .byte $DD               ;TextBlock14, entry 13.
 
-LDF37:  LDA CharYPos
-LDF39:  SEC
-LDF3A:  SBC #$2B
-LDF3C:  BCS $DF48
-LDF3E:  EOR #$FF
-LDF40:  STA $00
-LDF42:  INC $00
-LDF44:  LDA #$DF
-LDF46:  BNE $DF4C
-LDF48:  STA $00
+LDF37:  LDA CharYPos            ;Calculate player's Y distance from castle.
+LDF39:  SEC                     ;
+LDF3A:  SBC #$2B                ;Is distance a positive value?
+LDF3C:  BCS YDiffDialog         ;If so, branch to display value to player.
 
-LDF4A:  LDA #$DE
-LDF4C:  LDX #$00
-LDF4E:  STX $01
-LDF50:  JSR DoMidDialog         ;($C7BD)
+LDF3E:  EOR #$FF                ;
+LDF40:  STA GenByte00           ;Do 2's compliment on number to turn it positive.
+LDF42:  INC GenByte00           ;
 
-LDF53:  LDA CharXPos
-LDF55:  SEC
-LDF56:  SBC #$2B
-LDF58:  BCS $DF64
-LDF5A:  EOR #$FF
-LDF5C:  STA $00
-LDF5E:  INC $00
-LDF60:  LDA #$E0
-LDF62:  BNE $DF68
-LDF64:  STA $00
+LDF44:  LDA #$DF                ;TextBlock14, entry 15. To the south...
+LDF46:  BNE DoNorthSouthDialog  ;Branch always.
 
-LDF66:  LDA #$E1
-LDF68:  LDX #$00
-LDF6A:  STX $01
-LDF6C:  JSR DoMidDialog         ;($C7BD)
+YDiffDialog:
+LDF48:  STA GenByte00           ;Store Y distance from the castle.
 
-LDF6F:  LDA #$BD
-LDF71:  JMP DoFinalDialog       ;($D242)
+LDF4A:  LDA #$DE                ;TextBlock14, entry 14. To the north...
+
+DoNorthSouthDialog:
+LDF4C:  LDX #$00                ;Zero out register. Never used.
+LDF4E:  STX GenByte01           ;
+LDF50:  JSR DoMidDialog         ;($C7BD)Show north/south dialog.
+
+LDF53:  LDA CharXPos            ;Calculate player's X distance from castle.
+LDF55:  SEC                     ;
+LDF56:  SBC #$2B                ;Is distance a positive value?
+LDF58:  BCS XDiffDialog         ;If so, branch to display value to player.
+
+LDF5A:  EOR #$FF                ;
+LDF5C:  STA GenByte00           ;Do 2's compliment on number to turn it positive.
+LDF5E:  INC GenByte00           ;
+
+LDF60:  LDA #$E0                ;TextBlock15, entry 0. To the east...
+LDF62:  BNE DoEastWestDialog    ;Branch always.
+
+XDiffDialog:
+LDF64:  STA GenByte00           ;Store X distance from the castle.
+
+LDF66:  LDA #$E1                ;TextBlock15, entry 1. To the west...
+
+DoEastWestDialog:
+LDF68:  LDX #$00                ;Zero out register. Never used.
+LDF6A:  STX GenByte01           ;
+LDF6C:  JSR DoMidDialog         ;($C7BD)Show east/west dialog.
+
+LastLoveDialog:
+LDF6F:  LDA #$BD                ;TextBlock12, entry 13.
+LDF71:  JMP DoFinalDialog       ;($D242)I love thee...
+
+EndItemChecks:
 LDF74:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
 ;----------------------------------------------------------------------------------------------------
@@ -5442,6 +5480,8 @@ LDFCC:  JSR DoDialogLoBlock     ;($C7CB)Thou art already wearing the scale...
 LDFCF:  .byte $3B               ;TextBlock4, entry 11.
 LDFD0:  RTS                     ;
 
+;----------------------------------------------------------------------------------------------------
+
 ChkRing:
 LDFD1:  LDA ModsnSpells         ;
 LDFD3:  AND #F_FTR_RING         ;Check if already wearing the fighter's ring.
@@ -5459,6 +5499,7 @@ LDFE2:  JSR DoDialogLoBlock     ;($C7CB)Player adjusted the position of the ring
 LDFE5:  .byte $3F               ;TextBlock4, entry 15.
 LDFE6:  RTS                     ;
 
+WearCursedItem:
 LDFE7:  LDA #$3A                ;Description index for the cursed belt.
 LDFE9:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
 LDFEC:  BIT ModsnSpells         ;Is the player already wearing a cursed belt?
@@ -5468,6 +5509,7 @@ LDFF0:  LDA ModsnSpells         ;
 LDFF2:  ORA #F_CRSD_BELT        ;Indicate player is cursed.
 LDFF4:  STA ModsnSpells         ;
 
+PlayerCursed:
 LDFF6:  JSR DoDialogLoBlock     ;($C7CB)Player put on the item and was cursed...
 LDFF9:  .byte $42               ;TextBlock5, entry 2.
 
@@ -5486,16 +5528,17 @@ LE006:  .byte $43               ;TextBlock5, entry 3.
 
 LE007:  JMP PlayCursedMusic     ;($DFFA)Player equipped a cursed object.
 
-;----------------------------------------------------------------------------------------------------
-
-LE00A:  LDA #$3C
+ChkDeathNecklace:
+LE00A:  LDA #$3C                ;Description index for the death necklace.
 LE00C:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
-LE00F:  LDA ModsnSpells
-LE011:  BMI $E003
-LE013:  LDA ModsnSpells
-LE015:  ORA #F_DTH_NECKLACE
-LE017:  STA ModsnSpells
-LE019:  BNE $DFF6
+
+LE00F:  LDA ModsnSpells         ;Is the player wearing the death necklace.
+LE011:  BMI DoCursedDialog      ;If so, branch to tell player they are cursed.
+
+LE013:  LDA ModsnSpells         ;Set the bit indicating the player is wearing the death necklace.
+LE015:  ORA #F_DTH_NECKLACE     ;
+LE017:  STA ModsnSpells         ;
+LE019:  BNE PlayerCursed        ;Branch always to tell player they are cursed.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -5585,8 +5628,8 @@ LE089:  CLC
 LE08A:  ADC #$31
 LE08C:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
 
-LE08F:  LDA #$CD
-LE091:  JMP DoFinalDialog       ;($D242)
+LE08F:  LDA #$CD                ;TextBlock13, entry 13.
+LE091:  JMP DoFinalDialog       ;($D242)Thou hast given up thy item...
 
 LE094:  JSR DoDialogLoBlock     ;($C7CB)
 LE097:  .byte $CE
@@ -5743,8 +5786,8 @@ LE17E:  STA EqippedItems
 LE180:  LDA #$28                ;Erdrick's armor description byte.
 LE182:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
 
-LE185:  LDA #$D5                ;Player discovered the item...
-LE187:  JMP DoFinalDialog       ;($D242)TextBlock14, entry 5.
+LE185:  LDA #$D5                ;TextBlock14, entry 5.
+LE187:  JMP DoFinalDialog       ;($D242)Player discovered the item...
 
 LE18A:  LDA MapNumber
 LE18C:  CMP #MAP_DLCSTL_GF
@@ -5755,8 +5798,8 @@ LE194:  BNE $E1C8
 LE196:  LDA CharYPos
 LE198:  CMP #$03
 LE19A:  BNE $E1A1
-LE19C:  LDA #$D6
-LE19E:  JMP DoFinalDialog       ;($D242)
+LE19C:  LDA #$D6                ;TextBlock14, entry 6.
+LE19E:  JMP DoFinalDialog       ;($D242)Feel the wind behind the throne...
 LE1A1:  CMP #$01
 LE1A3:  BNE $E1C8
 LE1A5:  LDA ModsnSpells
@@ -5790,11 +5833,11 @@ LE1D3:  LDA TargetResults
 LE1D5:  CMP #$0C
 LE1D7:  BNE $E1DE
 
-LE1D9:  LDA #$D4                ;There is a treasure box...
-LE1DB:  JMP DoFinalDialog       ;($D242)TextBlock14, entry 4.
+LE1D9:  LDA #$D4                ;TextBlock14, entry 4.
+LE1DB:  JMP DoFinalDialog       ;($D242)There is a treasure box...
 
-LE1DE:  LDA #$D3                ;But there found nothing...
-LE1E0:  JMP DoFinalDialog       ;($D242)TextBlock14, entry 3.
+LE1DE:  LDA #$D3                ;TextBlock14, entry 3.
+LE1E0:  JMP DoFinalDialog       ;($D242)But there found nothing...
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -5811,8 +5854,8 @@ LE1F2:  LDA TargetResults
 LE1F4:  CMP #BLK_CHEST
 LE1F6:  BEQ $E1FD
 
-LE1F8:  LDA #$D7                ;There is nothing to take here...
-LE1FA:  JMP DoFinalDialog       ;($D242)TextBlock14, entry 7.
+LE1F8:  LDA #$D7                ;TextBlock14, entry 7.
+LE1FA:  JMP DoFinalDialog       ;($D242)There is nothing to take here...
         
 LE1FD:  BRK                     ;Copy treasure table into RAM.
 LE1FE:  .byte $08, $17          ;($994F)CopyTrsrTbl, bank 1.
@@ -5846,14 +5889,14 @@ LE22C:  CMP #$06
 LE22E:  BNE $E238
 LE230:  JSR GetTreasure         ;($E39A)Check for valid treasure and get it.
 
-LE233:  LDA #$DA                ;Unfortunately, it is empty...
-LE235:  JMP DoFinalDialog       ;($D242)TextBlock14, entry 10.
+LE233:  LDA #$DA                ;TextBlock14, entry 10.
+LE235:  JMP DoFinalDialog       ;($D242)Unfortunately, it is empty...
 
 LE238:  INC InventoryKeys
 LE23A:  JSR GetTreasure         ;($E39A)Check for valid treasure and get it.
 
-LE23D:  LDA #$D9
-LE23F:  JMP DoFinalDialog       ;($D242)
+LE23D:  LDA #$D9                ;TextBlock14, entry 9.
+LE23F:  JMP DoFinalDialog       ;($D242)Fortune smiles upon thee...
 
 LE242:  CMP #TRSR_HERB
 LE244:  BNE $E250
@@ -5927,7 +5970,7 @@ LE2AF:  LDA #$21                ;Description byte for Erdrick's sword.
 LE2B1:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
 
 LE2B4:  LDA #$D9                ;TextBlock14, entry 9.
-LE2B6:  JMP DoFinalDialog       ;($D242)Fortune smiles upon thee. Thou hast found the item...
+LE2B6:  JMP DoFinalDialog       ;($D242)Fortune smiles upon thee...
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -6846,7 +6889,7 @@ LE85B:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
 LE85E:  CMP #$0C
 LE860:  BNE $E86D
-LE862:  JSR $DFE7
+LE862:  JSR WearCursedItem      ;($DFE7)Player puts on cursed item.
 
 LE865:  LDA #MSC_REG_FGHT       ;Regular fight music.
 LE867:  BRK                     ;
@@ -6856,7 +6899,7 @@ LE86A:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
 LE86D:  CMP #$0E
 LE86F:  BNE $E87C
-LE871:  JSR $E00A
+LE871:  JSR ChkDeathNecklace    ;($E00A)Check if player is wearking the death necklace.
 
 LE874:  LDA #MSC_REG_FGHT       ;Regular fight music.
 LE876:  BRK                     ;

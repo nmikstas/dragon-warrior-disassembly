@@ -277,6 +277,7 @@
 .alias NTBlockY         $4B     ;Nametable Y block position, #$00-#$0E(1/2 y tile position).
 .alias BlkRemoveFlgs    $4C     ;Lower nibble is flags for tiles to keep when changing a map block.
                                 ;1-upper left, 2-upper right, 4-lower left, 8-lower right.
+.alias BridgeFlashCntr  $4C     ;Used to count palette flash cycles when rainbow bridge is created.
 .alias TileCounter      $4D     ;Used to count tiles when modifying blocks.
 .alias BlockClear       $4D     ;Is always 0. Maybe had some other function in Dragon's Quest.
 .alias NPCLoopCounter   $4E     ;Counter for controlling NPC update loops.
