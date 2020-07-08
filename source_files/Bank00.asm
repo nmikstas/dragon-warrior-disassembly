@@ -3048,37 +3048,43 @@ LA733:  .word Row112, Row113, Row114, Row115, Row116, Row117, Row118, Row119
 ;----------------------------------------------------------------------------------------------------
 
 ScreenFadeOut:
-LA743:  LDA DrgnLrdPal
-LA746:  CMP #EN_DRAGONLORD2
-LA748:  BEQ $A76D
+LA743:  LDA DrgnLrdPal          ;Is player about to fight the end boss?
+LA746:  CMP #EN_DRAGONLORD2     ;
+LA748:  BEQ LoadEndPals         ;If so, branch.
 
-LA74A:  LDA #PAL_LOAD_BG
-LA74C:  STA LoadBGPal
+LA74A:  LDA #PAL_LOAD_BG        ;Indicate background palette should be loaded.
+LA74C:  STA LoadBGPal           ;
 
-LA74E:  LDA RegSPPalPtr
-LA751:  STA $3E
-LA753:  LDA RegSPPalPtr+1
-LA756:  STA $3F
-LA758:  LDA OverworldPalPtr
-LA75B:  CLC
-LA75C:  ADC MapType
-LA75E:  STA $40
-LA760:  LDA OverworldPalPtr+1
-LA763:  ADC #$00
-LA765:  STA $41
+LA74E:  LDA RegSPPalPtr         ;
+LA751:  STA SprtPalPtrLB        ;Set pointer for sprite palettes.
+LA753:  LDA RegSPPalPtr+1       ;
+LA756:  STA SprtPalPtrUB        ;
+
+LA758:  LDA OverworldPalPtr     ;
+LA75B:  CLC                     ;
+LA75C:  ADC MapType             ;
+LA75E:  STA BGPalPtrLB          ;Calculate background palette pointer based on map type.
+LA760:  LDA OverworldPalPtr+1   ;
+LA763:  ADC #$00                ;
+LA765:  STA BGPalPtrUB          ;
+
 LA767:  JSR PalFadeOut          ;($C212)Fade out both background and sprite palettes.
 LA76A:  JMP ClearWinBufRAM2     ;($A788)Clear RAM buffer used for drawing text windows.
 
-LA76D:  LDA #$FF
-LA76F:  STA LoadBGPal
-LA771:  LDA EndBossPal1Ptr
-LA774:  STA $40
-LA776:  LDA EndBossPal1Ptr+1
-LA779:  STA $41
-LA77B:  LDA EndBossPal2Ptr
-LA77E:  STA $3E
-LA780:  LDA EndBossPal2Ptr+1
-LA783:  STA $3F
+LoadEndPals:
+LA76D:  LDA #PAL_LOAD_BG        ;Indicate background palette should be loaded.
+LA76F:  STA LoadBGPal           ;
+
+LA771:  LDA EndBossPal1Ptr      ;
+LA774:  STA BGPalPtrLB          ;Set pointer for background palettes.
+LA776:  LDA EndBossPal1Ptr+1    ;
+LA779:  STA BGPalPtrUB          ;
+
+LA77B:  LDA EndBossPal2Ptr      ;
+LA77E:  STA SprtPalPtrLB        ;Set pointer for sprite palettes.
+LA780:  LDA EndBossPal2Ptr+1    ;
+LA783:  STA SprtPalPtrUB        ;
+
 LA785:  JSR PalFadeOut          ;($C212)Fade out both background and sprite palettes.
 
 ;----------------------------------------------------------------------------------------------------
@@ -3168,35 +3174,35 @@ LA7F3:  STA $3E
 
 LA7F5:  JSR CalcPPUBufAddr      ;($C596)Calculate PPU address.
 
-LA7F8:  LDA PPUAddrLB
-LA7FA:  STA BlockAddrLB
-LA7FC:  LDA PPUAddrUB
-LA7FE:  STA BlockAddrUB
+LA7F8:  LDA PPUAddrLB           ;
+LA7FA:  STA BlockAddrLB         ;Copy PPU address pointer to block address pointer.
+LA7FC:  LDA PPUAddrUB           ;
+LA7FE:  STA BlockAddrUB         ;
 
-LA800:  LDA WndTypeCopy
-LA802:  BEQ SetWndBack
+LA800:  LDA WndTypeCopy         ;Get the window type.
+LA802:  BEQ SetWndBack          ;Is this the pop-up window? If so. branch. Background window.
 
-LA804:  CMP #WND_DIALOG
-LA806:  BEQ SetWndBack
+LA804:  CMP #WND_DIALOG         ;Is this a dialog window?
+LA806:  BEQ SetWndBack          ;If so, branch. Background window.
 
-LA808:  CMP #WND_CMD_NONCMB
-LA80A:  BEQ SetWndBack
+LA808:  CMP #WND_CMD_NONCMB     ;Is this a non-combat command window?
+LA80A:  BEQ SetWndBack          ;If so, branch. Background window.
 
-LA80C:  CMP #WND_CMD_CMB
-LA80E:  BEQ SetWndBack
+LA80C:  CMP #WND_CMD_CMB        ;Is this a combat command window?
+LA80E:  BEQ SetWndBack          ;If so, branch. Background window.
 
-LA810:  CMP #WND_ALPHBT
-LA812:  BEQ SetWndBack
+LA810:  CMP #WND_ALPHBT         ;Is this the alphabet selection window?
+LA812:  BEQ SetWndBack          ;If so, branch. Background window.
 
 SetWndFore:
-LA814:  LDA #WND_FOREGROUND
-LA816:  BEQ SetWndBackFore
+LA814:  LDA #WND_FOREGROUND     ;Set the window as a foreground window(covers other windows).
+LA816:  BEQ SetWndBackFore      ;
 
 SetWndBack:
-LA818:  LDA #WND_BACKGROUND
+LA818:  LDA #WND_BACKGROUND     ;Set the window as a background window(covered by other windows).
 
 SetWndBackFore:
-LA81A:  STA WndForeBack
+LA81A:  STA WndForeBack         ;Set window as foreground/background window.
 
 WndRemoveRowLoop:
 LA81C:  LDA #$00
@@ -3210,7 +3216,7 @@ LA826:  LDA $9E
 LA828:  STA WndColPos
 
 WndRemoveColLoop:
-LA82A:  JSR ClearWndBuf         ;($A880)Clear window block from buffers.
+LA82A:  JSR ClearWndBuf         ;($A880)Clear window block from buffers and uncover windows.
 
 LA82D:  LDA BlockAddrLB
 LA82F:  CLC
@@ -3273,16 +3279,16 @@ LA87F:  RTS                     ;Window is now removed. Exit.
 ;----------------------------------------------------------------------------------------------------
 
 ClearWndBuf:
-LA880:  LDA WndForeBack
-LA882:  BNE ClrWindowBlock
+LA880:  LDA WndForeBack         ;Is this a background window?
+LA882:  BNE ClrWindowBlock      ;If so, branch.
 
-LA884:  LDY #$00
-LA886:  LDA (BlockAddr),Y
-LA888:  CMP #$FF
-LA88A:  BEQ ClrWindowBlock
+LA884:  LDY #$00                ;Is this a foreground window over a blank block?
+LA886:  LDA (BlockAddr),Y       ;
+LA888:  CMP #$FF                ;
+LA88A:  BEQ ClrWindowBlock      ;If so, branch to clear window block.
 
-LA88C:  CMP #$FE
-LA88E:  BEQ ClrWindowBlock
+LA88C:  CMP #$FE                ;Is this a foreground window block not covering other window?
+LA88E:  BEQ ClrWindowBlock      ;If so, branch to clear window block.
 
 LA890:  JMP UncoverWindow       ;($A8AD)Uncover a window hidden by a foreground window.
 
@@ -3330,58 +3336,59 @@ LA8CE:  STA XFromLeftTemp       ;division necessary. value rolls over naturally.
 
 LA8D0:  JSR DoAddrCalc          ;($C5AA)Calculate destination address for GFX data.
 
-LA8D3:  LDX WndLineBufIdx
-LA8D5:  LDY #$00
+LA8D3:  LDX WndLineBufIdx       ;Initialize indexes.
+LA8D5:  LDY #$00                ;
 
-LA8D7:  LDA (BlockAddr),Y
-LA8D9:  STA WndLineBuf,X
-LA8DC:  INY
-LA8DD:  LDA (BlockAddr),Y
-LA8DF:  STA WndLineBuf+1,X
+LA8D7:  LDA (BlockAddr),Y       ;
+LA8D9:  STA WndLineBuf,X        ;
+LA8DC:  INY                     ;Transfer upper row of block data into window line buffer.
+LA8DD:  LDA (BlockAddr),Y       ;
+LA8DF:  STA WndLineBuf+1,X      ;
 
-LA8E2:  TXA
-LA8E3:  CLC
-LA8E4:  ADC WndEraseWdth
-LA8E7:  TAX
+LA8E2:  TXA                     ;
+LA8E3:  CLC                     ;Move to next row in window line buffer.
+LA8E4:  ADC WndEraseWdth        ;
+LA8E7:  TAX                     ;
 
-LA8E8:  LDY #$20
-LA8EA:  LDA (BlockAddr),Y
-LA8EC:  STA WndLineBuf,X
-LA8EF:  INY
-LA8F0:  LDA (BlockAddr),Y
-LA8F2:  STA WndLineBuf+1,X
+LA8E8:  LDY #$20                ;
+LA8EA:  LDA (BlockAddr),Y       ;
+LA8EC:  STA WndLineBuf,X        ;
+LA8EF:  INY                     ;Transfer upper row of block data into window line buffer.
+LA8F0:  LDA (BlockAddr),Y       ;
+LA8F2:  STA WndLineBuf+1,X      ;
 
-LA8F5:  LDA XFromLeftTemp
-LA8F7:  STA XPosFromLeft
-LA8F9:  LDA YFromTopTemp
-LA8FB:  STA YPosFromTop
+LA8F5:  LDA XFromLeftTemp       ;
+LA8F7:  STA XPosFromLeft        ;Update X and Y position for next window block.
+LA8F9:  LDA YFromTopTemp        ;
+LA8FB:  STA YPosFromTop         ;
 
-LA8FD:  LDY #$00
+LA8FD:  LDY #$00                ;Zero out index.
 
-LA8FF:  LDA (BlockAddr),Y
-LA901:  CMP #$C1
-LA903:  BCS $A909
+LA8FF:  LDA (BlockAddr),Y       ;Sets attribute table value for each block based on its -->
+LA901:  CMP #$C1                ;position in the pattern table.
+LA903:  BCS +                   ;Is this a sky tile in the battle scene? If not, branch.
 
-LA905:  LDA #$00
-LA907:  BEQ $A91B
+LA905:  LDA #$00                ;Set attribute table value for battle scene sky tiles.
+LA907:  BEQ StoreAttribByte     ;
 
-LA909:  CMP #$CA
-LA90B:  BCS $A911
+LA909:* CMP #$CA                ;Is this a green covered mountain tile in the battle scene?
+LA90B:  BCS +                   ;If not, branch.
 
-LA90D:  LDA #$01
-LA90F:  BNE $A91B
+LA90D:  LDA #$01                ;Set attribute table value for battle scene green covered -->
+LA90F:  BNE StoreAttribByte     ;mountain tiles. Branch always.
 
-LA911:  CMP #$DE
-LA913:  BCS $A919
+LA911:* CMP #$DE                ;Is this a foreground tile in the battle scene?
+LA913:  BCS +                   ;If not, branch.
 
-LA915:  LDA #$02
-LA917:  BNE $A91B
+LA915:  LDA #$02                ;Set attribute table value for battle scene foreground tiles.
+LA917:  BNE StoreAttribByte     ;Branch always.
 
-LA919:  LDA #$03
+LA919:* LDA #$03                ;Set attribute table values for battle scene horizon tiles.
 
-LA91B:  LDX AttribBufIndex
-LA91D:  STA AttribTblBuf,X
-LA920:  RTS
+StoreAttribByte:
+LA91B:  LDX AttribBufIndex      ;
+LA91D:  STA AttribTblBuf,X      ;Store the attribute table byte in the buffer.
+LA920:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -3517,20 +3524,20 @@ LA9CB:  BNE CalcBlockIndex      ;Branch always.
 
 ChkCoveredArea:
 LA9CD:  JSR HasCoverData        ;($AAE1)Check if current map has covered areas.
-LA9D0:  LDA CoverStatus
-LA9D2:  EOR CoveredStsNext
-LA9D4:  AND #$08
-LA9D6:  BEQ CalcBlockIndex
+LA9D0:  LDA CoverStatus         ;
+LA9D2:  EOR CoveredStsNext      ;Did player just enter/exit covered area?
+LA9D4:  AND #$08                ;
+LA9D6:  BEQ CalcBlockIndex      ;If not, beanch to move on.
 
-LA9D8:  LDA CoverStatus
-LA9DA:  BNE +
+LA9D8:  LDA CoverStatus         ;Did the player just enter cover?
+LA9DA:  BNE +                   ;If so, branch.
 
-LA9DC:  LDA #BLK_SML_TILES
-LA9DE:  STA $3C
+LA9DC:  LDA #BLK_SML_TILES      ;Area under cover will be replaced with small tile blocks.
+LA9DE:  STA TargetResults       ;
 LA9E0:  BNE CalcBlockIndex      ;Branch always.
 
-LA9E2:* LDA #BLK_BLANK
-LA9E4:  STA $3C
+LA9E2:* LDA #BLK_BLANK          ;Areas outside cover will be replaced with blank blocks.
+LA9E4:  STA TargetResults       ;
 
 CalcBlockIndex:
 LA9E6:  LDA TargetResults       ;
@@ -3544,44 +3551,42 @@ LA9F1:  LDA GFXTilesPtr+1       ;Calculate the address to the proper GFX block d
 LA9F4:  ADC #$00                ;
 LA9F6:  STA BlockDataPtrUB      ;
 
-LA9F8:  LDX WndLineBufIdx
-LA9FA:  LDY #$00
-LA9FC:  LDA (BlockDataPtr),Y
-LA9FE:  STA WndLineBuf,X  
-           
-LAA01:  INY
+LA9F8:  LDX WndLineBufIdx       ;Initialize indexes for transferring GFX block data.
+LA9FA:  LDY #$00                ;
 
-LAA02:  LDA (BlockDataPtr),Y
-LAA04:  STA WndLineBuf+1,X
+LA9FC:  LDA (BlockDataPtr),Y    ;
+LA9FE:  STA WndLineBuf,X        ;
+LAA01:  INY                     ;Transfer upper row of block data into window line buffer.
+LAA02:  LDA (BlockDataPtr),Y    ;
+LAA04:  STA WndLineBuf+1,X      ;
 
-LAA07:  TXA
-LAA08:  CLC
-LAA09:  ADC WndEraseWdth
-LAA0C:  TAX
+LAA07:  TXA                     ;
+LAA08:  CLC                     ;Move to the next row in the window line buffer.
+LAA09:  ADC WndEraseWdth        ;
+LAA0C:  TAX                     ;
 
-LAA0D:  LDA PPUAddrLB
-LAA0F:  CLC
-LAA10:  ADC #$1E
-LAA12:  STA PPUAddrLB
-LAA14:  BCC PushWndLineBuf
-LAA16:  INC PPUAddrUB
+LAA0D:  LDA PPUAddrLB           ;
+LAA0F:  CLC                     ;
+LAA10:  ADC #$1E                ;Move to the next row int the nametable.
+LAA12:  STA PPUAddrLB           ;
+LAA14:  BCC +                   ;
+LAA16:  INC PPUAddrUB           ;
 
-PushWndLineBuf:
-LAA18:  INY
-LAA19:  LDA (BlockDataPtr),Y
-LAA1B:  STA WndLineBuf,X
-LAA1E:  INY
-LAA1F:  LDA (BlockDataPtr),Y
-LAA21:  STA WndLineBuf+1,X
-LAA24:  INY
+LAA18:* INY                     ;
+LAA19:  LDA (BlockDataPtr),Y    ;
+LAA1B:  STA WndLineBuf,X        ;
+LAA1E:  INY                     ;Transfer lower row of block data into window line buffer.
+LAA1F:  LDA (BlockDataPtr),Y    ;
+LAA21:  STA WndLineBuf+1,X      ;
+LAA24:  INY                     ;
 
-LAA25:  LDA XFromLeftTemp
-LAA27:  STA XPosFromLeft
-LAA29:  LDA YFromTopTemp
-LAA2B:  STA YPosFromTop
+LAA25:  LDA XFromLeftTemp       ;
+LAA27:  STA XPosFromLeft        ;Update X and Y position for next window block.
+LAA29:  LDA YFromTopTemp        ;
+LAA2B:  STA YPosFromTop         ;
 
-LAA2D:  LDA (BlockDataPtr),Y
-LAA2F:  STA PPUDataByte
+LAA2D:  LDA (BlockDataPtr),Y    ;Get attribute table byte.
+LAA2F:  STA PPUDataByte         ;
 
 LAA31:  LDA AddAttribData       ;Should always be 0. Add attribute table data to buffer.
 LAA33:  BNE ModWndExit          ;Never branch.
@@ -3596,73 +3601,79 @@ LAA3C:  RTS                     ;Done removing window block. Return.
 ;----------------------------------------------------------------------------------------------------
 
 DoPalFadeIn:
-LAA3D:  JSR $AA49
+LAA3D:  JSR LoadFadePals        ;($AA49)Load fade in/fade out palettes.
 LAA40:  JMP PalFadeIn           ;($C529)Fade in both background and sprite palettes.
 
 DoPalFadeOut:
-LAA43:  JSR $AA49
+LAA43:  JSR LoadFadePals        ;($AA49)Load fade in/fade out palettes.
 LAA46:  JMP PalFadeOut          ;($C212)Fade out both background and sprite palettes.
 
-LAA49:  LDA BlackPalPtr
-LAA4C:  STA $3E
-LAA4E:  LDA BlackPalPtr+1
-LAA51:  STA $3F
-LAA53:  LDA $9A2C
-LAA56:  STA $40
-LAA58:  LDA $9A2D
-LAA5B:  STA $41
+LoadFadePals:
+LAA49:  LDA BlackPalPtr         ;
+LAA4C:  STA SprtPalPtrLB        ;Set pointer for sprite palettes.
+LAA4E:  LDA BlackPalPtr+1       ;
+LAA51:  STA SprtPalPtrUB        ;
 
-LAA5D:  LDA #$FF
-LAA5F:  STA $3D
-LAA61:  RTS
+LAA53:  LDA FadePalPtr          ;
+LAA56:  STA BGPalPtrLB          ;Set pointer for background palettes.
+LAA58:  LDA FadePalPtr+1        ;
+LAA5B:  STA BGPalPtrUB          ;
 
-;----------------------------------------------------------------------------------------------------
+LAA5D:  LDA #PAL_LOAD_BG        ;
+LAA5F:  STA LoadBGPal           ;Indicate background palette should be loaded.
+LAA61:  RTS                     ;
 
 LoadCreditsPals:
-LAA62:  LDA #PAL_LOAD_BG
-LAA64:  STA LoadBGPal
+LAA62:  LDA #PAL_LOAD_BG        ;Indicate background palette should be loaded.
+LAA64:  STA LoadBGPal           ;
 
-LAA66:  LDA RegSPPalPtr
-LAA69:  STA $3E
-LAA6B:  LDA RegSPPalPtr+1
-LAA6E:  STA $3F
-LAA70:  LDA TownPalPtr
-LAA73:  STA $40
-LAA75:  LDA TownPalPtr+1
-LAA78:  STA $41
+LAA66:  LDA RegSPPalPtr         ;
+LAA69:  STA SprtPalPtrLB        ;Set pointer for sprite palettes.
+LAA6B:  LDA RegSPPalPtr+1       ;
+LAA6E:  STA SprtPalPtrUB        ;
+
+LAA70:  LDA TownPalPtr          ;
+LAA73:  STA BGPalPtrLB          ;Set pointer for background palettes.
+LAA75:  LDA TownPalPtr+1        ;
+LAA78:  STA BGPalPtrUB          ;
+
 LAA7A:  JSR PalFadeOut          ;($C212)Fade out both background and sprite palettes.
-LAA7D:  RTS
+LAA7D:  RTS                     ;
 
 LoadStartPals:
-LAA7E:  LDA RegSPPalPtr
-LAA81:  STA $3E
-LAA83:  LDA RegSPPalPtr+1
-LAA86:  STA $3F
-LAA88:  LDA PreGamePalPtr
-LAA8B:  STA $40
-LAA8D:  LDA PreGamePalPtr+1
-LAA90:  STA $41
+LAA7E:  LDA RegSPPalPtr         ;
+LAA81:  STA SprtPalPtrLB        ;Set pointer for sprite palettes.
+LAA83:  LDA RegSPPalPtr+1       ;
+LAA86:  STA SprtPalPtrUB        ;
 
-LAA92:  LDA #PAL_LOAD_BG
-LAA94:  STA LoadBGPal
+LAA88:  LDA PreGamePalPtr       ;
+LAA8B:  STA BGPalPtrLB          ;Set pointer for background palettes.
+LAA8D:  LDA PreGamePalPtr+1     ;
+LAA90:  STA BGPalPtrUB          ;
+
+LAA92:  LDA #PAL_LOAD_BG        ;Indicate background palette should be loaded.
+LAA94:  STA LoadBGPal           ;
 LAA96:  JMP PalFadeIn           ;($C529)Fade in both background and sprite palettes.
 
 LoadIntroPals:
-LAA99:  LDA BlackPalPtr
-LAA9C:  STA PalPtrLB
-LAA9E:  LDA BlackPalPtr+1
+LAA99:  LDA BlackPalPtr         ;
+LAA9C:  STA PalPtrLB            ;Get pointer to palette data.
+LAA9E:  LDA BlackPalPtr+1       ;
 LAAA1:  STA PalPtrUB
-LAAA3:  LDA #$00
-LAAA5:  STA $3C
+
+LAAA3:  LDA #$00                ;Indicate no fade in/fade out.
+LAAA5:  STA PalModByte          ;
+
 LAAA7:  JSR PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
 LAAAA:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LAAAD:  LDA BlackPalPtr
-LAAB0:  STA PalPtrLB
-LAAB2:  LDA BlackPalPtr+1
-LAAB5:  STA PalPtrUB
 
-LAAB7:  LDA #$00
-LAAB9:  STA PalModByte
+LAAAD:  LDA BlackPalPtr         ;
+LAAB0:  STA PalPtrLB            ;Get pointer to palette data.
+LAAB2:  LDA BlackPalPtr+1       ;
+LAAB5:  STA PalPtrUB            ;
+
+LAAB7:  LDA #$00                ;Indicate no fade in/fade out.
+LAAB9:  STA PalModByte          ;
 LAABB:  JMP PrepSPPalLoad       ;($C632)Wait for PPU buffer to be open.
 
 ;----------------------------------------------------------------------------------------------------
