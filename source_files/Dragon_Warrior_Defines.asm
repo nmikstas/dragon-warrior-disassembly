@@ -123,6 +123,7 @@
 .alias PlayerDatPtrLB   $22     ;Pointer for loading/saving player stats, lower byte.
 .alias PlayerDatPtrUB   $23     ;Pointer for loading/saving player stats, upper byte.
 
+.alias WndLineBufIdx    $22     ;Index into window line buffer.
 .alias AttribBufIndex   $23     ;Index into attribute table buffer
 
 .alias WndTypeCopy      $23     ;Temporary copy of current window type.
@@ -238,6 +239,10 @@
 .alias EnDatPtrLB       $40     ;Enemy data pointer, lower byte.
 .alias EnDatPtrUB       $41     ;Enemy data pointer, upper byte.
 
+.alias BlockDataPtr     $40     ;Pointer to block graphics data.
+.alias BlockDataPtrLB   $40     ;Pointer to block graphics data, lower byte.
+.alias BlockDataPtrUB   $41     ;Pointer to block graphics data, upper byte.
+
 .alias CRCCopyLB        $40     ;Copy of saved game CRC, lower byte for verification purposes.
 .alias CRCCopyUB        $41     ;Copy of saved game CRC, upper byte for verification purposes.
 
@@ -280,6 +285,7 @@
 .alias BridgeFlashCntr  $4C     ;Used to count palette flash cycles when rainbow bridge is created.
 .alias TileCounter      $4D     ;Used to count tiles when modifying blocks.
 .alias BlockClear       $4D     ;Is always 0. Maybe had some other function in Dragon's Quest.
+.alias WndForeBack      $4D     ;#$FF=Background window, #$00=Foreground window(over another window).
 .alias NPCLoopCounter   $4E     ;Counter for controlling NPC update loops.
 .alias FrameCounter     $4F     ;Normally increments every frame. used for timing.
 
@@ -413,7 +419,9 @@
 
 .alias LightDiameter    $D0     ;Diameter in blocks of light around player in dungeons.                             
 .alias PPUHorzVert      $D1     ;#$00=Write PPU data in vertical column(add #$20 every write).
-                                ;non-zero=Write PPU data horizontally.                                
+                                ;non-zero=Write PPU data horizontally. 
+.alias AddAttribData    $D1     ;#$00=Move attrib data to buffer. Non-zero=skip attrib table data.
+                               
 .alias WndTxtXCoord     $D2     ;X coordinant of current text byte relative to the window.  
 .alias WndTxtYCoord     $D3     ;Y coordinant of current text byte relative to the window.                      
 
@@ -618,7 +626,7 @@
 .alias WndEraseWdth     $6008   ;Window erase width in tiles.
 .alias WndErasePos      $6009   ;Window erase position in blocks, X=upper nibble, Y=lower nibble.
 
-.alias WndLineBuf       $6436   ;Through $6471. 60 bytes. buffers 2 window rows.
+.alias WndLineBuf       $6436   ;Through $6471. 60 bytes. buffers 2 window tile rows.
 
 .alias AttribTblBuf     $6496   ;Through $64A5. Attribute table buffer for 1 on-screen block row.
 
@@ -1296,3 +1304,5 @@
 .alias PAL_LOAD_BG      $FF     ;Load background palette data.
 .alias PAL_SKIP_BG      $00     ;Skip loading background palette.
 .alias PAL_BLACK        $0F     ;Black background palette value.
+.alias WND_FOREGROUND   $00     ;Window overlaps another window.
+.alias WND_BACKGROUND   $FF     ;Window is a background window.

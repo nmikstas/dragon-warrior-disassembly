@@ -5545,9 +5545,11 @@ LE019:  BNE PlayerCursed        ;Branch always to tell player they are cursed.
 AddInvItem:
 LE01B:  STA $3E
 LE01D:  LDX #$00
+
 LE01F:  LDA InventorySlot12,X
 LE021:  AND #$0F
 LE023:  BNE $E02E
+
 LE025:  LDA InventorySlot12,X
 LE027:  AND #$F0
 LE029:  ORA $3E
@@ -5557,10 +5559,12 @@ LE02D:  RTS
 LE02E:  LDA InventorySlot12,X
 LE030:  AND #$F0
 LE032:  BNE $E045
+
 LE034:  ASL $3E
 LE036:  ASL $3E
 LE038:  ASL $3E
 LE03A:  ASL $3E
+
 LE03C:  LDA InventorySlot12,X
 LE03E:  AND #$0F
 LE040:  ORA $3E
@@ -5569,6 +5573,7 @@ LE044:  RTS
 LE045:  INX
 LE046:  CPX #$04
 LE048:  BNE $E01F
+
 LE04A:  RTS
 
 ;----------------------------------------------------------------------------------------------------

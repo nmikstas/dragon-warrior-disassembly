@@ -3051,8 +3051,10 @@ ScreenFadeOut:
 LA743:  LDA DrgnLrdPal
 LA746:  CMP #EN_DRAGONLORD2
 LA748:  BEQ $A76D
-LA74A:  LDA #$FF
+
+LA74A:  LDA #PAL_LOAD_BG
 LA74C:  STA LoadBGPal
+
 LA74E:  LDA RegSPPalPtr
 LA751:  STA $3E
 LA753:  LDA RegSPPalPtr+1
@@ -3104,7 +3106,7 @@ LA7A1:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 RemoveWindow:
-LA7A2:  STA WndTypeCopy
+LA7A2:  STA WndTypeCopy         ;Save a copy of the window type.
 
 LA7A4:  BRK                     ;Get parameters for removing windows from the screen.
 LA7A5:  .byte $00, $17          ;($AF24)WndEraseParams, bank 1.
@@ -3112,7 +3114,8 @@ LA7A5:  .byte $00, $17          ;($AF24)WndEraseParams, bank 1.
 LA7A7:  LDA WndEraseWdth
 LA7AA:  LSR
 LA7AB:  ORA #$10
-LA7AD:  STA $64A6
+LA7AD:  STA WndWidthTemp
+
 LA7B0:  LDA WndEraseHght
 LA7B3:  SEC
 LA7B4:  SBC #$01
@@ -3121,7 +3124,8 @@ LA7B7:  ASL
 LA7B8:  ASL
 LA7B9:  ASL
 LA7BA:  ADC WndErasePos
-LA7BD:  STA $64A7
+LA7BD:  STA _WndPosition
+
 LA7C0:  LDA WndErasePos
 LA7C3:  AND #$0F
 LA7C5:  STA $3C
@@ -3129,348 +3133,465 @@ LA7C7:  SEC
 LA7C8:  SBC #$08
 LA7CA:  ASL
 LA7CB:  STA $9D
+
 LA7CD:  LDA WndEraseHght
 LA7D0:  STA $98
 LA7D2:  SEC
 LA7D3:  SBC #$01
+
 LA7D5:  PHA
+
 LA7D6:  LDA WndErasePos
 LA7D9:  LSR
 LA7DA:  LSR
 LA7DB:  LSR
 LA7DC:  LSR
 LA7DD:  STA $22
+
 LA7DF:  PLA
+
 LA7E0:  CLC
 LA7E1:  ADC $22
 LA7E3:  STA $22
+
 LA7E5:  SEC
 LA7E6:  SBC #$07
 LA7E8:  ASL
-LA7E9:  STA $10
+LA7E9:  STA YPosFromCenter
+
 LA7EB:  LDA WndEraseWdth
 LA7EE:  LSR
 LA7EF:  STA $9E
+
 LA7F1:  LDA $22
 LA7F3:  STA $3E
+
 LA7F5:  JSR CalcPPUBufAddr      ;($C596)Calculate PPU address.
+
 LA7F8:  LDA PPUAddrLB
-LA7FA:  STA $99
+LA7FA:  STA BlockAddrLB
 LA7FC:  LDA PPUAddrUB
-LA7FE:  STA $9A
+LA7FE:  STA BlockAddrUB
 
 LA800:  LDA WndTypeCopy
-LA802:  BEQ $A818
+LA802:  BEQ SetWndBack
 
 LA804:  CMP #WND_DIALOG
-LA806:  BEQ $A818
+LA806:  BEQ SetWndBack
 
 LA808:  CMP #WND_CMD_NONCMB
-LA80A:  BEQ $A818
+LA80A:  BEQ SetWndBack
 
 LA80C:  CMP #WND_CMD_CMB
-LA80E:  BEQ $A818
+LA80E:  BEQ SetWndBack
 
 LA810:  CMP #WND_ALPHBT
-LA812:  BEQ $A818
+LA812:  BEQ SetWndBack
 
-LA814:  LDA #$00
-LA816:  BEQ $A81A
+SetWndFore:
+LA814:  LDA #WND_FOREGROUND
+LA816:  BEQ SetWndBackFore
 
-LA818:  LDA #$FF
+SetWndBack:
+LA818:  LDA #WND_BACKGROUND
 
-LA81A:  STA $4D
+SetWndBackFore:
+LA81A:  STA WndForeBack
+
+WndRemoveRowLoop:
 LA81C:  LDA #$00
 LA81E:  STA AttribBufIndex
-LA820:  STA $22
-LA822:  LDA $9D
-LA824:  STA $0F
-LA826:  LDA $9E
-LA828:  STA $97
+LA820:  STA WndLineBufIdx
 
-LA82A:  JSR $A880
-LA82D:  LDA $99
+LA822:  LDA $9D
+LA824:  STA XPosFromCenter
+
+LA826:  LDA $9E
+LA828:  STA WndColPos
+
+WndRemoveColLoop:
+LA82A:  JSR ClearWndBuf         ;($A880)Clear window block from buffers.
+
+LA82D:  LDA BlockAddrLB
 LA82F:  CLC
 LA830:  ADC #$02
-LA832:  STA $99
-LA834:  BCC $A838
-LA836:  INC $9A
-LA838:  INC $22
-LA83A:  INC $22
+LA832:  STA BlockAddrLB
+LA834:  BCC +
+LA836:  INC BlockAddrUB
+
+LA838:* INC WndLineBufIdx
+LA83A:  INC WndLineBufIdx
 LA83C:  INC AttribBufIndex
-LA83E:  INC $0F
-LA840:  INC $0F
-LA842:  DEC $97
-LA844:  BNE $A82A
+
+LA83E:  INC XPosFromCenter
+LA840:  INC XPosFromCenter
+
+LA842:  DEC WndColPos
+LA844:  BNE WndRemoveColLoop
 
 LA846:  BRK                     ;Show/hide window on the screen.
 LA847:  .byte $01, $17          ;($ABC4)WndShowHide.
 
-LA849:  LDA $99
+LA849:  LDA BlockAddrLB
 LA84B:  CLC
 LA84C:  ADC #$C0
-LA84E:  STA $99
+LA84E:  STA BlockAddrLB
 LA850:  BCS $A854
-LA852:  DEC $9A
+LA852:  DEC BlockAddrUB
+
 LA854:  LDA $9E
 LA856:  ASL
 LA857:  STA $3C
-LA859:  LDA $99
+
+LA859:  LDA BlockAddrLB
 LA85B:  SEC
 LA85C:  SBC $3C
-LA85E:  STA $99
-LA860:  BCS $A864
-LA862:  DEC $9A
-LA864:  LDA $64A7
-LA867:  SEC
-LA868:  SBC #$10
-LA86A:  STA $64A7
-LA86D:  DEC $10
-LA86F:  DEC $10
-LA871:  DEC $98
-LA873:  BNE $A81C
-LA875:  LDA StopNPCMove
-LA877:  BEQ $A87F
+LA85E:  STA BlockAddrLB
+LA860:  BCS +
+LA862:  DEC BlockAddrUB
+
+LA864:* LDA _WndPosition        ;
+LA867:  SEC                     ;Decrement the Y position of the window by 1 block. -->
+LA868:  SBC #$10                ;Does not appear to be used for anything.
+LA86A:  STA _WndPosition        ;
+
+LA86D:  DEC YPosFromCenter      ;Move to next block row down(2X2 tiles per block).
+LA86F:  DEC YPosFromCenter      ;
+
+LA871:  DEC WndRowPos           ;Move to next window row(in blocks).
+LA873:  BNE WndRemoveRowLoop    ;More rows to erase? If so, branch to do another row.
+
+LA875:  LDA StopNPCMove         ;Are NPCs moving?
+LA877:  BEQ DoneRemoveWindow    ;If so, branch to exit routine. Nothing left to do.
 
 LA879:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LA87C:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LA87F:  RTS                     ;
+
+DoneRemoveWindow:
+LA87F:  RTS                     ;Window is now removed. Exit.
 
 ;----------------------------------------------------------------------------------------------------
 
-LA880:  LDA $4D
-LA882:  BNE $A893
+ClearWndBuf:
+LA880:  LDA WndForeBack
+LA882:  BNE ClrWindowBlock
+
 LA884:  LDY #$00
-LA886:  LDA ($99),Y
+LA886:  LDA (BlockAddr),Y
 LA888:  CMP #$FF
-LA88A:  BEQ $A893
+LA88A:  BEQ ClrWindowBlock
+
 LA88C:  CMP #$FE
-LA88E:  BEQ $A893
-LA890:  JMP $A8AD
+LA88E:  BEQ ClrWindowBlock
 
-LA893:  LDA #$00
-LA895:  STA BlkRemoveFlgs
-LA897:  STA PPUHorzVert
-LA899:  JSR $A921
+LA890:  JMP UncoverWindow       ;($A8AD)Uncover a window hidden by a foreground window.
 
-LA89C:  LDY #$00
-LA89E:  LDA #$FF
-LA8A0:  STA ($99),Y
-LA8A2:  INY
-LA8A3:  STA ($99),Y
-LA8A5:  LDY #$20
-LA8A7:  STA ($99),Y
-LA8A9:  INY
-LA8AA:  STA ($99),Y
-LA8AC:  RTS
+ClrWindowBlock:
+LA893:  LDA #$00                ;
+LA895:  STA BlkRemoveFlgs       ;Remove no tiles from the current block.
+LA897:  STA AddAttribData       ;Indicate attrib data needs to be moved to buffer.
+LA899:  JSR ModWindowBlock      ;($A921)Replace window block with map block.
 
-LA8AD:  LDA NTBlockY
-LA8AF:  ASL
-LA8B0:  ADC $10
-LA8B2:  CLC
-LA8B3:  ADC #$1E
-LA8B5:  STA $3C
-LA8B7:  LDA #$1E
-LA8B9:  STA $3E
+LA89C:  LDY #$00                ;
+LA89E:  LDA #$FF                ;
+LA8A0:  STA (BlockAddr),Y       ;Clear upper row of window block.
+LA8A2:  INY                     ;
+LA8A3:  STA (BlockAddr),Y       ;
+
+LA8A5:  LDY #$20                ;
+LA8A7:  STA (BlockAddr),Y       ;
+LA8A9:  INY                     ;Clear lower row of window block.
+LA8AA:  STA (BlockAddr),Y       ;
+LA8AC:  RTS                     ;
+
+UncoverWindow:
+LA8AD:  LDA NTBlockY            ;*2. Convert the block position to tile position.
+LA8AF:  ASL                     ;
+LA8B0:  ADC YPosFromCenter      ;Calculate the nametable Y block that needs to be replaced.
+LA8B2:  CLC                     ;Add signed location of block to unsigned nametable location.
+LA8B3:  ADC #$1E                ;Add Screen height in tiles to ensure result is always positive.
+LA8B5:  STA DivNum1LB           ;
+
+LA8B7:  LDA #$1E                ;Divide out tile height and get remainder. Result will be -->
+LA8B9:  STA DivNum2             ;between #$00-#$1E(height of screen in tiles).
 LA8BB:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
-LA8BE:  LDA $40
-LA8C0:  STA $3E
-LA8C2:  STA $49
-LA8C4:  LDA NTBlockX
-LA8C6:  ASL
-LA8C7:  CLC
-LA8C8:  ADC $0F
-LA8CA:  AND #$3F
-LA8CC:  STA $3C
-LA8CE:  STA $48
+
+LA8BE:  LDA DivRemainder        ;The final result is the unsigned Y position of the block -->
+LA8C0:  STA YPosFromTop         ;to replace, measured in tiles. #$00-#$1E.
+LA8C2:  STA YFromTopTemp        ;
+
+LA8C4:  LDA NTBlockX            ;*2. Convert the block position to tile position.
+LA8C6:  ASL                     ;Calculate the nametable X block that needs to be replaced.
+LA8C7:  CLC                     ;Add signed location of block to unsigned nametable location.
+LA8C8:  ADC XPosFromCenter      ;Keep only lower 6 bits. The row is 64 tiles wide as it spans -->
+LA8CA:  AND #$3F                ;both nametables. The final result is the unsigned X position -->
+LA8CC:  STA XPosFromLeft        ;of the block to replace, measured in tiles. #$00-#$3F. No -->
+LA8CE:  STA XFromLeftTemp       ;division necessary. value rolls over naturally.
+
 LA8D0:  JSR DoAddrCalc          ;($C5AA)Calculate destination address for GFX data.
-LA8D3:  LDX $22
+
+LA8D3:  LDX WndLineBufIdx
 LA8D5:  LDY #$00
-LA8D7:  LDA ($99),Y
-LA8D9:  STA $6436,X
+
+LA8D7:  LDA (BlockAddr),Y
+LA8D9:  STA WndLineBuf,X
 LA8DC:  INY
-LA8DD:  LDA ($99),Y
-LA8DF:  STA $6437,X
+LA8DD:  LDA (BlockAddr),Y
+LA8DF:  STA WndLineBuf+1,X
+
 LA8E2:  TXA
 LA8E3:  CLC
 LA8E4:  ADC WndEraseWdth
 LA8E7:  TAX
+
 LA8E8:  LDY #$20
-LA8EA:  LDA ($99),Y
-LA8EC:  STA $6436,X
+LA8EA:  LDA (BlockAddr),Y
+LA8EC:  STA WndLineBuf,X
 LA8EF:  INY
-LA8F0:  LDA ($99),Y
-LA8F2:  STA $6437,X
-LA8F5:  LDA $48
-LA8F7:  STA $3C
-LA8F9:  LDA $49
-LA8FB:  STA $3E
+LA8F0:  LDA (BlockAddr),Y
+LA8F2:  STA WndLineBuf+1,X
+
+LA8F5:  LDA XFromLeftTemp
+LA8F7:  STA XPosFromLeft
+LA8F9:  LDA YFromTopTemp
+LA8FB:  STA YPosFromTop
+
 LA8FD:  LDY #$00
-LA8FF:  LDA ($99),Y
+
+LA8FF:  LDA (BlockAddr),Y
 LA901:  CMP #$C1
 LA903:  BCS $A909
+
 LA905:  LDA #$00
 LA907:  BEQ $A91B
+
 LA909:  CMP #$CA
 LA90B:  BCS $A911
+
 LA90D:  LDA #$01
 LA90F:  BNE $A91B
+
 LA911:  CMP #$DE
 LA913:  BCS $A919
+
 LA915:  LDA #$02
 LA917:  BNE $A91B
+
 LA919:  LDA #$03
+
 LA91B:  LDX AttribBufIndex
 LA91D:  STA AttribTblBuf,X
 LA920:  RTS
 
-LA921:  LDA NTBlockY
-LA923:  ASL
-LA924:  CLC
-LA925:  ADC $10
-LA927:  CLC
-LA928:  ADC #$1E
-LA92A:  STA $3C
-LA92C:  LDA #$1E
-LA92E:  STA $3E
+;----------------------------------------------------------------------------------------------------
+
+ModWindowBlock:
+LA921:  LDA NTBlockY            ;*2. Convert the block position to tile position.
+LA923:  ASL                     ;
+LA924:  CLC                     ;Calculate the nametable Y block that needs to be replaced.
+LA925:  ADC YPosFromCenter      ;Add signed location of block to unsigned nametable location.
+LA927:  CLC                     ;
+LA928:  ADC #$1E                ;Add Screen height in tiles to ensure result is always positive.
+LA92A:  STA DivNum1LB           ;
+
+LA92C:  LDA #$1E                ;Divide out tile height and get remainder. Result will be -->
+LA92E:  STA DivNum2             ;between #$00-#$1E(height of screen in tiles).
 LA930:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
-LA933:  LDA $40
-LA935:  STA $3E
-LA937:  STA $49
-LA939:  LDA NTBlockX
-LA93B:  ASL
-LA93C:  CLC
-LA93D:  ADC $0F
-LA93F:  AND #$3F
-LA941:  STA $3C
-LA943:  STA $48
+
+LA933:  LDA DivRemainder        ;The final result is the unsigned Y position of the block -->
+LA935:  STA YPosFromTop         ;to replace, measured in tiles. #$00-#$1E.
+LA937:  STA YFromTopTemp        ;
+
+LA939:  LDA NTBlockX            ;*2. Convert the block position to tile position.
+LA93B:  ASL                     ;Calculate the nametable X block that needs to be replaced.
+LA93C:  CLC                     ;Add signed location of block to unsigned nametable location.
+LA93D:  ADC XPosFromCenter      ;Keep only lower 6 bits. The row is 64 tiles wide as it spans -->
+LA93F:  AND #$3F                ;both nametables. The final result is the unsigned X position -->
+LA941:  STA XPosFromLeft        ;of the block to replace, measured in tiles. #$00-#$3F. No -->
+LA943:  STA XFromLeftTemp       ;division necessary. value rolls over naturally.
+
 LA945:  JSR DoAddrCalc          ;($C5AA)Calculate destination address for GFX data.
-LA948:  LDA $0F
-LA94A:  ASL
-LA94B:  LDA $0F
-LA94D:  ROR
-LA94E:  CLC
-LA94F:  ADC CharXPos
-LA951:  STA $3C
-LA953:  LDA $10
-LA955:  ASL
-LA956:  LDA $10
-LA958:  ROR
-LA959:  CLC
-LA95A:  ADC CharYPos
-LA95C:  STA $3E
+
+LA948:  LDA XPosFromCenter      ;
+LA94A:  ASL                     ;/2 with sign extension to convert block X location. 
+LA94B:  LDA XPosFromCenter      ;
+LA94D:  ROR                     ;
+
+LA94E:  CLC                     ;
+LA94F:  ADC CharXPos            ;Add the player's X position in preparation to get block type.
+LA951:  STA XTarget             ;
+
+LA953:  LDA YPosFromCenter      ;
+LA955:  ASL                     ;/2 with sign extension to convert to block Y location.
+LA956:  LDA YPosFromCenter      ;
+LA958:  ROR                     ;
+
+LA959:  CLC                     ;
+LA95A:  ADC CharYPos            ;Add the player's Y position in preparation to get block type.
+LA95C:  STA YTarget             ;
+
 LA95E:  JSR GetBlockID          ;($AC17)Get description of block.
-LA961:  LDA MapType
-LA963:  CMP #MAP_DUNGEON
-LA965:  BNE $A9CD
-LA967:  LDA $0F
-LA969:  BPL $A975
-LA96B:  EOR #$FF
-LA96D:  CLC
-LA96E:  ADC #$01
-LA970:  STA $3E
-LA972:  JMP $A979
-LA975:* LDA $0F
-LA977:  STA $3E
-LA979:  LDA LightDiameter
-LA97B:  CMP $3E
-LA97D:  BCS $A989
-LA97F:  LDA #$16
-LA981:  STA $3C
-LA983:  LDA #$00
-LA985:  STA BlkRemoveFlgs
-LA987:  BEQ $A9E6
-LA989:* BNE $A999
-LA98B:  LDA $0F
-LA98D:  BPL $A995
-LA98F:  LDA #$05
-LA991:  STA BlkRemoveFlgs
-LA993:  BNE $A999
-LA995:* LDA #$0A
-LA997:  STA BlkRemoveFlgs
-LA999:* LDA $10
-LA99B:  BPL $A9A7
-LA99D:  EOR #$FF
-LA99F:  CLC
-LA9A0:  ADC #$01
-LA9A2:  STA $3E
-LA9A4:  JMP $A9AB
-LA9A7:* LDA $10
-LA9A9:  STA $3E
-LA9AB:  LDA LightDiameter
-LA9AD:  CMP $3E
-LA9AF:  BCS +
-LA9B1:  LDA #$16
-LA9B3:  STA $3C
-LA9B5:  LDA #$00
-LA9B7:  STA BlkRemoveFlgs
-LA9B9:  BEQ +++++
-LA9BB:* BNE ++++
-LA9BD:  LDA $10
-LA9BF:  BPL +
-LA9C1:  LDA #$03
-LA9C3:  STA BlkRemoveFlgs
-LA9C5:  BNE ++++
-LA9C7:* LDA #$0C
-LA9C9:  STA BlkRemoveFlgs
-LA9CB:  BNE +++
-LA9CD:* JSR HasCoverData        ;($AAE1)Check if current map has covered areas.
+
+LA961:  LDA MapType             ;Is the player in a dungeon?
+LA963:  CMP #MAP_DUNGEON        ;
+LA965:  BNE ChkCoveredArea      ;If not, branch.
+
+LA967:  LDA XPosFromCenter      ;Is X position a positive value?
+LA969:  BPL +                   ;If so, branch.
+
+LA96B:  EOR #$FF                ;
+LA96D:  CLC                     ;
+LA96E:  ADC #$01                ;2s compliment. Convert X position to a positive number.
+LA970:  STA GenByte3E           ;
+LA972:  JMP ChkLightDiameterX   ;
+
+LA975:* LDA XPosFromCenter      ;Store the unsigned tile X position.
+LA977:  STA GenByte3E           ;
+
+ChkLightDiameterX:
+LA979:  LDA LightDiameter       ;Is target block outside the visible area in a dungeon?
+LA97B:  CMP GenByte3E           ;
+LA97D:  BCS ChkLightXEdge       ;If not, branch.
+
+LA97F:  LDA #BLK_BLANK          ;Target block is outside visible area. -->
+LA981:  STA TargetResults       ;Load a blank block.
+
+LA983:  LDA #$00                ;Remove no tiles from the current block.
+LA985:  STA BlkRemoveFlgs       ;
+LA987:  BEQ CalcBlockIndex      ;Branch always.
+
+ChkLightXEdge:
+LA989:  BNE ChkLightY           ;Branch if block is not at the very edge of the lighted area.
+
+LA98B:  LDA XPosFromCenter      ;Is block on the right edge of lighted area?
+LA98D:  BPL LightXRight         ;If so, branch.
+
+LightXLeft:
+LA98F:  LDA #$05                ;Black out left side of block.
+LA991:  STA BlkRemoveFlgs       ;Block is on the left edge of lighted area.
+LA993:  BNE ChkLightY           ;Branch always.
+
+LightXRight:
+LA995:  LDA #$0A                ;Black out right side of block.
+LA997:  STA BlkRemoveFlgs       ;Block is on the right edge of lighted area.
+
+ChkLightY:
+LA999:  LDA YPosFromCenter      ;Is Y position a positive value?
+LA99B:  BPL LightYBottom        ;If so, branch.
+
+LA99D:  EOR #$FF                ;
+LA99F:  CLC                     ;
+LA9A0:  ADC #$01                ;2s compliment. Convert Y position to a positive number.
+LA9A2:  STA GenByte3E           ;
+LA9A4:  JMP ChkLightDiameterY   ;
+
+LightYBottom:
+LA9A7:  LDA YPosFromCenter      ;Store the unsigned tile Y position.
+LA9A9:  STA GenByte3E           ;
+
+ChkLightDiameterY:
+LA9AB:  LDA LightDiameter       ;Is target block outside the visible area in a dungeon?
+LA9AD:  CMP GenByte3E           ;
+LA9AF:  BCS ChkLightYEdge       ;If not, branch.
+
+LA9B1:  LDA #BLK_BLANK          ;Target block is outside visible area. -->
+LA9B3:  STA TargetResults       ;Load a blank block.
+
+LA9B5:  LDA #$00                ;Remove no tiles from the current block.
+LA9B7:  STA BlkRemoveFlgs       ;
+LA9B9:  BEQ CalcBlockIndex      ;Branch always.
+
+ChkLightYEdge:
+LA9BB:  BNE CalcBlockIndex      ;Branch if block is not at the very edge of the lighted area.
+
+LA9BD:  LDA YPosFromCenter      ;Is block on the bottom edge of lighted area?
+LA9BF:  BPL +                   ;If so, branch.
+
+LA9C1:  LDA #$03                ;Black out upper half of block.
+LA9C3:  STA BlkRemoveFlgs       ;Block is on the upper edge of lighted area.
+LA9C5:  BNE CalcBlockIndex      ;Branch always.
+
+LA9C7:* LDA #$0C                ;Black out lower half of block.
+LA9C9:  STA BlkRemoveFlgs       ;Block is on the lower edge of lighted area.
+LA9CB:  BNE CalcBlockIndex      ;Branch always.
+
+ChkCoveredArea:
+LA9CD:  JSR HasCoverData        ;($AAE1)Check if current map has covered areas.
 LA9D0:  LDA CoverStatus
 LA9D2:  EOR CoveredStsNext
 LA9D4:  AND #$08
-LA9D6:  BEQ ++
+LA9D6:  BEQ CalcBlockIndex
+
 LA9D8:  LDA CoverStatus
 LA9DA:  BNE +
-LA9DC:  LDA #$15
+
+LA9DC:  LDA #BLK_SML_TILES
 LA9DE:  STA $3C
-LA9E0:  BNE ++                  ;Branch always.
-LA9E2:* LDA #$16
+LA9E0:  BNE CalcBlockIndex      ;Branch always.
+
+LA9E2:* LDA #BLK_BLANK
 LA9E4:  STA $3C
-LA9E6:* LDA $3C
-LA9E8:  ASL
-LA9E9:  ASL
-LA9EA:  ADC $3C
-LA9EC:  ADC GFXTilesPtr
-LA9EF:  STA $40
-LA9F1:  LDA GFXTilesPtr+1
-LA9F4:  ADC #$00
-LA9F6:  STA $41
-LA9F8:  LDX $22                 ;Load store offset.
+
+CalcBlockIndex:
+LA9E6:  LDA TargetResults       ;
+LA9E8:  ASL                     ;*5. Data for the graphic block is 5 bytes.
+LA9E9:  ASL                     ;
+LA9EA:  ADC TargetResults       ;
+
+LA9EC:  ADC GFXTilesPtr         ;
+LA9EF:  STA BlockDataPtrLB      ;
+LA9F1:  LDA GFXTilesPtr+1       ;Calculate the address to the proper GFX block data row.
+LA9F4:  ADC #$00                ;
+LA9F6:  STA BlockDataPtrUB      ;
+
+LA9F8:  LDX WndLineBufIdx
 LA9FA:  LDY #$00
-LA9FC:  LDA ($40),Y             ;Load tile number.
-LA9FE:  STA $6436,X             
+LA9FC:  LDA (BlockDataPtr),Y
+LA9FE:  STA WndLineBuf,X  
+           
 LAA01:  INY
-LAA02:  LDA ($40),Y
-LAA04:  STA $6437,X
+
+LAA02:  LDA (BlockDataPtr),Y
+LAA04:  STA WndLineBuf+1,X
+
 LAA07:  TXA
 LAA08:  CLC
 LAA09:  ADC WndEraseWdth
 LAA0C:  TAX
+
 LAA0D:  LDA PPUAddrLB
 LAA0F:  CLC
 LAA10:  ADC #$1E
 LAA12:  STA PPUAddrLB
-LAA14:  BCC $AA18
+LAA14:  BCC PushWndLineBuf
 LAA16:  INC PPUAddrUB
-LAA18:* INY
-LAA19:  LDA ($40),Y
-LAA1B:  STA $6436,X
+
+PushWndLineBuf:
+LAA18:  INY
+LAA19:  LDA (BlockDataPtr),Y
+LAA1B:  STA WndLineBuf,X
 LAA1E:  INY
-LAA1F:  LDA ($40),Y
-LAA21:  STA $6437,X
+LAA1F:  LDA (BlockDataPtr),Y
+LAA21:  STA WndLineBuf+1,X
 LAA24:  INY
-LAA25:  LDA $48
-LAA27:  STA $3C
-LAA29:  LDA $49
-LAA2B:  STA $3E
-LAA2D:  LDA ($40),Y
+
+LAA25:  LDA XFromLeftTemp
+LAA27:  STA XPosFromLeft
+LAA29:  LDA YFromTopTemp
+LAA2B:  STA YPosFromTop
+
+LAA2D:  LDA (BlockDataPtr),Y
 LAA2F:  STA PPUDataByte
-LAA31:  LDA PPUHorzVert
-LAA33:  BNE $AA3C
-LAA35:  LDX AttribBufIndex
-LAA37:  LDA PPUDataByte
-LAA39:  STA AttribTblBuf,X
-LAA3C:* RTS
+
+LAA31:  LDA AddAttribData       ;Should always be 0. Add attribute table data to buffer.
+LAA33:  BNE ModWndExit          ;Never branch.
+
+LAA35:  LDX AttribBufIndex      ;
+LAA37:  LDA PPUDataByte         ;Add attribute table data to buffer for the corresponding block.
+LAA39:  STA AttribTblBuf,X      ;
+
+ModWndExit:
+LAA3C:  RTS                     ;Done removing window block. Return.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -3490,6 +3611,7 @@ LAA53:  LDA $9A2C
 LAA56:  STA $40
 LAA58:  LDA $9A2D
 LAA5B:  STA $41
+
 LAA5D:  LDA #$FF
 LAA5F:  STA $3D
 LAA61:  RTS
@@ -3497,8 +3619,9 @@ LAA61:  RTS
 ;----------------------------------------------------------------------------------------------------
 
 LoadCreditsPals:
-LAA62:  LDA #$FF
-LAA64:  STA $3D
+LAA62:  LDA #PAL_LOAD_BG
+LAA64:  STA LoadBGPal
+
 LAA66:  LDA RegSPPalPtr
 LAA69:  STA $3E
 LAA6B:  LDA RegSPPalPtr+1
@@ -3519,8 +3642,9 @@ LAA88:  LDA PreGamePalPtr
 LAA8B:  STA $40
 LAA8D:  LDA PreGamePalPtr+1
 LAA90:  STA $41
-LAA92:  LDA #$FF
-LAA94:  STA $3D
+
+LAA92:  LDA #PAL_LOAD_BG
+LAA94:  STA LoadBGPal
 LAA96:  JMP PalFadeIn           ;($C529)Fade in both background and sprite palettes.
 
 LoadIntroPals:
