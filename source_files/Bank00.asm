@@ -3117,60 +3117,61 @@ LA7A2:  STA WndTypeCopy         ;Save a copy of the window type.
 LA7A4:  BRK                     ;Get parameters for removing windows from the screen.
 LA7A5:  .byte $00, $17          ;($AF24)WndEraseParams, bank 1.
 
-LA7A7:  LDA WndEraseWdth
-LA7AA:  LSR
-LA7AB:  ORA #$10
-LA7AD:  STA WndWidthTemp
+LA7A7:  LDA WndEraseWdth        ;
+LA7AA:  LSR                     ;Convert wiindow erase position from tiles to blocks. -->
+LA7AB:  ORA #$10                ;Does not appear to be used anywhere.
+LA7AD:  STA WndWidthTemp        ;
 
-LA7B0:  LDA WndEraseHght
-LA7B3:  SEC
-LA7B4:  SBC #$01
-LA7B6:  ASL
-LA7B7:  ASL
-LA7B8:  ASL
-LA7B9:  ASL
-LA7BA:  ADC WndErasePos
-LA7BD:  STA _WndPosition
+LA7B0:  LDA WndEraseHght        ;
+LA7B3:  SEC                     ;
+LA7B4:  SBC #$01                ;
+LA7B6:  ASL                     ;Perform a calculation on the window erase height and -->
+LA7B7:  ASL                     ;store it. It is referenced below but does no useful work.
+LA7B8:  ASL                     ;
+LA7B9:  ASL                     ;
+LA7BA:  ADC WndErasePos         ;
+LA7BD:  STA _WndPosition        ;
 
-LA7C0:  LDA WndErasePos
-LA7C3:  AND #$0F
-LA7C5:  STA $3C
-LA7C7:  SEC
-LA7C8:  SBC #$08
-LA7CA:  ASL
-LA7CB:  STA $9D
+LA7C0:  LDA WndErasePos         ;Get the X position of the window in blocks.
+LA7C3:  AND #$0F                ;
 
-LA7CD:  LDA WndEraseHght
-LA7D0:  STA $98
-LA7D2:  SEC
-LA7D3:  SBC #$01
+LA7C5:  STA XPosFromLeft        ;
+LA7C7:  SEC                     ;Convert the X positon into a signed value. then, multiply -->
+LA7C8:  SBC #$08                ;by 2 to convert to tiles.
+LA7CA:  ASL                     ;
+LA7CB:  STA StartSignedXPos     ;
 
-LA7D5:  PHA
+LA7CD:  LDA WndEraseHght        ;Store the window erase height. Does not appera to be used.
+LA7D0:  STA BlockCounter        ;
+LA7D2:  SEC                     ;Get the height of the window in blocks - 1.
+LA7D3:  SBC #$01                ;
 
-LA7D6:  LDA WndErasePos
-LA7D9:  LSR
-LA7DA:  LSR
-LA7DB:  LSR
-LA7DC:  LSR
-LA7DD:  STA $22
+LA7D5:  PHA                     ;Save the height for later.
 
-LA7DF:  PLA
+LA7D6:  LDA WndErasePos         ;
+LA7D9:  LSR                     ;
+LA7DA:  LSR                     ;Get the Y position of the window, in blocks.
+LA7DB:  LSR                     ;
+LA7DC:  LSR                     ;
+LA7DD:  STA WndLineBufIdx       ;
 
-LA7E0:  CLC
-LA7E1:  ADC $22
-LA7E3:  STA $22
+LA7DF:  PLA                     ;Get the height calculation again.
 
-LA7E5:  SEC
-LA7E6:  SBC #$07
-LA7E8:  ASL
-LA7E9:  STA YPosFromCenter
+LA7E0:  CLC                     ;Add the height of the window to the offset of -->
+LA7E1:  ADC WndLineBufIdx       ;the window on the screen. Result is in blocks.
+LA7E3:  STA WndLineBufIdx       ;
 
-LA7EB:  LDA WndEraseWdth
-LA7EE:  LSR
-LA7EF:  STA $9E
+LA7E5:  SEC                     ;
+LA7E6:  SBC #$07                ;Convert the Y positon into a signed value. then, multiply -->
+LA7E8:  ASL                     ;by 2 to convert to tiles.
+LA7E9:  STA YPosFromCenter      ;
 
-LA7F1:  LDA $22
-LA7F3:  STA $3E
+LA7EB:  LDA WndEraseWdth        ;
+LA7EE:  LSR                     ;Store the width of the window in blocks.
+LA7EF:  STA WndBlockWidth       ;
+
+LA7F1:  LDA WndLineBufIdx       ;Set the start of the removal to the bottom of the window.
+LA7F3:  STA YPosFromTop         ;
 
 LA7F5:  JSR CalcPPUBufAddr      ;($C596)Calculate PPU address.
 
@@ -3205,56 +3206,57 @@ SetWndBackFore:
 LA81A:  STA WndForeBack         ;Set window as foreground/background window.
 
 WndRemoveRowLoop:
-LA81C:  LDA #$00
-LA81E:  STA AttribBufIndex
-LA820:  STA WndLineBufIdx
+LA81C:  LDA #$00                ;
+LA81E:  STA AttribBufIndex      ;Reset buffer index to remove a new row.
+LA820:  STA WndLineBufIdx       ;
 
-LA822:  LDA $9D
-LA824:  STA XPosFromCenter
+LA822:  LDA StartSignedXPos     ;Set the X position to start erasing row.
+LA824:  STA XPosFromCenter      ;
 
-LA826:  LDA $9E
-LA828:  STA WndColPos
+LA826:  LDA WndBlockWidth       ;Set the width of the window in blocks.
+LA828:  STA WndColPos           ;
 
-WndRemoveColLoop:
+WndRemoveBlockLoop:
 LA82A:  JSR ClearWndBuf         ;($A880)Clear window block from buffers and uncover windows.
 
-LA82D:  LDA BlockAddrLB
-LA82F:  CLC
-LA830:  ADC #$02
-LA832:  STA BlockAddrLB
-LA834:  BCC +
-LA836:  INC BlockAddrUB
+LA82D:  LDA BlockAddrLB         ;
+LA82F:  CLC                     ;
+LA830:  ADC #$02                ;Increment the block address pointer by 2. points at WinBufRAM.
+LA832:  STA BlockAddrLB         ;
+LA834:  BCC +                   ;
+LA836:  INC BlockAddrUB         ;
 
-LA838:* INC WndLineBufIdx
-LA83A:  INC WndLineBufIdx
-LA83C:  INC AttribBufIndex
+LA838:* INC WndLineBufIdx       ;Increment the window line buffer index by 2.
+LA83A:  INC WndLineBufIdx       ;
 
-LA83E:  INC XPosFromCenter
-LA840:  INC XPosFromCenter
+LA83C:  INC AttribBufIndex      ;Increment the attribute table buffer index.
 
-LA842:  DEC WndColPos
-LA844:  BNE WndRemoveColLoop
+LA83E:  INC XPosFromCenter      ;Increment to the next block in the row(2X2 tiles per block).
+LA840:  INC XPosFromCenter      ;
+
+LA842:  DEC WndColPos           ;Are there more blocks in this window row to process?
+LA844:  BNE WndRemoveBlockLoop  ;If so, branch to do another block.
 
 LA846:  BRK                     ;Show/hide window on the screen.
 LA847:  .byte $01, $17          ;($ABC4)WndShowHide.
 
-LA849:  LDA BlockAddrLB
-LA84B:  CLC
-LA84C:  ADC #$C0
-LA84E:  STA BlockAddrLB
-LA850:  BCS $A854
-LA852:  DEC BlockAddrUB
+LA849:  LDA BlockAddrLB         ;
+LA84B:  CLC                     ;
+LA84C:  ADC #$C0                ;Subtract 64 tiles from pointer. (2 rows up the nametables).
+LA84E:  STA BlockAddrLB         ;This moves to the next block up.
+LA850:  BCS +                   ;
+LA852:  DEC BlockAddrUB         ;
 
-LA854:  LDA $9E
-LA856:  ASL
-LA857:  STA $3C
+LA854:* LDA WndBlockWidth       ;Start at beginnig of row by converting block width -->
+LA856:  ASL                     ;into tiles.
+LA857:  STA XPosFromLeft        ;
 
-LA859:  LDA BlockAddrLB
-LA85B:  SEC
-LA85C:  SBC $3C
-LA85E:  STA BlockAddrLB
-LA860:  BCS +
-LA862:  DEC BlockAddrUB
+LA859:  LDA BlockAddrLB         ;
+LA85B:  SEC                     ;
+LA85C:  SBC XPosFromLeft        ;Move back to the beginning of the row of blocks to erase next.
+LA85E:  STA BlockAddrLB         ;
+LA860:  BCS +                   ;
+LA862:  DEC BlockAddrUB         ;
 
 LA864:* LDA _WndPosition        ;
 LA867:  SEC                     ;Decrement the Y position of the window by 1 block. -->
@@ -3773,14 +3775,14 @@ LAB31:  STY XTarget             ;
 LAB33:  JSR FindRowBlock        ;($ABF4)Find block ID of target block in world map row.
 
 ChkWtrBlkRght:
-LAB36:  BEQ WaterBlockRight     ;Is block to right of target block water? If so, branch.
+LAB36:  BEQ PrepBlockLeft       ;Is block to right of target block water? If so, branch.
 
 LAB38:  TXA                     ;Block to right of target is not a water block.
 LAB39:  CLC                     ;Set bit 2 in index byte. Shore will be on the right-->
 LAB3A:  ADC #$04                ;of the current water block.
 LAB3C:  TAX                     ;
 
-WaterBlockRight:
+PrepBlockLeft:
 LAB3D:  LDY GenByte2C           ;Restore the original block X coord. Is target first block row? 
 LAB3F:  BEQ ChkWtrBlkLft        ;If so, branch. Block to left is always another water block.
 
@@ -3789,40 +3791,44 @@ LAB42:  STY XTarget             ;
 LAB44:  JSR FindRowBlock        ;($ABF4)Find block ID of target block in world map row.
 
 ChkWtrBlkLft:
-LAB47:  BEQ WaterBlockLeft      ;Is block to left of target block water? If so, branch.
+LAB47:  BEQ PrepBlockUp         ;Is block to left of target block water? If so, branch.
 
 LAB49:  INX                     ;Block to left of target is not a water block.
 LAB4A:  INX                     ;set bit 1 in index byte. Shore to left.
 
-WaterBlockLeft:
+PrepBlockUp:
 LAB4B:  LDA GenByte2C           ;Restore the original block X coord.
-LAB4D:  STA XTarget
-LAB4F:  LDY YTarget
-LAB51:  BEQ $AB58
+LAB4D:  STA XTarget             ;
+LAB4F:  LDY YTarget             ;Is target the first block in the column?
+LAB51:  BEQ ChkWtrBlkUp         ;If so, branch.
 
-LAB53:  DEY
-LAB54:  TYA
+LAB53:  DEY                     ;Get block ID of block above target block.
+LAB54:  TYA                     ;
 LAB55:  JSR ChkWtrOrBrdg        ;($ABE8)If target block is water or bridge, set zero flag.
 
-LAB58:  BEQ $AB5B
+ChkWtrBlkUp:
+LAB58:* BEQ +                   ;Is block above target block water? If so, branch.
 
-LAB5A:  INX
+LAB5A:  INX                     ;Block above is not a water block. Set LSB of index.
 
-LAB5B:  LDY YTarget
-LAB5D:  CPY #$77
-LAB5F:  BEQ $AB66
+ChkWtrBlkDown:
+LAB5B:* LDY YTarget             ;Is target the last block in the column?
+LAB5D:  CPY #$77                ;
+LAB5F:  BEQ +                   ;If so, branch.
 
-LAB61:  INY
-LAB62:  TYA
+LAB61:  INY                     ;Get block ID of block below target block.
+LAB62:  TYA                     ;
 LAB63:  JSR ChkWtrOrBrdg        ;($ABE8)If target block is water or bridge, set zero flag.
-LAB66:  BEQ $AB6D
 
-LAB68:  TXA
-LAB69:  CLC
-LAB6A:  ADC #$08
-LAB6C:  TAX
+LAB66:* BEQ +                   ;Is block below target block water? If so, branch.
 
-LAB6D:  LDA GenBlkConvTbl,X     ;Get final block ID from conversion table.
+LAB68:  TXA                     ;
+LAB69:  CLC                     ;Block below is not a water block. calculate final index.
+LAB6A:  ADC #$08                ;
+LAB6C:  TAX                     ;
+
+SetBlockID:
+LAB6D:* LDA GenBlkConvTbl,X     ;Get final block ID from conversion table.
 LAB70:  STA TargetResults       ;
 
 LAB72:  PLA                     ;
@@ -3839,69 +3845,77 @@ LAB78:  PHA                     ;Save Y and X on stack.
 LAB79:  TXA                     ;
 LAB7A:  PHA                     ;
 
-LAB7B:  LDX #$00
-LAB7D:  LDA MapNumber
-LAB7F:  CMP #MAP_OVERWORLD
-LAB81:  BNE $ABDF
+LAB7B:  LDX #$00                ;Assume water with no shore is the out of bounds block.
 
-LAB83:  LDA YTarget
-LAB85:  BMI $ABB1
+LAB7D:  LDA MapNumber           ;Is player on overworld map?
+LAB7F:  CMP #MAP_OVERWORLD      ;
+LAB81:  BNE BoundsChkEnd        ;If not, branch. Just use out of bounds block.
 
-LAB87:  CMP #$78
-LAB89:  BCS $ABB1
+;The following code is used to check what kind of water block should be displayed on the far
+;edges of the overworld map. The out of bounds block will always be a water block but it may
+;border with the land so the shoreline must be caclulated.
 
-LAB8B:  LDA XTarget
-LAB8D:  CMP #$FF
-LAB8F:  BEQ $ABA3
+ChkXBounds:
+LAB83:  LDA YTarget             ;Is Y value beyond visible screen area?
+LAB85:  BMI ChkYBounds          ;If so, branch.
 
-LAB91:  CMP #$78
-LAB93:  BNE $ABB1
+LAB87:  CMP #$78                ;Is the Y within the map bounds?
+LAB89:  BCS ChkYBounds          ;If not, branch to check Y position.
 
-LAB95:  DEC XTarget
-LAB97:  LDA YTarget
+LAB8B:  LDA XTarget             ;Is the X position 1 left of the map bounds?
+LAB8D:  CMP #$FF                ;
+LAB8F:  BEQ ChkRightBounds      ;If so, branch.
+
+LAB91:  CMP #$78                ;Is the X position 1 right of the map bounds?
+LAB93:  BNE ChkYBounds          ;If not, branch.
+
+ChkLeftBounds:
+LAB95:  DEC XTarget             ;Check if block to the left of the water is land.
+LAB97:  LDA YTarget             ;
 LAB99:  JSR ChkWtrOrBrdg        ;($ABE8)If target block is water or bridge, set zero flag.
-LAB9C:  BEQ $ABA0
+LAB9C:  BEQ +                   ;Is the target land? If not, branch.
+LAB9E:  LDX #$02                ;Water with shore at the left.
+LABA0:* JMP SetBlockID          ;Set the water boundry block with shore on the left.
 
-LAB9E:  LDX #$02
-LABA0:  JMP $AB6D
-
-LABA3:  INC XTarget
-LABA5:  LDA YTarget
+ChkRightBounds:
+LABA3:  INC XTarget             ;Check if block to the right of the water is land.
+LABA5:  LDA YTarget             ;
 LABA7:  JSR ChkWtrOrBrdg        ;($ABE8)If target block is water or bridge, set zero flag.
-LABAA:  BEQ $ABAE
+LABAA:  BEQ +                   ;Is the target land? If not, branch.
+LABAC:  LDX #$04                ;Water with shore on the right.
+LABAE:* JMP SetBlockID          ;Set the water boundry block with shore on the right.
 
-LABAC:  LDX #$04
-LABAE:  JMP $AB6D
+ChkYBounds:
+LABB1:  LDA XTarget             ;Is X value beyond visible screen area?
+LABB3:  BMI BoundsChkEnd        ;If so, branch.
 
-LABB1:  LDA XTarget
-LABB3:  BMI $ABDF
+LABB5:  CMP #$78                ;Is the X within the map bounds?
+LABB7:  BCS BoundsChkEnd        ;If not, branch to exit.
 
-LABB5:  CMP #$78
-LABB7:  BCS $ABDF
+LABB9:  LDA YTarget             ;Is the Y position 1 above of the map bounds?
+LABBB:  CMP #$FF                ;
+LABBD:  BEQ ChkDownBounds       ;If so, branch.
 
-LABB9:  LDA YTarget
-LABBB:  CMP #$FF
-LABBD:  BEQ $ABD1
+LABBF:  CMP #$78                ;Is the Y position 1 below of the map bounds?
+LABC1:  BNE BoundsChkEnd        ;If not, branch.
 
-LABBF:  CMP #$78
-LABC1:  BNE $ABDF
-
-LABC3:  DEC YTarget
-LABC5:  LDA YTarget
+ChkUpBounds:
+LABC3:  DEC YTarget             ;Check if block above the water is land.
+LABC5:  LDA YTarget             ;
 LABC7:  JSR ChkWtrOrBrdg        ;($ABE8)If target block is water or bridge, set zero flag.
-LABCA:  BEQ $ABCE
+LABCA:  BEQ +                   ;Is the target land? If not, branch.
+LABCC:  LDX #$01                ;Water with shore at the top.
+LABCE:* JMP SetBlockID          ;Set the water boundry block with shore on the top.
 
-LABCC:  LDX #$01
-LABCE:  JMP $AB6D
-
-LABD1:  INC YTarget
-LABD3:  LDA YTarget
+ChkDownBounds:
+LABD1:  INC YTarget             ;Check if block below the water is land.
+LABD3:  LDA YTarget             ;
 LABD5:  JSR ChkWtrOrBrdg        ;($ABE8)If target block is water or bridge, set zero flag.
-LABD8:  BEQ $ABDC
+LABD8:  BEQ +                   ;Is the target land? If not, branch.
+LABDA:  LDX #$08                ;Water with shore at the bottom.
+LABDC:* JMP SetBlockID          ;Set the water boundry block with shore on the bottom.
 
-LABDA:  LDX #$08
-LABDC:  JMP $AB6D
-
+BoundsChkEnd:
 LABDF:  LDA BoundryBlock        ;Target is beyond map boundry.
 LABE1:  STA TargetResults       ;Load results with boundry block value.
 
@@ -4534,7 +4548,7 @@ LAF93:  LDA MapDatTbl,Y
 LAF96:  STA MapHeight
 LAF98:  INY
 LAF99:  LDA MapDatTbl,Y
-LAF9C:  STA $15
+LAF9C:  STA BoundryBlock
 LAF9E:  LDA #$FF
 LAFA0:  STA NPCUpdateCntr
 LAFA2:  LDA StoryFlags

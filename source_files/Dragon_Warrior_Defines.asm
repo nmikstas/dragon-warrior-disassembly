@@ -319,7 +319,6 @@
 .alias StopNPCMove      $96     ;#$FF-Stop NPCs from moving, #$00-Allow NPCs to move.
 .alias WndColPos        $97     ;Window column position, in tiles.
 .alias WndRowPos        $98     ;Window row position, in tiles.
-
 .alias BlockCounter     $98     ;Counts blocks placed when putting combat background on screen.
 
 .alias BlockAddr        $99     ;Current block address in buffer.
@@ -329,6 +328,9 @@
 .alias DatPntr1         $99     ;
 .alias DatPntr1LB       $99     ;Stores a pointer to the start of data tables.
 .alias DatPntrlUB       $9A     ;
+
+.alias StartSignedXPos  $9D     ;Starting X position in tiles of window row. signed from center.
+.alias WndBlockWidth    $9E     ;Block width of window being removed.
 
 .alias DialogPtr        $9F     ;Pointer to dialog text.
 .alias DialogPtrLB      $9F     ;Pointer to dialog text, lower byte.
@@ -624,7 +626,7 @@
 .alias WndUnused6006    $6006   ;Unused window variable.
 .alias WndEraseHght     $6007   ;Window erase height in blocks.
 .alias WndEraseWdth     $6008   ;Window erase width in tiles.
-.alias WndErasePos      $6009   ;Window erase position in blocks, X=upper nibble, Y=lower nibble.
+.alias WndErasePos      $6009   ;Window erase position in blocks, Y=upper nibble, X=lower nibble.
 
 .alias WndLineBuf       $6436   ;Through $6471. 60 bytes. buffers 2 window tile rows.
 
@@ -695,7 +697,7 @@
 .alias WndWidth         $64E3   ;Window width in tiles.
 .alias WndHeightblks    $64E4   ;Window height in blocks (block is 2X2 tiles).
 .alias WndHeight        $64E5   ;Window height in tiles.
-.alias WndPosition      $64E6   ;Window screen coordinates in blocks. X in upper nibble, Y in lower.
+.alias WndPosition      $64E6   ;Window screen coordinates in blocks. Y in upper nibble, X in lower.
 .alias WndColumns       $64E7   ;Window columnns. Indicates how many tiles between columns.
 .alias WndDatIndex      $64E8   ;Index into window data table.
 .alias WndRepeatIndex   $64E9   ;Index in window data to return to for variable height windows.
