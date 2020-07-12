@@ -3875,7 +3875,7 @@ LAB97:  LDA YTarget             ;
 LAB99:  JSR ChkWtrOrBrdg        ;($ABE8)If target block is water or bridge, set zero flag.
 LAB9C:  BEQ +                   ;Is the target land? If not, branch.
 LAB9E:  LDX #$02                ;Water with shore at the left.
-LABA0:* JMP SetBlockID          ;Set the water boundry block with shore on the left.
+LABA0:* JMP SetBlockID          ;Set the water boundary block with shore on the left.
 
 ChkRightBounds:
 LABA3:  INC XTarget             ;Check if block to the right of the water is land.
@@ -3883,7 +3883,7 @@ LABA5:  LDA YTarget             ;
 LABA7:  JSR ChkWtrOrBrdg        ;($ABE8)If target block is water or bridge, set zero flag.
 LABAA:  BEQ +                   ;Is the target land? If not, branch.
 LABAC:  LDX #$04                ;Water with shore on the right.
-LABAE:* JMP SetBlockID          ;Set the water boundry block with shore on the right.
+LABAE:* JMP SetBlockID          ;Set the water boundary block with shore on the right.
 
 ChkYBounds:
 LABB1:  LDA XTarget             ;Is X value beyond visible screen area?
@@ -3905,7 +3905,7 @@ LABC5:  LDA YTarget             ;
 LABC7:  JSR ChkWtrOrBrdg        ;($ABE8)If target block is water or bridge, set zero flag.
 LABCA:  BEQ +                   ;Is the target land? If not, branch.
 LABCC:  LDX #$01                ;Water with shore at the top.
-LABCE:* JMP SetBlockID          ;Set the water boundry block with shore on the top.
+LABCE:* JMP SetBlockID          ;Set the water boundary block with shore on the top.
 
 ChkDownBounds:
 LABD1:  INC YTarget             ;Check if block below the water is land.
@@ -3913,11 +3913,11 @@ LABD3:  LDA YTarget             ;
 LABD5:  JSR ChkWtrOrBrdg        ;($ABE8)If target block is water or bridge, set zero flag.
 LABD8:  BEQ +                   ;Is the target land? If not, branch.
 LABDA:  LDX #$08                ;Water with shore at the bottom.
-LABDC:* JMP SetBlockID          ;Set the water boundry block with shore on the bottom.
+LABDC:* JMP SetBlockID          ;Set the water boundary block with shore on the bottom.
 
 BoundsChkEnd:
-LABDF:  LDA BoundryBlock        ;Target is beyond map boundry.
-LABE1:  STA TargetResults       ;Load results with boundry block value.
+LABDF:  LDA BoundryBlock        ;Target is beyond map boundary.
+LABE1:  STA TargetResults       ;Load results with boundary block value.
 
 LABE3:  PLA                     ;
 LABE4:  TAX                     ;
@@ -4114,9 +4114,9 @@ LACC7:  LDY #$00                ;
 LACC9:  LDA (MapBytePtr),Y      ;Use new index to retreive desired data byte from memory.
 LACCB:  STA TargetResults       ;
 
-LACCD:  LDA _TargetX            ;Is target block have an oeven numbered X position?
+LACCD:  LDA _TargetX            ;Is target block have an even numbered X position?
 LACCF:  LSR                     ;If so, the upper nibble needs to-->
-LACD0:  BCS ChkRemovedBlks      ; be shifted the the lower nibble.
+LACD0:  BCS ChkRemovedBlks      ;be shifted to the lower nibble.
 
 LACD2:  LSR TargetResults       ;
 LACD4:  LSR TargetResults       ;Shift upper nibble to the lower nibble.
@@ -4124,236 +4124,291 @@ LACD6:  LSR TargetResults       ;
 LACD8:  LSR TargetResults       ;
 
 ChkRemovedBlks:
-LACDA:  LDA MapNumber
-LACDC:  CMP #MAP_TANTCSTL_SL
-LACDE:  BCC $ACE4
+LACDA:  LDA MapNumber           ;Is the player currently in a dungeon or town?
+LACDC:  CMP #MAP_TANTCSTL_SL    ;
+LACDE:  BCC TownBlockMask       ;If in a town, branch. 16 possible tiles in towns.
 
-LACE0:  LDA #$07
-LACE2:  BNE $ACE6
+DungeonBlockMask:
+LACE0:  LDA #$07                ;8 possible tiles in dungeons.
+LACE2:  BNE GetBaseBlockID      ;Branch always.
 
-LACE4:  LDA #$0F
+TownBlockMask:
+LACE4:  LDA #$0F                ;16 possible tiles in towns.
 
-LACE6:  AND XTarget
-LACE8:  CLC
-LACE9:  ADC MapType
-LACEB:  TAY
-LACEC:  LDA GenBlkConvTbl,Y
-LACEF:  STA TargetResults
+GetBaseBlockID:
+LACE6:  AND XTarget             ;
+LACE8:  CLC                     ;Add in the proper offset for the block to find. -->
+LACE9:  ADC MapType             ;The offset can either point to town blocks or dungeon -->
+LACEB:  TAY                     ;blocks. A now contains the block ID but special blocks -->
+LACEC:  LDA GenBlkConvTbl,Y     ;have not yet been considered. That happens next.
+LACEF:  STA TargetResults       ;
 
-LACF1:  CMP #BLK_PRINCESS
-LACF3:  BNE $AD01
+LACF1:  CMP #BLK_PRINCESS       ;Is the target block princess Gwaelin in the swamp cave?
+LACF3:  BNE ChkStairBlock       ;If not, branch to check for other blocks.
 
-LACF5:  LDA PlayerFlags
-LACF7:  AND #F_DONE_GWAELIN
-LACF9:  BEQ $AD3C
+LACF5:  LDA PlayerFlags         ;Has Gwaelin been saved or is she being carried?
+LACF7:  AND #F_DONE_GWAELIN     ;
+LACF9:  BEQ ReturnBlockID       ;If not, branch to return Gwaelin block ID.
 
-LACFB:  LDA #BLK_BRICK
-LACFD:  STA TargetResults
-LACFF:  BNE $AD3C
+LACFB:  LDA #BLK_BRICK          ;Gwaelin has already been saved or is being carried.
+LACFD:  STA TargetResults       ;Return target block as a brick floor.
+LACFF:  BNE ReturnBlockID       ;Branch always.
 
-LAD01:  CMP #BLK_STAIR_DN
-LAD03:  BNE $AD23
+ChkStairBlock:
+LAD01:  CMP #BLK_STAIR_DN       ;Is the target block stairs down?
+LAD03:  BNE ChkTrsrBlock        ;If not, branch to check for other blocks.
 
-LAD05:  LDA MapNumber
-LAD07:  CMP #MAP_DLCSTL_GF
-LAD09:  BNE $AD3C
-LAD0B:  LDA $42
-LAD0D:  CMP #$0A
-LAD0F:  BNE $AD3C
-LAD11:  LDA $43
-LAD13:  CMP #$01
-LAD15:  BNE $AD3C
-LAD17:  LDA ModsnSpells
-LAD19:  AND #F_PSG_FOUND
-LAD1B:  BNE $AD3C
+LAD05:  LDA MapNumber           ;Is the player in the ground floor of the dragonlord's castle?
+LAD07:  CMP #MAP_DLCSTL_GF      ;
+LAD09:  BNE ReturnBlockID       ;If not, branch to return stair down block ID.
 
-LAD1D:  LDA #BLK_FFIELD
-LAD1F:  STA TargetResults
-LAD21:  BNE $AD3C
+LAD0B:  LDA _TargetX            ;Is the target X,Y position that of the secret passage -->
+LAD0D:  CMP #$0A                ;behind the dragonlord's throne?
+LAD0F:  BNE ReturnBlockID       ;
+LAD11:  LDA _TargetY            ;
+LAD13:  CMP #$01                ;
+LAD15:  BNE ReturnBlockID       ;If not, branch to return stair down block ID.
 
-LAD23:  CMP #BLK_CHEST
-LAD25:  BNE $AD45
+LAD17:  LDA ModsnSpells         ;Has the secret paggase already been found?
+LAD19:  AND #F_PSG_FOUND        ;
+LAD1B:  BNE ReturnBlockID       ;If so, branch to return stairs down block ID.
 
-LAD27:  LDY #$00
-LAD29:  LDA $42
-LAD2B:  CMP TrsrXPos,Y
-LAD2E:  BNE $AD3F
+LAD1D:  LDA #BLK_FFIELD         ;Hidden stairs have not been found yet. -->
+LAD1F:  STA TargetResults       ;Return force field block ID.
+LAD21:  BNE ReturnBlockID       ;Branch always.
 
-LAD30:  INY
-LAD31:  LDA $43
-LAD33:  CMP TrsrXPos,Y
-LAD36:  BNE $AD40
+ChkTrsrBlock:
+LAD23:  CMP #BLK_CHEST          ;Is the target block a treasure chest?
+LAD25:  BNE ChkDoorBlock        ;If not, branch to check for other blocks.
 
-LAD38:  LDA #BLK_BRICK
-LAD3A:  STA TargetResults
+LAD27:  LDY #$00                ;Zero out index to treasure chest taken array.
 
-LAD3C:  PLA
-LAD3D:  TAY
-LAD3E:  RTS
+ChkTreasureLoop:
+LAD29:  LDA _TargetX            ;Is there an X position record of this treasure taken?
+LAD2B:  CMP TrsrXPos,Y          ;
+LAD2E:  BNE NextTrsr1           ;If not, branch to check next item in treasure taken array.
 
-LAD3F:  INY
+LAD30:  INY                     ;Prepare to check Y position of treasure chest.
 
-LAD40:  INY
-LAD41:  CPY #BLK_STONE
-LAD43:  BNE $AD29
+LAD31:  LDA _TargetY            ;Is there a Y position record of this treasure taken?
+LAD33:  CMP TrsrXPos,Y          ;
+LAD36:  BNE NextTrsr2           ;If not, branch to check next item in treasure taken array.
 
-LAD45:  LDA $3C
-LAD47:  CMP #BLK_DOOR
-LAD49:  BNE $AD3C
+SetBrickID:
+LAD38:  LDA #BLK_BRICK          ;This treasure has already been taken. Return brick block ID.
+LAD3A:  STA TargetResults       ;
 
-LAD4B:  LDY #$00
-LAD4D:  LDA $42
-LAD4F:  CMP DoorXPos,Y
-LAD52:  BNE $AD5E
-LAD54:  INY
-LAD55:  LDA $43
-LAD57:  CMP DoorXPos,Y
-LAD5A:  BNE $AD5F
-LAD5C:  BEQ $AD38
-LAD5E:  INY
-LAD5F:  INY
-LAD60:  CPY #$10
-LAD62:  BNE $AD4D
-LAD64:  BEQ $AD3C
+ReturnBlockID:
+LAD3C:  PLA                     ;Restore Y from stack.
+LAD3D:  TAY                     ;
+LAD3E:  RTS                     ;TargetResults now contains the block ID.
+
+NextTrsr1:
+LAD3F:  INY                     ;Move to next treasure position.
+
+NextTrsr2:
+LAD40:  INY                     ;Move to next treasure position.
+
+LAD41:  CPY #$10                ;Max 8 treasures per map. Have all treasures been checked?
+LAD43:  BNE ChkTreasureLoop     ;If not, branch to check if another has been taken already.
+
+ChkDoorBlock:
+LAD45:  LDA TargetResults       ;Is the target block a door?
+LAD47:  CMP #BLK_DOOR           ;
+LAD49:  BNE ReturnBlockID       ;If not, branch to exit. No more special blocks to check.
+
+LAD4B:  LDY #$00                ;Zero out index to door opened array.
+
+ChkDoorLoop:
+LAD4D:  LDA _TargetX            ;Is there an X position record of this door opened?
+LAD4F:  CMP DoorXPos,Y          ;
+LAD52:  BNE NextDoor1           ;If not, branch to check next item in door opened array.
+
+LAD54:  INY                     ;Prepare to check Y position of door.
+
+LAD55:  LDA _TargetY            ;Is there a Y position record of this door opened?
+LAD57:  CMP DoorXPos,Y          ;
+LAD5A:  BNE NextDoor2           ;If not, branch to check next item in door opened array.
+
+LAD5C:  BEQ SetBrickID          ;This door has already been opened. Return brick block ID.
+
+NextDoor1:
+LAD5E:  INY                     ;Move to next door position.
+
+NextDoor2:
+LAD5F:  INY                     ;Move to next door position.
+
+LAD60:  CPY #$10                ;Max 8 doors per map. Have all doors been checked?
+LAD62:  BNE ChkDoorLoop         ;If not, branch to check if another has been opened already.
+LAD64:  BEQ ReturnBlockID       ;Else exit.
 
 ;----------------------------------------------------------------------------------------------------
 
 ModMapBlock:
-LAD66:  LDA NTBlockY            ;*2. Blocks are 2 tiles wide and 2 tiles tall.
+LAD66:  LDA NTBlockY            ;*2. Convert the block position to tile position.
 LAD68:  ASL                     ;
+LAD69:  CLC                     ;Calculate the nametable Y block that needs to be replaced.
+LAD6A:  ADC YPosFromCenter      ;Add signed location of block to unsigned nametable location.
+LAD6C:  CLC                     ;
+LAD6D:  ADC #$1E                ;Add Screen height in tiles to ensure result is always positive.
+LAD6F:  STA DivNum1LB           ;
 
-LAD69:  CLC                     ;Add the signed Y tile offset of the block to modify.
-LAD6A:  ADC YPosFromCenter      ;
-
-LAD6C:  CLC
-LAD6D:  ADC #$1E
-LAD6F:  STA DivNum1LB
-
-LAD71:  LDA #$1E
-LAD73:  STA DivNum2
+LAD71:  LDA #$1E                ;Divide out tile height and get remainder. Result will be -->
+LAD73:  STA DivNum2             ;between #$00-#$1E(height of screen in tiles).
 LAD75:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
 
-LAD78:  LDA DivRemainder
-LAD7A:  STA $3E
-LAD7C:  STA $49
+LAD78:  LDA DivRemainder        ;The final result is the unsigned Y position of the block -->
+LAD7A:  STA YPosFromTop         ;to replace, measured in tiles. #$00-#$1E.
+LAD7C:  STA YFromTopTemp        ;
 
-LAD7E:  LDA NTBlockX            ;*2. Blocks are 2 tiles wide and 2 tiles tall.
-LAD80:  ASL                     ;
-
-LAD81:  CLC                     ;Add the signed X tile offset of the block to modify.
-LAD82:  ADC XPosFromCenter      ;
-
-LAD84:  AND #$3F
-LAD86:  STA $3C
-LAD88:  STA $48
+LAD7E:  LDA NTBlockX            ;*2. Convert the block position to tile position.
+LAD80:  ASL                     ;Calculate the nametable X block that needs to be replaced.
+LAD81:  CLC                     ;Add signed location of block to unsigned nametable location.
+LAD82:  ADC XPosFromCenter      ;Keep only lower 6 bits. The row is 64 tiles wide as it spans -->
+LAD84:  AND #$3F                ;both nametables. The final result is the unsigned X position -->
+LAD86:  STA XPosFromLeft        ;of the block to replace, measured in tiles. #$00-#$3F. No -->
+LAD88:  STA XFromLeftTemp       ;division necessary. value rolls over naturally.
 
 LAD8A:  JSR DoAddrCalc          ;($C5AA)Calculate destination address for GFX data.
 
-LAD8D:  LDA XPosFromCenter
-LAD8F:  ASL
-LAD90:  LDA XPosFromCenter
-LAD92:  ROR
-LAD93:  CLC
-LAD94:  ADC CharXPos
-LAD96:  STA $3C
+LAD8D:  LDA XPosFromCenter      ;
+LAD8F:  ASL                     ;/2 with sign extension to convert block X location. 
+LAD90:  LDA XPosFromCenter      ;
+LAD92:  ROR                     ;
 
-LAD98:  LDA YPosFromCenter
-LAD9A:  ASL
-LAD9B:  LDA YPosFromCenter
-LAD9D:  ROR
-LAD9E:  CLC
-LAD9F:  ADC CharYPos
-LADA1:  STA $3E
+LAD93:  CLC                     ;
+LAD94:  ADC CharXPos            ;Add the player's X position in preparation to get block type.
+LAD96:  STA XTarget             ;
+
+LAD98:  LDA YPosFromCenter      ;
+LAD9A:  ASL                     ;/2 with sign extension to convert to block Y location.
+LAD9B:  LDA YPosFromCenter      ;
+LAD9D:  ROR                     ;
+
+LAD9E:  CLC                     ;
+LAD9F:  ADC CharYPos            ;Add the player's Y position in preparation to get block type.
+LADA1:  STA YTarget             ;
 
 LADA3:  JSR GetBlockID          ;($AC17)Get description of block.
 
-LADA6:  LDA MapType
-LADA8:  CMP #MAP_DUNGEON
-LADAA:  BNE $AE12
+LADA6:  LDA MapType             ;Is the player in a dungeon?
+LADA8:  CMP #MAP_DUNGEON        ;
+LADAA:  BNE ChkCoveredArea2     ;If not, branch.
 
-LADAC:  LDA $0F
-LADAE:  BPL $ADBA
-LADB0:  EOR #$FF
-LADB2:  CLC
-LADB3:  ADC #$01
-LADB5:  STA $3E
-LADB7:  JMP $ADBE
-LADBA:  LDA $0F
-LADBC:  STA $3E
-LADBE:  LDA LightDiameter
-LADC0:  CMP $3E
-LADC2:  BCS $ADCE
-LADC4:  LDA #$16
-LADC6:  STA $3C
-LADC8:  LDA #$00
-LADCA:  STA BlkRemoveFlgs
-LADCC:  BEQ ModPPUBuffer
-LADCE:  BNE $ADDE
-LADD0:  LDA $0F
-LADD2:  BPL $ADDA
-LADD4:  LDA #$05
-LADD6:  STA BlkRemoveFlgs
-LADD8:  BNE $ADDE
-LADDA:  LDA #$0A
-LADDC:  STA BlkRemoveFlgs
-LADDE:  LDA $10
-LADE0:  BPL $ADEC
-LADE2:  EOR #$FF
-LADE4:  CLC
-LADE5:  ADC #$01
-LADE7:  STA $3E
-LADE9:  JMP $ADF0
-LADEC:  LDA $10
-LADEE:  STA $3E
-LADF0:  LDA LightDiameter
-LADF2:  CMP $3E
-LADF4:  BCS $AE00
-LADF6:  LDA #$16
-LADF8:  STA $3C
-LADFA:  LDA #$00
-LADFC:  STA BlkRemoveFlgs
-LADFE:  BEQ ModPPUBuffer
-LAE00:  BNE ModPPUBuffer
-LAE02:  LDA $10
-LAE04:  BPL $AE0C
-LAE06:  LDA #$03
-LAE08:  STA BlkRemoveFlgs
-LAE0A:  BNE ModPPUBuffer
-LAE0C:  LDA #$0C
-LAE0E:  STA BlkRemoveFlgs
-LAE10:  BNE ModPPUBuffer
+LADAC:  LDA XPosFromCenter      ;Is X position a positive value?
+LADAE:  BPL +                   ;If so, branch.
 
+LADB0:  EOR #$FF                ;
+LADB2:  CLC                     ;
+LADB3:  ADC #$01                ;2s compliment. Convert X position to a positive number.
+LADB5:  STA GenByte3E           ;
+LADB7:  JMP ChkLightDiameterX2  ;
+
+LADBA:* LDA XPosFromCenter      ;Store the unsigned tile X position.
+LADBC:  STA GenByte3E           ;
+
+ChkLightDiameterX2:
+LADBE:  LDA LightDiameter       ;Is target block outside the visible area in a dungeon?
+LADC0:  CMP GenByte3E           ;
+LADC2:  BCS ChkLightXEdge2      ;If not, branch.
+
+LADC4:  LDA #BLK_BLANK          ;Target block is outside visible area. -->
+LADC6:  STA TargetResults       ;Load a blank block.
+
+LADC8:  LDA #$00                ;Remove no tiles from the current block.
+LADCA:  STA BlkRemoveFlgs       ;
+LADCC:  BEQ CalcBlockIndex2     ;Branch always.
+
+ChkLightXEdge2:
+LADCE:  BNE ChkLightY2          ;Branch if block is not at the very edge of the lighted area.
+
+LADD0:  LDA XPosFromCenter      ;Is block on the right edge of lighted area?
+LADD2:  BPL LightXRight2        ;If so, branch.
+
+LADD4:  LDA #$05                ;Black out left side of block.
+LADD6:  STA BlkRemoveFlgs       ;Block is on the left edge of lighted area.
+LADD8:  BNE ChkLightY2          ;Branch always.
+
+LightXRight2:
+LADDA:  LDA #$0A                ;Black out right side of block.
+LADDC:  STA BlkRemoveFlgs       ;Block is on the right edge of lighted area.
+
+ChkLightY2:
+LADDE:  LDA YPosFromCenter      ;Is Y position a positive value?
+LADE0:  BPL LightYBottom2       ;If so, branch.
+
+LADE2:  EOR #$FF                ;
+LADE4:  CLC                     ;
+LADE5:  ADC #$01                ;2s compliment. Convert Y position to a positive number.
+LADE7:  STA GenByte3E           ;
+LADE9:  JMP ChkLightDiameterY2  ;
+
+LightYBottom2:
+LADEC:  LDA YPosFromCenter      ;Store the unsigned tile Y position.
+LADEE:  STA GenByte3E           ;
+
+ChkLightDiameterY2:
+LADF0:  LDA LightDiameter       ;Is target block outside the visible area in a dungeon?
+LADF2:  CMP GenByte3E           ;
+LADF4:  BCS ChkLightYEdge2      ;If not, branch.
+
+LADF6:  LDA #BLK_BLANK          ;Target block is outside visible area. -->
+LADF8:  STA TargetResults       ;Load a blank block.
+
+LADFA:  LDA #$00                ;Remove no tiles from the current block.
+LADFC:  STA BlkRemoveFlgs       ;
+LADFE:  BEQ CalcBlockIndex2     ;Branch always.
+
+ChkLightYEdge2:
+LAE00:  BNE CalcBlockIndex2     ;Branch if block is not at the very edge of the lighted area.
+
+LAE02:  LDA YPosFromCenter      ;Is block on the bottom edge of lighted area?
+LAE04:  BPL +                   ;If so, branch.
+
+LAE06:  LDA #$03                ;Black out upper half of block.
+LAE08:  STA BlkRemoveFlgs       ;Block is on the upper edge of lighted area.
+LAE0A:  BNE CalcBlockIndex2      ;Branch always.
+
+LAE0C:* LDA #$0C                ;Black out lower half of block.
+LAE0E:  STA BlkRemoveFlgs       ;Block is on the lower edge of lighted area.
+LAE10:  BNE CalcBlockIndex2      ;Branch always.
+
+ChkCoveredArea2:
 LAE12:  JSR HasCoverData        ;($AAE1)Check if current map has covered areas.
 LAE15:  LDA CoverStatus         ;
 LAE17:  EOR CoveredStsNext      ;Did player just enter/exit covered area?
 LAE19:  AND #$08                ;
-LAE1B:  BEQ ModPPUBuffer        ;If not, branch.
+LAE1B:  BEQ CalcBlockIndex2     ;If not, branch.
 
 LAE1D:  LDA CoverStatus         ;Did player just enter cover?
 LAE1F:  BNE ModUnderCover       ;If so branch to load blank tiles.
 
 LAE21:  LDA #BLK_SML_TILES      ;Player just left covered area.
 LAE23:  STA GenByte3C           ;Prepare to hide covered areas with small tiles.
-LAE25:  BNE ModPPUBuffer        ;Branch always.
+LAE25:  BNE CalcBlockIndex2     ;Branch always.
 
 ModUnderCover:
 LAE27:  LDA #BLK_BLANK          ;Player just entered covered area.
 LAE29:  STA GenByte3C           ;Prepeare to hide outside with blank tiles.
 
-ModPPUBuffer:
-LAE2B:  LDA GenByte3C
-LAE2D:  ASL
-LAE2E:  ASL
-LAE2F:  ADC GenByte3C
-LAE31:  ADC GFXTilesPtr
-LAE34:  STA $40
-LAE36:  LDA GFXTilesPtr+1
-LAE39:  ADC #$00
-LAE3B:  STA $41
-LAE3D:  LDY #$00
-LAE3F:  LDA ($40),Y
+CalcBlockIndex2:
+LAE2B:  LDA TargetResults       ;
+LAE2D:  ASL                     ;*5. Data for the graphic block is 5 bytes.
+LAE2E:  ASL                     ;
+LAE2F:  ADC TargetResults       ;
+
+LAE31:  ADC GFXTilesPtr         ;
+LAE34:  STA BlockDataPtrLB      ;
+LAE36:  LDA GFXTilesPtr+1       ;Calculate the address to the proper GFX block data row.
+LAE39:  ADC #$00                ;
+LAE3B:  STA BlockDataPtrUB      ;
+
+LAE3D:  LDY #$00                ;Initialize index for transferring GFX block data.
+
+LAE3F:  LDA (BlockDataPtr),Y
 LAE41:  STA PPUDataByte
 LAE43:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
+
 LAE46:  LDA BlkRemoveFlgs
 LAE48:  LSR
 LAE49:  BCC $AE63
@@ -4372,88 +4427,109 @@ LAE5B:  DEC PPUBufCount
 LAE5D:  DEC PPUBufCount
 LAE5F:  DEC PPUBufCount
 LAE61:  DEC PPUEntCount
+
 LAE63:  INY
-LAE64:  LDA ($40),Y
+LAE64:  LDA (BlockDataPtr),Y
 LAE66:  STA PPUDataByte
+
 LAE68:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
+
 LAE6B:  LDA BlkRemoveFlgs
 LAE6D:  AND #$02
 LAE6F:  BEQ $AE89
+
 LAE71:  LDA MapType
-LAE73:  CMP #$20
+LAE73:  CMP #MAP_DUNGEON
 LAE75:  BNE $AE81
+
 LAE77:  LDX PPUBufCount
 LAE79:  DEX
 LAE7A:  LDA #TL_BLANK_TILE1
 LAE7C:  STA BlockRAM,X
 LAE7F:  BNE $AE89
+
 LAE81:  DEC PPUBufCount
 LAE83:  DEC PPUBufCount
 LAE85:  DEC PPUBufCount
 LAE87:  DEC PPUEntCount
+
 LAE89:  INY
 LAE8A:  LDA PPUAddrLB
 LAE8C:  CLC
 LAE8D:  ADC #$1E
 LAE8F:  STA PPUAddrLB
 LAE91:  BCC $AE95
+
 LAE93:  INC PPUAddrUB
-LAE95:  LDA ($40),Y
+LAE95:  LDA (BlockDataPtr),Y
 LAE97:  STA PPUDataByte
 LAE99:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
+
 LAE9C:  LDA BlkRemoveFlgs
 LAE9E:  AND #$04
 LAEA0:  BEQ $AEBA
+
 LAEA2:  LDA MapType
 LAEA4:  CMP #$20
 LAEA6:  BNE $AEB2
+
 LAEA8:  LDX PPUBufCount
 LAEAA:  DEX
 LAEAB:  LDA #TL_BLANK_TILE1
 LAEAD:  STA BlockRAM,X
 LAEB0:  BNE $AEBA
+
 LAEB2:  DEC PPUBufCount
 LAEB4:  DEC PPUBufCount
 LAEB6:  DEC PPUBufCount
 LAEB8:  DEC PPUEntCount
 LAEBA:  INY
-LAEBB:  LDA ($40),Y
+LAEBB:  LDA (BlockDataPtr),Y
 LAEBD:  STA PPUDataByte
 LAEBF:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
 LAEC2:  LDA BlkRemoveFlgs
 LAEC4:  AND #$08
 LAEC6:  BEQ $AEE0
+
 LAEC8:  LDA MapType
 LAECA:  CMP #MAP_DUNGEON
 LAECC:  BNE $AED8
+
 LAECE:  LDX PPUBufCount
 LAED0:  DEX
 LAED1:  LDA #TL_BLANK_TILE1
 LAED3:  STA BlockRAM,X
 LAED6:  BNE $AEE0
+
 LAED8:  DEC PPUBufCount
 LAEDA:  DEC PPUBufCount
 LAEDC:  DEC PPUBufCount
 LAEDE:  DEC PPUEntCount
+
 LAEE0:  INY
-LAEE1:  LDA $48
-LAEE3:  STA $3C
-LAEE5:  LDA $49
-LAEE7:  STA $3E
-LAEE9:  LDA ($40),Y
-LAEEB:  STA PPUDataByte
+
+LAEE1:  LDA XFromLeftTemp       ;
+LAEE3:  STA XPosFromLeft        ;Update X and Y position for next block.
+LAEE5:  LDA YFromTopTemp        ;
+LAEE7:  STA YPosFromTop         ;
+
+LAEE9:  LDA (BlockDataPtr),Y    ;Get attribute table byte.
+LAEEB:  STA PPUDataByte         ;
+
 LAEED:  JSR ModAttribBits       ;($C006)Set the attribute table bits for a nametable block.
 
-LAEF0:  LDA PPUHorzVert
-LAEF2:  BNE $AEFE
+LAEF0:  LDA PPUHorzVert         ;Is PPU set up to write in rows?
+LAEF2:  BNE ModBlockExit        ;If so, branch to exit.
 
 LAEF4:  LDA PPUAddrUB
 LAEF6:  CLC
 LAEF7:  ADC #$20
 LAEF9:  STA PPUAddrUB
 LAEFB:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
-LAEFE:  RTS
+
+ModBlockExit:
+LAEFE:  RTS                     ;Done modifying graphics block. Return.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -4605,11 +4681,13 @@ LAFF7:  STA NPCXPos,X
 LAFF9:  INX
 LAFFA:  INY
 LAFFB:  JMP $AFE5
+
 LAFFE:  INY
 LAFFF:  LDX #$1E
 LB001:  LDA ($3C),Y
 LB003:  CMP #$FF
 LB005:  BEQ $B01A
+
 LB007:  STA NPCXPos,X
 LB009:  INX
 LB00A:  INY
