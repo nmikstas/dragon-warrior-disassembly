@@ -4470,7 +4470,7 @@ LAE9E:  AND #$04
 LAEA0:  BEQ $AEBA
 
 LAEA2:  LDA MapType
-LAEA4:  CMP #$20
+LAEA4:  CMP #MAP_DUNGEON
 LAEA6:  BNE $AEB2
 
 LAEA8:  LDX PPUBufCount
@@ -4534,10 +4534,12 @@ LAEFE:  RTS                     ;Done modifying graphics block. Return.
 ;----------------------------------------------------------------------------------------------------
 
 LAEFF:  LDA CharXPos
-LAF01:  STA $3C
+LAF01:  STA XTarget
 LAF03:  LDA CharYPos
-LAF05:  STA $3E
+LAF05:  STA YTarget
+
 LAF07:  JSR GetBlockID          ;($AC17)Get description of block.
+
 LAF0A:  JSR HasCoverData        ;($AAE1)Check if current map has covered areas.
 LAF0D:  LDA CoveredStsNext
 LAF0F:  STA CoverStatus
@@ -4545,6 +4547,7 @@ LAF11:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
+InitMapData:
 LAF12:  LDA MapNumber
 LAF14:  CMP #MAP_DLCSTL_SL1
 LAF16:  BCS $AF1F
@@ -4567,12 +4570,14 @@ LAF2F:  BNE $AF3C
 
 LAF31:  LDX #$00
 LAF33:  TXA
+
 LAF34:  STA DoorXPos,X
 LAF37:  INX
 LAF38:  CPX #$20
 LAF3A:  BNE $AF34
+
 LAF3C:  LDA PlayerFlags
-LAF3E:  AND #$08
+LAF3E:  AND #F_LEFT_THROOM
 LAF40:  BEQ $AF6A
 
 LAF42:  LDA MapNumber
@@ -4601,6 +4606,7 @@ LAF6A:  LDA #$08
 LAF6C:  STA NTBlockX
 LAF6E:  LDA #$07
 LAF70:  STA NTBlockY
+
 LAF72:  LDA #$00
 LAF74:  STA ScrollX
 LAF76:  STA ScrollY
@@ -4775,25 +4781,30 @@ LB08C:  RTS
 
 MapChngNoFadeOut:
 LB08D:  LDA #$00
-LB08F:  BEQ $B099
+LB08F:  BEQ SetSoundAndFade
 
 MapChngNoSound:
 LB091:  LDA #$00
 LB093:  STA $25
-LB095:  BEQ $B09E
+LB095:  BEQ ClearSprites
 
 MapChngWithSound:
 LB097:  LDA #$01
 
+SetSoundAndFade:
 LB099:  STA $25
 LB09B:  JSR ScreenFadeOut       ;($A743)Fade out screen.
+
+ClearSprites:
 LB09E:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
 
-LB0A1:  LDA #$00
-LB0A3:  STA PPUControl1
+LB0A1:  LDA #%00000000          ;Turn off the display.
+LB0A3:  STA PPUControl1         ;
 LB0A6:  STA DrgnLrdPal          ;Clear dragonlord palette register.
+
 LB0A9:  JSR Bank1ToCHR0         ;($FC98)Load CHR bank 1 into CHR0 memory.
 LB0AC:  JSR Bank2ToCHR1         ;($FCAD)Load CHR bank 2 into CHR1 memory.
+
 LB0AF:  LDA $25
 LB0B1:  BEQ $B0B8
 
@@ -4801,10 +4812,12 @@ LB0B3:  LDA #SFX_STAIRS         ;Stairs SFX.
 LB0B5:  BRK                     ;
 LB0B6:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LB0B8:  LDA #$18
-LB0BA:  STA PPUControl1
-LB0BD:  JSR $AF12
+LB0B8:  LDA #%00011000          ;Enable sprites and background.
+LB0BA:  STA PPUControl1         ;
+
+LB0BD:  JSR InitMapData         ;($AF12)Initialize map data.
 LB0C0:  JSR $AEFF
+
 LB0C3:  LDA #$F2
 LB0C5:  STA $10
 
@@ -4815,10 +4828,13 @@ LB0CC:  STA $0F
 LB0CE:  LDA #$00
 LB0D0:  STA BlkRemoveFlgs
 LB0D2:  STA PPUHorzVert
+
 LB0D4:  JSR ModMapBlock         ;($AD66)Change block on map.
+
 LB0D7:  INC $0F
 LB0D9:  INC $0F
 LB0DB:  BNE $B0CE
+
 LB0DD:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LB0E0:  LDA #$00
@@ -4838,11 +4854,13 @@ LB0F9:  CMP #$10
 LB0FB:  BNE $B0C7
 
 LB0FD:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB100:  LDA #NPC_STOP
-LB102:  STA StopNPCMove
+
+LB100:  LDA #NPC_STOP           ;Stop the NPCs from moving.
+LB102:  STA StopNPCMove         ;
 LB104:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
-LB107:  LDA #NPC_MOVE
-LB109:  STA StopNPCMove
+
+LB107:  LDA #NPC_MOVE           ;Allow the NPCs to move again.
+LB109:  STA StopNPCMove         ;
 LB10B:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LB10E:  LDX MapNumber           ;Get current map number.
@@ -4855,20 +4873,26 @@ LB116:  LDA RegSPPalPtr
 LB119:  STA $3E
 LB11B:  LDA RegSPPalPtr+1
 LB11E:  STA $3F
+
 LB120:  LDA #$FF
 LB122:  STA $3D
+
 LB124:  LDA OverworldPalPtr
 LB127:  CLC
 LB128:  ADC MapType
 LB12A:  STA $40
+
 LB12C:  LDA OverworldPalPtr+1
 LB12F:  ADC #$00
 LB131:  STA $41
+
 LB133:  JSR PalFadeIn           ;($C529)Fade in both background and sprite palettes.
+
 LB136:  LDA #$02
 LB138:  STA PPUAddrLB
 LB13A:  LDA #$24
 LB13C:  STA PPUAddrUB
+
 LB13E:  LDA #TL_BLANK_TILE1
 LB140:  STA PPUDataByte
 LB142:  LDA #$0F
@@ -4888,29 +4912,37 @@ LB15D:  LDA PPUAddrLB
 LB15F:  STA BlockRAM+2,Y
 LB162:  LDA PPUDataByte
 LB164:  STA BlockRAM+3,Y
+
 LB167:  INY
 LB168:  DEX
 LB169:  BNE $B164
 LB16B:  INC PPUEntCount
+
 LB16D:  LDA PPUAddrLB
 LB16F:  CLC
 LB170:  ADC #$20
 LB172:  STA PPUAddrLB
-LB174:  BCC $B178
+LB174:  BCC +
 LB176:  INC PPUAddrUB
-LB178:  LDA PPUAddrUB
+
+LB178:* LDA PPUAddrUB
 LB17A:  ORA #$80
 LB17C:  STA BlockRAM+3,Y
+
 LB17F:  LDA #$1C
 LB181:  TAX
 LB182:  STA BlockRAM+4,Y
+
 LB185:  LDA PPUAddrLB
 LB187:  STA BlockRAM+5,Y
+
 LB18A:  LDA PPUDataByte
 LB18C:  STA BlockRAM+6,Y
+
 LB18F:  INY
 LB190:  DEX
 LB191:  BNE $B18C
+
 LB193:  INC PPUEntCount
 LB195:  TYA
 LB196:  CLC
@@ -4920,10 +4952,12 @@ LB19B:  LDA PPUAddrLB
 LB19D:  CLC
 LB19E:  ADC #$20
 LB1A0:  STA PPUAddrLB
-LB1A2:  BCC $B1A6
+LB1A2:  BCC +
 LB1A4:  INC PPUAddrUB
-LB1A6:  DEC $4D
+
+LB1A6:* DEC $4D
 LB1A8:  BNE $B146
+
 LB1AA:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LB1AD:  RTS
 
@@ -6362,6 +6396,7 @@ LB981:  STA ThisNPCXPos
 LB983:  LDA $3F
 LB985:  ADC #$00
 LB987:  BNE $B9C0
+
 LB989:  TYA
 LB98A:  STX $25
 LB98C:  TAX

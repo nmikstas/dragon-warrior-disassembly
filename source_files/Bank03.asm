@@ -3078,7 +3078,7 @@ LD3BB:  .byte $B9               ;TextBlock12, entry 9.
 LD3BC:  LDA #ITM_GWAELIN_LVE    ;Try to give player Gwaelin's love.
 LD3BE:  JSR AddInvItem          ;($E01B)Add item to inventory.
 
-LD3C1:  CPX #$04                ;Was Gwaelin's love successfully given?
+LD3C1:  CPX #INV_FULL           ;Was Gwaelin's love successfully given?
 LD3C3:  BNE KingPrncsDialog     ;If so, branch.
 
 LD3C5:  LDX #$00                ;Inventory full.  Prepare to take an item.
@@ -3778,7 +3778,7 @@ LD728:  SEC                     ;
 LD729:  SBC #$12                ;
 
 LD72B:  JSR AddInvItem          ;($E01B)Add item to inventory.
-LD72E:  CPX #$04                ;Is player's inventory full?
+LD72E:  CPX #INV_FULL           ;Is player's inventory full?
 LD730:  BNE PurchaseTool        ;If not, branch to purchase tool.
 
 LD732:  JSR DoDialogLoBlock     ;($C7CB)Thou cannot carry anymore...
@@ -4033,9 +4033,9 @@ LD86E:  .byte $22               ;TextBlock3, entry 2.
 LD86F:  JMP EndFairyDialog      ;($D855)End fairy water dialog.
 
 ChkFryWtrInv:
-LD872:  LDA #$02                ;Attempt to add a fairy water to the player's inventory.
+LD872:  LDA #ITM_FRY_WATER      ;Attempt to add a fairy water to the player's inventory.
 LD874:  JSR AddInvItem          ;($E01B)Add item to inventory.
-LD877:  CPX #$04                ;Is the players inventory full?
+LD877:  CPX #INV_FULL           ;Is the players inventory full?
 LD879:  BNE BuyFairyWater       ;If not, branch to commit to purchase.
 
 LD87B:  JSR DoDialogLoBlock     ;($C7CB)Thou cannot carry anymore.
@@ -5543,38 +5543,42 @@ LE019:  BNE PlayerCursed        ;Branch always to tell player they are cursed.
 ;----------------------------------------------------------------------------------------------------
 
 AddInvItem:
-LE01B:  STA $3E
-LE01D:  LDX #$00
+LE01B:  STA GenByte3E           ;Store a copy of the inventory item and zero out index.
+LE01D:  LDX #$00                ;
 
-LE01F:  LDA InventorySlot12,X
-LE021:  AND #$0F
-LE023:  BNE $E02E
+AddInvLoop:
+LE01F:  LDA InventorySlot12,X   ;Is the lower nibble inventory slot already occupied?
+LE021:  AND #$0F                ;
+LE023:  BNE ChkUpperInvNibble   ;If so, branch to check the upper nibble.
 
-LE025:  LDA InventorySlot12,X
-LE027:  AND #$F0
-LE029:  ORA $3E
-LE02B:  STA InventorySlot12,X
-LE02D:  RTS
+LE025:  LDA InventorySlot12,X   ;
+LE027:  AND #$F0                ;
+LE029:  ORA GenByte3E           ;Add new inventory item to lower nibble slot.
+LE02B:  STA InventorySlot12,X   ;
+LE02D:  RTS                     ;
 
-LE02E:  LDA InventorySlot12,X
-LE030:  AND #$F0
-LE032:  BNE $E045
+ChkUpperInvNibble:
+LE02E:  LDA InventorySlot12,X   ;Is the upper nibble inventory slot already occupied?
+LE030:  AND #$F0                ;
+LE032:  BNE ChkNextInvSlot      ;If so, branch to check the next inventory byte.
 
-LE034:  ASL $3E
-LE036:  ASL $3E
-LE038:  ASL $3E
-LE03A:  ASL $3E
+LE034:  ASL GenByte3E           ;
+LE036:  ASL GenByte3E           ;Slot is open. Move item to upper nibble.
+LE038:  ASL GenByte3E           ;
+LE03A:  ASL GenByte3E           ;
 
-LE03C:  LDA InventorySlot12,X
-LE03E:  AND #$0F
-LE040:  ORA $3E
-LE042:  STA InventorySlot12,X
-LE044:  RTS
-LE045:  INX
-LE046:  CPX #$04
-LE048:  BNE $E01F
+LE03C:  LDA InventorySlot12,X   ;
+LE03E:  AND #$0F                ;
+LE040:  ORA GenByte3E           ;Add new inventory item to upper nibble slot.
+LE042:  STA InventorySlot12,X   ;
+LE044:  RTS                     ;
 
-LE04A:  RTS
+ChkNextInvSlot:
+LE045:  INX                     ;Have all 4 bytes of inventory been checked(8 items)?
+LE046:  CPX #INV_FULL           ;
+LE048:  BNE AddInvLoop          ;If not, branch to check another byte.
+
+LE04A:  RTS                     ;Inventory is full. Return.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -5619,92 +5623,109 @@ LE07A:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
+DiscardItem:
 LE07B:  STA DialogTemp          ;Store dialog control byte.
 
-LE07D:  JSR DoDialogLoBlock     ;($C7CB)
-LE080:  .byte $CC
+LE07D:  JSR DoDialogLoBlock     ;($C7CB)If thou will take the item, thou must discard something...
+LE080:  .byte $CC               ;TextBlock13, entry 12.
 
 LE081:  JSR Dowindow            ;($C6F0)display on-screen window.
-LE084:  .byte WND_YES_NO1
+LE084:  .byte WND_YES_NO1       ;Yes/No window.
 
-LE085:  BEQ $E094
-LE087:  LDA DialogTemp
-LE089:  CLC
-LE08A:  ADC #$31
+LE085:  BEQ PlayerDiscards      ;Branch if player chooses to discard an item.
+
+PlayerNoDiscard:
+LE087:  LDA DialogTemp          ;Player will not discard an item.
+LE089:  CLC                     ;
+LE08A:  ADC #$31                ;
 LE08C:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
 
 LE08F:  LDA #$CD                ;TextBlock13, entry 13.
 LE091:  JMP DoFinalDialog       ;($D242)Thou hast given up thy item...
 
-LE094:  JSR DoDialogLoBlock     ;($C7CB)
-LE097:  .byte $CE
+PlayerDiscards:
+LE094:  JSR DoDialogLoBlock     ;($C7CB)What shall thou drop..
+LE097:  .byte $CE               ;TextBlock13, entry 14.
 
 LE098:  JSR CreateInvList       ;($DF77)Create inventory list in description buffer.
 
 LE09B:  JSR Dowindow            ;($C6F0)display on-screen window.
 LE09E:  .byte WND_INVTRY1       ;Player inventory window.
 
-LE09F:  CMP #$FF
-LE0A1:  BEQ $E087
-LE0A3:  TAX
-LE0A4:  LDA DescBuf+1,X
-LE0A6:  LDY #$00
-LE0A8:  CMP $E0FA,Y
-LE0AB:  BNE $E0B4
+LE09F:  CMP #WND_ABORT          ;Did player abort the discard process?
+LE0A1:  BEQ PlayerNoDiscard     ;If so, branch.
 
-LE0AD:  JSR DoDialogLoBlock     ;($C7CB)
-LE0B0:  .byte $D1
+LE0A3:  TAX                     ;Prepare a check to see if player is trying to discard -->
+LE0A4:  LDA DescBuf+1,X         ;an important item that cannot be discarded.
+LE0A6:  LDY #$00                ;
 
-LE0B1:  JMP $E094
+DiscardChkLoop:
+LE0A8:  CMP NonDiscardTbl,Y     ;Does the item match a non-discarable item?
+LE0AB:  BNE NextDiscardChk      ;If not, branch to check next non-discardable item.
 
-LE0B4:  INY
-LE0B5:  CPY #$09
-LE0B7:  BNE $E0A8
-LE0B9:  CMP #$0C
-LE0BB:  BNE $E0C8
-LE0BD:  BIT ModsnSpells
-LE0BF:  BVC $E0C8
+LE0AD:  JSR DoDialogLoBlock     ;($C7CB)That is much to important to throw away...
+LE0B0:  .byte $D1               ;TextBlock14, entry 1.
+
+LE0B1:  JMP PlayerDiscards      ;Jump so player can choose another item to discard.
+
+NextDiscardChk:
+LE0B4:  INY                     ;Has the item been checked against all non-discardable items?
+LE0B5:  CPY #$09                ;
+LE0B7:  BNE DiscardChkLoop      ;If not, branch to check against another item.
+
+LE0B9:  CMP #INV_BELT           ;Is player trying to discard the cursed belt?
+LE0BB:  BNE ChkDiscardNecklace  ;If not, branch to check if its the death necklace.
+
+LE0BD:  BIT ModsnSpells         ;Is the player wearing the cursed belt?
+LE0BF:  BVC ChkDiscardNecklace  ;If so, branch to check if player is discarding death necklace.
 
 BodyCursedDialog:
 LE0C1:  JSR DoDialogLoBlock     ;($C7CB)A curse is upon thy body...
 LE0C4:  .byte $18               ;TextBlock2, entry 8.
 
-LE0C5:  JMP $E094
+LE0C5:  JMP PlayerDiscards      ;Jump so player can choose another item to discard.
 
-LE0C8:  LDA DescBuf+1,X
-LE0CA:  CMP #$0E
-LE0CC:  BNE $E0D2
+ChkDiscardNecklace:
+LE0C8:  LDA DescBuf+1,X         ;Is player trying to discard the death necklace?
+LE0CA:  CMP #INV_NECKLACE       ;
+LE0CC:  BNE +                   ;If not, branch.
 
 LE0CE:  LDA ModsnSpells         ;Is the player wearing the death necklace?
 LE0D0:  BMI BodyCursedDialog    ;If so, branch to display cursed dialog.
 
-LE0D2:  LDA DescBuf+1,X
-LE0D4:  PHA
-LE0D5:  CLC
-LE0D6:  ADC #$2E
+LE0D2:* LDA DescBuf+1,X         ;Save a copy of the description of the item.
+LE0D4:  PHA                     ;
+
+LE0D5:  CLC                     ;Add offset to find proper description of discarded item.
+LE0D6:  ADC #$2E                ;
 LE0D8:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
 
 LE0DB:  JSR DoDialogLoBlock     ;($C7CB)Thou hast dropped thy item...
 LE0DE:  .byte $CF               ;TextBlock13, entry 15.
 
-LE0DF:  LDA DialogTemp
-LE0E1:  CLC
-LE0E2:  ADC #$31
+LE0DF:  LDA DialogTemp          ;Add offset to find proper description of gained item.
+LE0E1:  CLC                     ;
+LE0E2:  ADC #$31                ;
 LE0E4:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
 
 LE0E7:  JSR DoDialogLoBlock     ;($C7CB)And obtained the item...
 LE0EA:  .byte $D0               ;TextBlock14, entry 0
 
-LE0EB:  PLA
-LE0EC:  SEC
-LE0ED:  SBC #$03
+LE0EB:  PLA                     ;Add offset to get proper item to remove from inventory.
+LE0EC:  SEC                     ;
+LE0ED:  SBC #$03                ;
 LE0EF:  JSR RemoveInvItem       ;($E04B)Remove item from inventory.
-LE0F2:  LDA DialogTemp
+
+LE0F2:  LDA DescTemp            ;Prepare to add new item to inventory.
 LE0F4:  JSR AddInvItem          ;($E01B)Add item to inventory.
 
 LE0F7:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
-LE0FA:  .byte $02, $03, $08, $0A, $0B, $0D, $0F, $10, $11
+;The following table contains items that cannot be discarded by the player.
+
+NonDiscardTbl:
+LE0FA:  .byte INV_HERB, INV_KEY,    INV_FLUTE, INV_TOKEN, INV_LOVE
+LE0FF:  .byte INV_HARP, INV_STONES, INV_STAFF, INV_DROP
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -5712,81 +5733,90 @@ DoSearch:
 LE103:  JSR Dowindow            ;($C6F0)display on-screen window.
 LE106:  .byte WND_DIALOG        ;Dialog window.
 
-LE107:  JSR DoDialogLoBlock     ;($C7CB)
-LE10A:  .byte $D2
+LE107:  JSR DoDialogLoBlock     ;($C7CB)Player searched the ground all about...
+LE10A:  .byte $D2               ;TextBlock14, entry 2.
 
-LE10B:  LDA MapNumber
-LE10D:  CMP #MAP_OVERWORLD
-LE10F:  BNE $E14A
-LE111:  LDA CharXPos
-LE113:  CMP #$53
-LE115:  BNE NextSearch
-LE117:  LDA CharYPos
-LE119:  CMP #$71
-LE11B:  BNE NextSearch
-LE11D:  LDA #ITM_ERDRICK_TKN
-LE11F:  STA DialogTemp
+LE10B:  LDA MapNumber           ;Is player on the overworld map?
+LE10D:  CMP #MAP_OVERWORLD      ;
+LE10F:  BNE NextSearch          ;If not, branch to do other searches.
+
+LE111:  LDA CharXPos            ;
+LE113:  CMP #$53                ;Is player in the proper X any Y position to find Erdrick's token?
+LE115:  BNE NextSearch          ;
+LE117:  LDA CharYPos            ;If not, branch to do other searches. Erdrick's token is the -->
+LE119:  CMP #$71                ;only item to find on the overworld map.
+LE11B:  BNE NextSearch          ;
+
+LE11D:  LDA #ITM_ERDRICK_TKN    ;Check to see if the player already has Erdrick's token.
+
+FoundItem:
+LE11F:  STA DescTemp            ;Prepare to check for existing inventory item.
 LE121:  JSR CheckForInvItem     ;($E055)Check inventory for item.
-LE124:  CMP #ITM_NOT_FOUND
-LE126:  BEQ $E12D
+
+LE124:  CMP #ITM_NOT_FOUND      ;Does player already have Erdrick's token?
+LE126:  BEQ ErdrickTknFound     ;If not, branch to try to add it to player's inventory.
+
+ItemAlreadyFound:
 LE128:  LDA #$D3                ;TextBlock14, entry 3.
 LE12A:  JMP DoFinalDialog       ;($D242)But there found nothing...
 
-LE12D:  LDA DialogTemp
-LE12F:  CLC
-LE130:  ADC #$31
+ErdrickTknFound:
+LE12D:  LDA DescTemp            ;Get offset to description byte for Erdrick's token.
+LE12F:  CLC                     ;
+LE130:  ADC #$31                ;
 LE132:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
 
 LE135:  JSR DoDialogLoBlock     ;($C7CB)Player discovered the item...
 LE138:  .byte $D5               ;TextBlock14, entry 5.
 
-LE139:  LDA DialogTemp
+LE139:  LDA DescTemp            ;Prepare to try to add item to inventory.
 LE13B:  JSR AddInvItem          ;($E01B)Add item to inventory.
-LE13E:  CPX #$04
-LE140:  BEQ $E145
+
+LE13E:  CPX #INV_FULL           ;Is player's inventory full?
+LE140:  BEQ +                   ;If so, branch.
+
 LE142:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
-LE145:  LDA DialogTemp
-LE147:  JMP $E07B
+LE145:* LDA DescTemp            ;Prepare to tell player inventory is full.
+LE147:  JMP DiscardItem         ;($E07B)Inventory full. Ask player to discard an item.
 
 ;----------------------------------------------------------------------------------------------------
 
 NextSearch:
-LE14A:  LDA MapNumber
-LE14C:  CMP #MAP_KOL
-LE14E:  BNE $E160
+LE14A:  LDA MapNumber           ;Is player in the town of Kol?
+LE14C:  CMP #MAP_KOL            ;
+LE14E:  BNE SrchEdrckArmor      ;If not, branch.
 
-LE150:  LDA CharXPos
-LE152:  CMP #$09
-LE154:  BNE $E160
+LE150:  LDA CharXPos            ;
+LE152:  CMP #$09                ;Is player in the proper location to find the fairy flute?
+LE154:  BNE SrchEdrckArmor      ;
+LE156:  LDA CharYPos            ;
+LE158:  CMP #$06                ;If not, branch to move on.
+LE15A:  BNE SrchEdrckArmor      ;
 
-LE156:  LDA CharYPos
-LE158:  CMP #$06
-LE15A:  BNE $E160
+LE15C:  LDA #ITM_FRY_FLUTE      ;Indicate playe may find the fairy flute.
+LE15E:  BNE FoundItem           ;branch always.
 
-LE15C:  LDA #$05
-LE15E:  BNE $E11F
+SrchEdrckArmor:
+LE160:  LDA MapNumber           ;Is the player in Huksness?
+LE162:  CMP #MAP_HAUKSNESS      ;
+LE164:  BNE SrchPassage         ;If not, branch.
 
-LE160:  LDA MapNumber
-LE162:  CMP #MAP_HAUKSNESS
-LE164:  BNE $E18A
+LE166:  LDA CharXPos            ;
+LE168:  CMP #$12                ;Is player in the proper location to find Erdrick's armor?
+LE16A:  BNE SrchPassage         ;
+LE16C:  LDA CharYPos            ;
+LE16E:  CMP #$0C                ;If not, branch to move on.
+LE170:  BNE SrchPassage         ;
 
-LE166:  LDA CharXPos
-LE168:  CMP #$12
-LE16A:  BNE $E18A
+LE172:  LDA EqippedItems        ;Does player already have Erdrick's armor?
+LE174:  AND #AR_ARMOR           ;
+LE176:  CMP #AR_ERDK_ARMR       ;
+LE178:  BEQ ItemAlreadyFound    ;If so, branch.
 
-LE16C:  LDA CharYPos
-LE16E:  CMP #$0C
-LE170:  BNE $E18A
-
-LE172:  LDA EqippedItems
-LE174:  AND #AR_ARMOR
-LE176:  CMP #AR_ERDK_ARMR
-LE178:  BEQ $E128
-
-LE17A:  LDA EqippedItems
-LE17C:  ORA #AR_ERDK_ARMR
-LE17E:  STA EqippedItems
+LE17A:  LDA EqippedItems        ;
+LE17C:  ORA #AR_ERDK_ARMR       ;Equip player with Erdrick's armor.
+LE17E:  STA EqippedItems        ;
 
 LE180:  LDA #$28                ;Erdrick's armor description byte.
 LE182:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
@@ -5794,54 +5824,60 @@ LE182:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
 LE185:  LDA #$D5                ;TextBlock14, entry 5.
 LE187:  JMP DoFinalDialog       ;($D242)Player discovered the item...
 
-LE18A:  LDA MapNumber
-LE18C:  CMP #MAP_DLCSTL_GF
-LE18E:  BNE $E1C8
-LE190:  LDA CharXPos
-LE192:  CMP #$0A
-LE194:  BNE $E1C8
-LE196:  LDA CharYPos
-LE198:  CMP #$03
-LE19A:  BNE $E1A1
+SrchPassage:
+LE18A:  LDA MapNumber           ;Is player on the ground floor of the dragonlord's castle?
+LE18C:  CMP #MAP_DLCSTL_GF      ;
+LE18E:  BNE ChkSearchTrsr       ;If not, branch.
+
+LE190:  LDA CharXPos            ;
+LE192:  CMP #$0A                ;Is the player standing in the dragonlord's throne?
+LE194:  BNE ChkSearchTrsr       ;
+LE196:  LDA CharYPos            ;If so, branch to tell player wind is comming -->
+LE198:  CMP #$03                ;from behind the throne.
+LE19A:  BNE +                   ;Else branch.
+
 LE19C:  LDA #$D6                ;TextBlock14, entry 6.
 LE19E:  JMP DoFinalDialog       ;($D242)Feel the wind behind the throne...
-LE1A1:  CMP #$01
-LE1A3:  BNE $E1C8
-LE1A5:  LDA ModsnSpells
-LE1A7:  AND #F_PSG_FOUND
-LE1A9:  BNE $E1C8
-LE1AB:  LDA ModsnSpells
-LE1AD:  ORA #F_PSG_FOUND
-LE1AF:  STA ModsnSpells
 
-LE1B1:  LDA #$0F
+LE1A1:* CMP #$01                ;Is player standing behind dragonlord's throne?
+LE1A3:  BNE ChkSearchTrsr       ;If not, branch.
+
+LE1A5:  LDA ModsnSpells         ;Has player already found the secret passage?
+LE1A7:  AND #F_PSG_FOUND        ;
+LE1A9:  BNE ChkSearchTrsr       ;If so, branch to move on.
+
+LE1AB:  LDA ModsnSpells         ;
+LE1AD:  ORA #F_PSG_FOUND        ;Indicate the player discvered the secret passage.
+LE1AF:  STA ModsnSpells         ;
+
+LE1B1:  LDA #$0F                ;Description byte for the secret passage.
 LE1B3:  JSR GetDescriptionByte  ;($DBF0)Load byte for item dialog description.
 
 LE1B6:  JSR DoDialogLoBlock     ;($C7CB)TextBlock14, entry 5.
 LE1B9:  .byte $D5               ;Player discovered the item...
 
-LE1BA:  LDA #$00
-LE1BC:  STA $10
-LE1BE:  STA $0F
-LE1C0:  STA BlkRemoveFlgs
+LE1BA:  LDA #$00                ;
+LE1BC:  STA YPosFromCenter      ;Change the block the player is standing on to stairs down.
+LE1BE:  STA XPosFromCenter      ;
+LE1C0:  STA BlkRemoveFlgs       ;Remove no tiles from the block.
 LE1C2:  JSR ModMapBlock         ;($AD66)Change block on map.
 LE1C5:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
-;----------------------------------------------------------------------------------------------------
-
-LE1C8:  LDA CharXPos
-LE1CA:  STA $3C
-LE1CC:  LDA CharYPos
-LE1CE:  STA $3E
+ChkSearchTrsr:
+LE1C8:  LDA CharXPos            ;
+LE1CA:  STA XTarget             ;Get the block description of the block the player is standing on.
+LE1CC:  LDA CharYPos            ;
+LE1CE:  STA YTarget             ;
 LE1D0:  JSR GetBlockID          ;($AC17)Get description of block.
-LE1D3:  LDA TargetResults
-LE1D5:  CMP #$0C
-LE1D7:  BNE $E1DE
+
+LE1D3:  LDA TargetResults       ;Is player standing on a treasure chest?
+LE1D5:  CMP #BLK_CHEST          ;
+LE1D7:  BNE +                   ;If not, branch.
 
 LE1D9:  LDA #$D4                ;TextBlock14, entry 4.
 LE1DB:  JMP DoFinalDialog       ;($D242)There is a treasure box...
 
-LE1DE:  LDA #$D3                ;TextBlock14, entry 3.
+LE1DE:* LDA #$D3                ;TextBlock14, entry 3.
 LE1E0:  JMP DoFinalDialog       ;($D242)But there found nothing...
 
 ;----------------------------------------------------------------------------------------------------
@@ -5850,71 +5886,99 @@ DoTake:
 LE1E3:  JSR Dowindow            ;($C6F0)display on-screen window.
 LE1E6:  .byte WND_DIALOG        ;Dialog window.
 
-LE1E7:  LDA CharXPos
-LE1E9:  STA XTarget
-LE1EB:  LDA CharYPos
-LE1ED:  STA YTarget
+LE1E7:  LDA CharXPos            ;
+LE1E9:  STA XTarget             ;Get the block description of the block the player is standing on.
+LE1EB:  LDA CharYPos            ;
+LE1ED:  STA YTarget             ;
 LE1EF:  JSR GetBlockID          ;($AC17)Get description of block.
-LE1F2:  LDA TargetResults
-LE1F4:  CMP #BLK_CHEST
-LE1F6:  BEQ $E1FD
 
+LE1F2:  LDA TargetResults       ;Is player standing on a treasure chest?
+LE1F4:  CMP #BLK_CHEST          ;
+LE1F6:  BEQ FoundTreasure       ;If so, branch.
+
+NoTrsrChest:
 LE1F8:  LDA #$D7                ;TextBlock14, entry 7.
 LE1FA:  JMP DoFinalDialog       ;($D242)There is nothing to take here...
-        
+
+FoundTreasure:       
 LE1FD:  BRK                     ;Copy treasure table into RAM.
 LE1FE:  .byte $08, $17          ;($994F)CopyTrsrTbl, bank 1.
 
 LE200:  LDY #$00                ;Treasure table starts at address $0320.
 
 ChkTrsrTblLoop:
-LE202:  LDA MapNumber
-LE204:  CMP $0320,Y
-LE207:  BNE $E217
-LE209:  LDA CharXPos
-LE20B:  CMP $0321,Y
-LE20E:  BNE $E217
-LE210:  LDA CharYPos
-LE212:  CMP $0322,Y
-LE215:  BEQ $E221
-LE217:  INY
-LE218:  INY
-LE219:  INY
-LE21A:  INY
-LE21B:  CPY #$7C
-LE21D:  BNE ChkTrsrTblLoop
+LE202:  LDA MapNumber           ;Does player map match current treasure chest map?
+LE204:  CMP TrsrArray,Y         ;
+LE207:  BNE NextTrsrChest       ;If not, branch to increment to next treasure chest.
 
-LE21F:  BEQ $E1F8
-LE221:  LDA $0323,Y
-LE224:  STA DialogTemp
-LE226:  CMP #TRSR_KEY
-LE228:  BNE $E242
-LE22A:  LDA InventoryKeys
-LE22C:  CMP #$06
-LE22E:  BNE $E238
+LE209:  LDA CharXPos            ;Does player X position match treasure chest X position?
+LE20B:  CMP TrsrArray+1,Y       ;
+LE20E:  BNE NextTrsrChest       ;If not, branch to increment to next treasure chest.
+
+LE210:  LDA CharYPos            ;Does player Y position match treasure chest X position?
+LE212:  CMP TrsrArray+2,Y       ;
+LE215:  BEQ ChkTrsrKey          ;If so, branch. Treasure chest found!
+
+NextTrsrChest:
+LE217:  INY                     ;
+LE218:  INY                     ;Increment to next entry in treasure chest data array.
+LE219:  INY                     ;
+LE21A:  INY                     ;
+
+LE21B:  CPY #$7C                ;Has the whole treasure chest data array been checked?
+LE21D:  BNE ChkTrsrTblLoop      ;If not, branch to check the next entry.
+
+LE21F:  BEQ NoTrsrChest         ;No treasure chest found at this location by the player.
+
+;----------------------------------------------------------------------------------------------------
+
+ChkTrsrKey:
+LE221:  LDA TrsrArray+3,Y       ;Did player just find a treasure chest containing a key?
+LE224:  STA DialogTemp          ;
+LE226:  CMP #TRSR_KEY           ;
+LE228:  BNE ChkTrsrHerb         ;If not, branch to check the next treasure type.
+
+LE22A:  LDA InventoryKeys       ;Does player have the max of 5 keys?
+LE22C:  CMP #$06                ;
+LE22E:  BNE TrsrGetKey          ;If not, branch to increment keys in inventory.
+
+GetTreasureChest1:
 LE230:  JSR GetTreasure         ;($E39A)Check for valid treasure and get it.
 
 LE233:  LDA #$DA                ;TextBlock14, entry 10.
 LE235:  JMP DoFinalDialog       ;($D242)Unfortunately, it is empty...
 
-LE238:  INC InventoryKeys
+TrsrGetKey:
+LE238:  INC InventoryKeys       ;Player got a key. Increment keys in inventory.
+
+GetTreasureChest2:
 LE23A:  JSR GetTreasure         ;($E39A)Check for valid treasure and get it.
 
 LE23D:  LDA #$D9                ;TextBlock14, entry 9.
 LE23F:  JMP DoFinalDialog       ;($D242)Fortune smiles upon thee...
 
-LE242:  CMP #TRSR_HERB
-LE244:  BNE $E250
-LE246:  LDA InventoryHerbs
+;----------------------------------------------------------------------------------------------------
+
+ChkTrsrHerb:
+LE242:  CMP #TRSR_HERB          ;Did player just find a treasure chest containing an herb?
+LE244:  BNE ChkTrsrNecklace     ;If not, branch to check the next treasure type.
+
+LE246:  LDA InventoryHerbs      ;Does player have the max of 5 herbs?
 LE248:  CMP #$06
-LE24A:  BEQ $E230
-LE24C:  INC InventoryHerbs
-LE24E:  BNE $E23A
-LE250:  CMP #TRSR_NCK
-LE252:  BNE $E297
-LE254:  LDA PlayerFlags
-LE256:  AND #F_DTH_NCK_FOUND
-LE258:  BNE GetDthNeckGold      ;($E288)
+LE24A:  BEQ GetTreasureChest1   ;If so, branch to get treasure and exit without incrementing herbs.
+
+LE24C:  INC InventoryHerbs      ;Increment player's herb inventory.
+LE24E:  BNE GetTreasureChest2   ;branch always.
+
+;----------------------------------------------------------------------------------------------------
+
+ChkTrsrNecklace:
+LE250:  CMP #TRSR_NCK           ;Did player just find a treasure chest containing the death necklace?
+LE252:  BNE ChkTrsrErdSword     ;If not, branch to check the next treasure type.
+
+LE254:  LDA PlayerFlags         ;Did the player already find the death necklace?
+LE256:  AND #F_DTH_NCK_FOUND    ;
+LE258:  BNE GetDthNeckGold      ;If so, branch to get gold instead.
 
 LE25A:  JSR UpdateRandNum       ;($C55B)Get random number.
 LE25D:  LDA RandNumUB           ;If lower 5 bits are 0, player will receive the-->
@@ -5925,50 +5989,60 @@ LE263:  LDA PlayerFlags         ;
 LE265:  ORA #F_DTH_NCK_FOUND    ;Indicate player has found the death necklace.
 LE267:  STA PlayerFlags         ;
 
+;----------------------------------------------------------------------------------------------------
+
+SetTrsrDescByte:
 LE269:  JSR GetTreasure         ;($E39A)Check for valid treasure and get it.
-LE26C:  LDA DialogTemp
-LE26E:  SEC
-LE26F:  SBC #$03
-LE271:  STA DialogTemp
+LE26C:  LDA DescTemp            ;
+LE26E:  SEC                     ;Set the proper index to the description byte for the item.
+LE26F:  SBC #$03                ;
+LE271:  STA DescTemp            ;
 
 LE273:  JSR DoDialogLoBlock     ;($C7CB)Fortune smiles upon thee. Thou hast found the item...
 LE276:  .byte $D9               ;TextBlock14, entry 9.
 
-LE277:  LDA DialogTemp
+LE277:  LDA DescTemp            ;Add the item to the player's inventory.
 LE279:  JSR AddInvItem          ;($E01B)Add item to inventory.
-LE27C:  CPX #$04
-LE27E:  BEQ $E283
+
+LE27C:  CPX #INV_FULL           ;Is the player's inventory full?
+LE27E:  BEQ TrsrInvFull         ;If so, branch to give player the option to drop an item.
+
 LE280:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
-;----------------------------------------------------------------------------------------------------
-
-LE283:  LDA DialogTemp
-LE285:  JMP $E07B
+TrsrInvFull:
+LE283:  LDA DescTemp            ;Get index to item player is trying to pick up.
+LE285:  JMP DiscardItem         ;($E07B)Inventory full. Ask player to discard an item.
 
 ;----------------------------------------------------------------------------------------------------
 
 GetDthNeckGold:
-LE288:  LDA #$1F
-LE28A:  STA $3E
-LE28C:  LDA #$64
-LE28E:  STA $00
-LE290:  LDA #$00
-LE292:  STA $01
+LE288:  LDA #$1F                ;Up to 31 extra gold randomly added.
+LE28A:  STA RndGoldBits         ;
+
+LE28C:  LDA #$64                ;
+LE28E:  STA TrsrGoldLB          ;100 base gold for this treasure.
+LE290:  LDA #$00                ;
+LE292:  STA TrsrGoldUB          ;
+
 LE294:  JMP GetTrsrGold         ;($E365)Calculate treasure gold received.
 
 ;----------------------------------------------------------------------------------------------------
 
-LE297:  CMP #$11
-LE299:  BNE $E2B9
-LE29B:  LDA EqippedItems
-LE29D:  AND #WP_WEAPONS
-LE29F:  CMP #WP_ERDK_SWRD
-LE2A1:  BNE $E2A6
-LE2A3:  JMP $E230
+ChkTrsrErdSword:
+LE297:  CMP #TRSR_ERSD          ;Did player just find a treasure chest containing Erdrick's sword?
+LE299:  BNE ChkTrsrHarp         ;If not, branch to check the next treasure type.
 
-LE2A6:  LDA EqippedItems
-LE2A8:  ORA #WP_ERDK_SWRD
-LE2AA:  STA EqippedItems
+LE29B:  LDA EqippedItems        ;Does the player already have Erdrick's sword?
+LE29D:  AND #WP_WEAPONS         ;
+LE29F:  CMP #WP_ERDK_SWRD       ;
+LE2A1:  BNE +                   ;If not, branch.
+
+GetTreasureChest3:
+LE2A3:  JMP GetTreasureChest1   ;The treasure chest is empty.
+
+LE2A6:* LDA EqippedItems        ;Indicate the player is equipped with Erdrick's sword.
+LE2A8:  ORA #WP_ERDK_SWRD       ;
+LE2AA:  STA EqippedItems        ;
 LE2AC:  JSR GetTreasure         ;($E39A)Check for valid treasure and get it.
 
 LE2AF:  LDA #$21                ;Description byte for Erdrick's sword.
@@ -5979,88 +6053,135 @@ LE2B6:  JMP DoFinalDialog       ;($D242)Fortune smiles upon thee...
 
 ;----------------------------------------------------------------------------------------------------
 
-LE2B9:  CMP #$0D
-LE2BB:  BNE $E2DB
+ChkTrsrHarp:
+LE2B9:  CMP #TRSR_HARP          ;Did player just get chest with the harp, staff or rainbow drop?
+LE2BB:  BNE ChkTrsrStones       ;If not, branch to check the next treasure type.
 
-LE2BD:  LDA #ITM_SLVR_HARP
+LE2BD:  LDA #ITM_SLVR_HARP      ;Check if player has the silver harp.
 LE2BF:  JSR CheckForInvItem     ;($E055)Check if item is already in inventory.
-LE2C2:  CMP #ITM_NOT_FOUND
-LE2C4:  BNE $E2A3
 
-LE2C6:  LDA #ITM_STFF_RAIN
+LE2C2:  CMP #ITM_NOT_FOUND      ;Does player have the silver harp?
+LE2C4:  BNE GetTreasureChest3   ;if so, branch got get empty treasure chest.
+
+LE2C6:  LDA #ITM_STFF_RAIN      ;Check if the player has the staff of rain.
 LE2C8:  JSR CheckForInvItem     ;($E055)Check if item is already in inventory.
-LE2CB:  CMP #ITM_NOT_FOUND
-LE2CD:  BNE $E2A3
 
-LE2CF:  LDA #ITM_RNBW_DROP
+LE2CB:  CMP #ITM_NOT_FOUND      ;Does the player have the staff of rain?
+LE2CD:  BNE GetTreasureChest3   ;if so, branch got get empty treasure chest.
+
+ChkRnbwDrop:
+LE2CF:  LDA #ITM_RNBW_DROP      ;Check if the player has the rainbow drop.
 LE2D1:  JSR CheckForInvItem     ;($E055)Check if item is already in inventory.
-LE2D4:  CMP #ITM_NOT_FOUND
-LE2D6:  BNE $E2A3
 
-LE2D8:  JMP $E269
+LE2D4:  CMP #ITM_NOT_FOUND      ;Does the player have the rainbow drop?
+LE2D6:  BNE GetTreasureChest3   ;if so, branch got get empty treasure chest.
 
-LE2DB:  CMP #$0F
-LE2DD:  BNE $E2EA
-LE2DF:  LDA #ITM_STNS_SNLGHT
+LE2D8:  JMP SetTrsrDescByte     ;Display a message to player about getting the silver harp.
+
+;----------------------------------------------------------------------------------------------------
+
+ChkTrsrStones:
+LE2DB:  CMP #TRSR_SUN           ;Did player just get chest with the stones of sunlight?
+LE2DD:  BNE ChkTrsrNonGold      ;If not, branch to check the next treasure type.
+
+LE2DF:  LDA #ITM_STNS_SNLGHT    ;Check if player already has the stones of sunlight.
 LE2E1:  JSR CheckForInvItem     ;($E055)Check if item is already in inventory.
-LE2E4:  CMP #ITM_NOT_FOUND
-LE2E6:  BNE $E2A3
 
-LE2E8:  BEQ $E2CF
+LE2E4:  CMP #ITM_NOT_FOUND      ;Does the player have the stones of sunlight?
+LE2E6:  BNE GetTreasureChest3   ;if so, branch got get empty treasure chest.
 
-LE2EA:  CMP #$11
-LE2EC:  BCS $E2F1
-LE2EE:  JMP $E269
+LE2E8:  BEQ ChkRnbwDrop         ;Branch always to check for the rainbow drop.
 
-LE2F1:  CMP #$12
-LE2F3:  BNE $E303
-LE2F5:  LDA #$0F
-LE2F7:  STA $3E
-LE2F9:  LDA #$05
-LE2FB:  STA $00
-LE2FD:  LDA #$00
-LE2FF:  STA $01
+;----------------------------------------------------------------------------------------------------
+
+ChkTrsrNonGold:
+LE2EA:  CMP #TRSR_ERSD          ;Did player get a non-gold treasure not already checked for?
+LE2EC:  BCS ChkTrsrGold1        ;If not, branch to check for a gold based treasure.
+
+LE2EE:  JMP SetTrsrDescByte     ;Branch always to get the treasure and inform the player.
+
+;----------------------------------------------------------------------------------------------------
+
+ChkTrsrGold1:
+LE2F1:  CMP #TRSR_GLD1          ;Did player just get a treasure chest with gold 1 treasure?
+LE2F3:  BNE ChkTrsrGold2        ;If not, branch to check for gold 2 treasure.
+
+LE2F5:  LDA #$0F                ;Max 15 gold randomly added to treasure.
+LE2F7:  STA RndGoldBits         ;
+
+LE2F9:  LDA #$05                ;
+LE2FB:  STA TrsrGoldLB          ;Base gold amount of treasure is 5.
+LE2FD:  LDA #$00                ;
+LE2FF:  STA TrsrGoldUB          ;
+
 LE301:  BEQ GetTrsrGold         ;($E365)Calculate treasure gold received.
 
-LE303:  CMP #$13
-LE305:  BNE $E315
-LE307:  LDA #$07
-LE309:  STA $3E
-LE30B:  LDA #$06
-LE30D:  STA $00
-LE30F:  LDA #$00
-LE311:  STA $01
+;----------------------------------------------------------------------------------------------------
+
+ChkTrsrGold2:
+LE303:  CMP #TRSR_GLD2          ;Did player just get a treasure chest with gold 2 treasure?
+LE305:  BNE ChkTrsrGold3        ;If not, branch to check for gold 3 treasure.
+
+LE307:  LDA #$07                ;Max 7 gold randomly added to treasure.
+LE309:  STA RndGoldBits         ;
+
+LE30B:  LDA #$06                ;
+LE30D:  STA TrsrGoldLB          ;Base gold amount of treasure is 6.
+LE30F:  LDA #$00                ;
+LE311:  STA TrsrGoldUB          ;
+
 LE313:  BEQ GetTrsrGold         ;($E365)Calculate treasure gold received.
 
-LE315:  CMP #$14
-LE317:  BNE $E327
-LE319:  LDA #$07
-LE31B:  STA $3E
-LE31D:  LDA #$0A
-LE31F:  STA $00
-LE321:  LDA #$00
-LE323:  STA $01
+;----------------------------------------------------------------------------------------------------
+
+ChkTrsrGold3:
+LE315:  CMP #TRSR_GLD3          ;Did player just get a treasure chest with gold 3 treasure?
+LE317:  BNE ChkTrsrGold4        ;If not, branch to check for gold 4 treasure.
+
+LE319:  LDA #$07                ;Max 7 gold randomly added to treasure.
+LE31B:  STA RndGoldBits         ;
+
+LE31D:  LDA #$0A                ;
+LE31F:  STA TrsrGoldLB          ;Base gold amount of treasure is 10.
+LE321:  LDA #$00                ;
+LE323:  STA TrsrGoldUB          ;
+
 LE325:  BEQ GetTrsrGold         ;($E365)Calculate treasure gold received.
 
-LE327:  CMP #$15
-LE329:  BNE $E339
-LE32B:  LDA #$FF
-LE32D:  STA $3E
-LE32F:  LDA #$F4
-LE331:  STA $00
-LE333:  LDA #$01
-LE335:  STA $01
+;----------------------------------------------------------------------------------------------------
+
+ChkTrsrGold4:
+LE327:  CMP #TRSR_GLD4          ;Did player just get a treasure chest with gold 4 treasure?
+LE329:  BNE ChkTrsrGold5        ;If not, branch to check for gold 5 treasure.
+
+LE32B:  LDA #$FF                ;Max 255 gold randomly added to treasure.
+LE32D:  STA RndGoldBits         ;
+
+LE32F:  LDA #$F4                ;
+LE331:  STA TrsrGoldLB          ;Base gold amount of treasure is 500.
+LE333:  LDA #$01                ;
+LE335:  STA TrsrGoldUB          ;
+
 LE337:  BNE GetTrsrGold         ;($E365)Calculate treasure gold received.
 
-LE339:  CMP #$16
-LE33B:  BNE $E349
-LE33D:  LDA #$00
-LE33F:  STA $3E
-LE341:  STA $01
-LE343:  LDA #$78
-LE345:  STA $00
+;----------------------------------------------------------------------------------------------------
+
+ChkTrsrGold5:
+LE339:  CMP #TRSR_GLD5          ;Did player just get a treasure chest with gold 5 treasure?
+LE33B:  BNE ChkTrsrErdTablet    ;If not, branch to get Erdrick's tablet(only remianing treasure).
+
+LE33D:  LDA #$00                ;No random amount added to treasure.
+LE33F:  STA RndGoldBits         ;
+
+LE341:  STA TrsrGoldUB          ;
+LE343:  LDA #$78                ;Base gold amount of treasure is 120.
+LE345:  STA TrsrGoldLB          ;
+
 LE347:  BNE GetTrsrGold         ;($E365)Calculate treasure gold received.
 
+;----------------------------------------------------------------------------------------------------
+
+ChkTrsrErdTablet:
 LE349:  JSR GetTreasure         ;($E39A)Check for valid treasure and get it.
 
 LE34C:  LDX #$00                ;Only thing left is Erdrick's tablet.
@@ -6081,29 +6202,35 @@ LE360:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 ErdrkTabletTbl:
 LE363:  .byte $19, $FA          ;Description index for Erdrick's tablet.
 
+;----------------------------------------------------------------------------------------------------
+
 GetTrsrGold:
 LE365:  JSR UpdateRandNum       ;($C55B)Get random number.
-LE368:  LDA RandNumUB
-LE36A:  AND $3E
-LE36C:  CLC
-LE36D:  ADC $00
-LE36F:  STA $00
-LE371:  LDA $01
-LE373:  ADC #$00
-LE375:  STA $01
-LE377:  JSR GetTreasure         ;($E39A)Check for valid treasure and get it.
-LE37A:  LDA GoldLB
-LE37C:  CLC
-LE37D:  ADC $00
-LE37F:  STA GoldLB
-LE381:  LDA GoldUB
-LE383:  ADC $01
-LE385:  STA GoldUB
-LE387:  BCC $E38F
-LE389:  LDA #$FF
-LE38B:  STA GoldLB
-LE38D:  STA GoldUB
+LE368:  LDA RandNumUB           ;
+LE36A:  AND RndGoldBits         ;Get random anount of gold to add to treasure gold.
 
+LE36C:  CLC                     ;
+LE36D:  ADC TrsrGoldLB          ;
+LE36F:  STA TrsrGoldLB          ;Add the random amount of gold to the treasure gold.
+LE371:  LDA TrsrGoldUB          ;
+LE373:  ADC #$00                ;
+LE375:  STA TrsrGoldUB          ;
+LE377:  JSR GetTreasure         ;($E39A)Check for valid treasure and get it.
+
+LE37A:  LDA GoldLB              ;
+LE37C:  CLC                     ;
+LE37D:  ADC TrsrGoldLB          ;
+LE37F:  STA GoldLB              ;Add treasure gold to player's gold.
+LE381:  LDA GoldUB              ;
+LE383:  ADC TrsrGoldUB          ;
+LE385:  STA GoldUB              ;Did player's gold overflow?
+LE387:  BCC GainGoldDialog      ;If not, branch to display message and exit.
+
+LE389:  LDA #$FF                ;
+LE38B:  STA GoldLB              ;Set player's gold to max(65535).
+LE38D:  STA GoldUB              ;
+
+GainGoldDialog:
 LE38F:  JSR DoDialogLoBlock     ;($C7CB)Of gold thou hast gained...
 LE392:  .byte $D8               ;TextBlock14, entry 8.
 

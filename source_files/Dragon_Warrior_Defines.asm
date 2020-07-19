@@ -56,6 +56,8 @@
 
 ;-----------------------------------------[Variable Defines]-----------------------------------------
 
+.alias TrsrGoldLB       $00     ;Lower byte of gold received trom treasure chest.
+.alias TrsrGoldUB       $01     ;Upper byte of gold received trom treasure chest.
 .alias NMIStatus        $02     ;#$00 = in NMI(VBlank).
 .alias PPUEntCount      $03     ;Number of entries load from PPU buffer to PPU.
 .alias PPUBufCount      $04     ;Number of bytes to load from PPU buffer to PPU.
@@ -212,6 +214,7 @@
 .alias DivRemainder     $40     ;Divide results, remainder.
 
 .alias EnemyOffset      $3E     ;Offset used to get enemy from EnemyGroupsTbl.
+.alias RndGoldBits      $3E     ;Bitmask for adding random gold to found treasure chests.
 
 .alias SpellFlagsLB     $3E     ;Stores bit flags for first 8 spells.
 .alias SpellFlagsUB     $3F     ;Stores bit flags for last 2 spells in the LSBs.
@@ -532,6 +535,7 @@
 .alias Stack            $0110   ;Through $01FF. CPU stack.
 .alias SpriteRAM        $0200   ;Through $02FF. Sprite DMA RAM.
 .alias BlockRAM         $0300   ;Through $03FF. Multipurpose RAM for buffering.
+.alias TrsrArray        $0320   ;Through $039B. Array of all trasure chest data.
 .alias WinBufRAM        $0400   ;Through $07BF. Window data buffer. 32 by 30 bytes.  
 
 ;--------------------------------------[Hardware defines]--------------------------------------------
@@ -1308,3 +1312,4 @@
 .alias PAL_BLACK        $0F     ;Black background palette value.
 .alias WND_FOREGROUND   $00     ;Window overlaps another window.
 .alias WND_BACKGROUND   $FF     ;Window is a background window.
+.alias INV_FULL         $04     ;Player's inventory is full.
