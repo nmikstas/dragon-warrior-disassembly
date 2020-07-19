@@ -6698,6 +6698,8 @@ LE5F9:  BEQ PlyrFight           ;If so, branch.
 
 LE5FB:  JMP ChkPlyrSpell        ;($E6B6)Check if player attempted to cast a spell.
 
+;----------------------------------------------------------------------------------------------------
+
 PlyrFight:
 LE5FE:  LDA #WND_CMD_CMB        ;Remove combat window from screen.
 LE600:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
@@ -6709,22 +6711,22 @@ LE606:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 LE608:  JSR DoDialogLoBlock     ;($C7CB)Player attacks...
 LE60B:  .byte $E5               ;TextBlock15, entry 5.
 
-LE60C:  LDA $CC
-LE60E:  STA $42
-LE610:  LDA EnBaseDef
-LE613:  STA $43
+LE60C:  LDA DisplayedAttck      ;
+LE60E:  STA AttackStat          ;Save a copy of the player's attack and enemy's defense.
+LE610:  LDA EnBaseDef           ;
+LE613:  STA DefenseStat         ;
 
-LE615:  LDA EnNumber
-LE617:  CMP #EN_DRAGONLORD1
-LE619:  BEQ $E651
+LE615:  LDA EnNumber            ;Is player fighting the dragonlord's first form?
+LE617:  CMP #EN_DRAGONLORD1     ;
+LE619:  BEQ ChkPlyrMiss         ;If so, branch. no excellent moves permitted.
 
-LE61B:  CMP #EN_DRAGONLORD2
-LE61D:  BEQ $E651
+LE61B:  CMP #EN_DRAGONLORD2     ;Is player fighting the dragonlord's final form?
+LE61D:  BEQ ChkPlyrMiss         ;If so, branch. no excellent moves permitted.
 
 LE61F:  JSR UpdateRandNum       ;($C55B)Get random number.
-LE622:  LDA RandNumUB
-LE624:  AND #$1F
-LE626:  BNE $E651
+LE622:  LDA RandNumUB           ;
+LE624:  AND #$1F                ;Did player get an excellent move(1/32 chance)?
+LE626:  BNE ChkPlyrMiss         ;If not, branch to see if player missed.
 
 LE628:  LDA #SFX_EXCLNT_MOVE    ;Excellent move SFX
 LE62A:  BRK                     ;
@@ -6736,22 +6738,25 @@ LE630:  JSR DoDialogHiBlock     ;($C7C5)Excellent move...
 LE633:  .byte $04               ;TextBlock17, entry 4.
 
 LE634:  JSR UpdateRandNum       ;($C55B)Get random number.
-LE637:  LDA RandNumUB
-LE639:  STA MultNum1LB
-LE63B:  LDA DisplayedAttck
-LE63D:  LSR
-LE63E:  STA MultNum2LB
-LE640:  LDA #$00
-LE642:  STA MultNum1UB
-LE644:  STA MultNum2UB
+LE637:  LDA RandNumUB           ;
+LE639:  STA MultNum1LB          ;
+LE63B:  LDA DisplayedAttck      ;
+LE63D:  LSR                     ;A = DisplayedAttack/2 * rnd(255).
+LE63E:  STA MultNum2LB          ;
+LE640:  LDA #$00                ;
+LE642:  STA MultNum1UB          ;
+LE644:  STA MultNum2UB          ;
 LE646:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
-LE649:  LDA DisplayedAttck
-LE64B:  SEC
-LE64C:  SBC MultRsltUB
-LE64E:  JMP $E664
-LE651:  JSR $EFE5
-LE654:  LDA MultNum1LB
-LE656:  BNE $E664
+
+LE649:  LDA DisplayedAttck      ;Total equation for excellent move damage:
+LE64B:  SEC                     ;Damage=DisplayedAttack-(DisplayedAttack/2 * rnd(255))/256.
+LE64C:  SBC MultRsltUB          ;
+LE64E:  JMP SetEnDmg1           ;($E664)Set the amount of damage player did to the enemy.
+
+ChkPlyrMiss:
+LE651:  JSR PlyrCalcHitDmg      ;($EFE5)Calculate the damage player will do to the enemy.
+LE654:  LDA CalcDamage          ;Did player do damage to the enemy?
+LE656:  BNE SetEnDmg1           ;If so, branch.
 
 LE658:  LDA #SFX_MISSED1        ;Player missed 1 SFX.
 LE65A:  BRK                     ;
@@ -6762,22 +6767,28 @@ LE660:  .byte $E7               ;TextBlock15, entry 7.
 
 LE661:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
-LE664:  STA $00
-LE666:  LDA #$00
-LE668:  STA $01
-LE66A:  BIT PlayerFlags
-LE66C:  BVS $E69A
+SetEnDmg1:
+LE664:  STA EnDamage            ;
+LE666:  LDA #$00                ;Set the damage the player will do if enemy does not dodge.
+LE668:  STA DmgNotUsed          ;
+
+LE66A:  BIT PlayerFlags         ;Is the enemy asleep?
+LE66C:  BVS PlyrHitEn           ;If so, branch. Enemy can't dodge.
+
 LE66E:  JSR UpdateRandNum       ;($C55B)Get random number.
-LE671:  LDA RandNumUB
-LE673:  AND #$3F
-LE675:  STA RandNumUB
-LE677:  LDA EnBaseMDef
-LE67A:  AND #$0F
-LE67C:  BEQ $E69A
-LE67E:  SEC
-LE67F:  SBC #$01
-LE681:  CMP RandNumUB
-LE683:  BCC $E69A
+
+LE671:  LDA RandNumUB           ;
+LE673:  AND #$3F                ;Get a random number and keep lower 6 bits(0-63).
+LE675:  STA RandNumUB           ;
+
+LE677:  LDA EnBaseMDef          ;Does enemy have magic defense?
+LE67A:  AND #$0F                ;
+LE67C:  BEQ PlyrHitEn           ;If not, branch. Enemy can't dodge.
+
+LE67E:  SEC                     ;Magic defense will be 0-14.
+LE67F:  SBC #$01                ;If random number is equal or greater than this, player will hit.
+LE681:  CMP RandNumUB           ;
+LE683:  BCC PlyrHitEn           ;22% chance enemy will dodge(14/63).
 
 LE685:  JSR CopyEnUpperBytes    ;($DBE4)Copy enemy upper bytes to description RAM.
 
@@ -6790,39 +6801,45 @@ LE690:  .byte $0A               ;TextBlock17, entry 10.
 
 LE691:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
-LE694:  STA $00
-LE696:  LDA #$00
-LE698:  STA $01
+SetEnDmg2:
+LE694:  STA EnDamage            ;
+LE696:  LDA #$00                ;Set the damage the player will do. Enemy can't dodge spells.
+LE698:  STA DmgNotUsed          ;
 
+PlyrHitEn:
 LE69A:  LDA #SFX_ENMY_HIT       ;Enemy hit SFX.
 LE69C:  BRK                     ;
 LE69D:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LE69F:  LDA RedFlashPalPtr
-LE6A2:  STA $42
-LE6A4:  LDA RedFlashPalPtr+1
-LE6A7:  STA $43
+LE69F:  LDA RedFlashPalPtr      ;
+LE6A2:  STA GenPtr42LB          ;Save a pointer to the red flash palette.
+LE6A4:  LDA RedFlashPalPtr+1    ;
+LE6A7:  STA GenPtr42UB          ;
+
 LE6A9:  JSR PaletteFlash        ;($EF38)Palette flashing effect.
 LE6AC:  JSR CopyEnUpperBytes    ;($DBE4)Copy enemy upper bytes to description RAM.
 
-LE6AF:  JSR DoDialogLoBlock     ;($C7CB)
-LE6B2:  .byte $E6
+LE6AF:  JSR DoDialogLoBlock     ;($C7CB)The enemy's HP has been reduced...
+LE6B2:  .byte $E6               ;TextBlock15, entry 6.
 
-LE6B3:  JMP $E95D
+LE6B3:  JMP UpdateEnHP          ;($E95D)Subtract damage from enemy HP.
+
+;----------------------------------------------------------------------------------------------------
 
 ChkPlyrSpell:
-LE6B6:  CMP #$02
-LE6B8:  BEQ $E6BD
+LE6B6:  CMP #CC_SPELL
+LE6B8:  BEQ PlyrSpell
 
-LE6BA:  JMP $E7A2
+LE6BA:  JMP ChkPlyrItem         ;($E7A2)Check if player is trying to use an item.
 
+PlyrSpell:
 LE6BD:  LDA SpellFlags
 LE6BF:  STA SpellFlagsLB
 LE6C1:  LDA ModsnSpells
 LE6C3:  AND #$03
 LE6C5:  STA SpellFlagsUB
 LE6C7:  ORA SpellFlagsLB
-LE6C9:  BNE $E6D7
+LE6C9:  BNE ShowSpellWnd
 
 LE6CB:  LDA #WND_CMD_CMB        ;Remove command window.
 LE6CD:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
@@ -6832,6 +6849,7 @@ LE6D3:  .byte $31               ;TextBlock4, entry 1.
 
 LE6D4:  JMP StartPlayerTurn     ;($E5CE)It's the player's turn to attack.
 
+ShowSpellWnd:
 LE6D7:  JSR ShowSpells          ;($DB56)Bring up the spell window.
 LE6DA:  CMP #WND_ABORT
 LE6DC:  BNE $E6E6
@@ -6846,10 +6864,13 @@ LE6E9:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
 LE6EC:  PLA
 LE6ED:  CMP #$03
 LE6EF:  BEQ $E6FD
+
 LE6F1:  CMP #$07
 LE6F3:  BEQ $E6FD
+
 LE6F5:  CMP #$05
 LE6F7:  BEQ $E6FD
+
 LE6F9:  CMP #$06
 LE6FB:  BNE $E704
 
@@ -6888,18 +6909,22 @@ LE733:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
 LE736:* CMP #$01
 LE738:  BNE $E751
+
 LE73A:  LDA EnBaseMDef
 LE73D:  LSR
 LE73E:  LSR
 LE73F:  LSR
 LE740:  LSR
 LE741:  JSR $E946
+
 LE744:  JSR UpdateRandNum       ;($C55B)Get random number.
+
 LE747:  LDA RandNumUB
 LE749:  AND #$07
 LE74B:  CLC
 LE74C:  ADC #$05
-LE74E:  JMP $E694
+LE74E:  JMP SetEnDmg2           ;($E694)Set damage enemy will take.
+
 LE751:  CMP #$09
 LE753:  BNE $E76C
 LE755:  LDA EnBaseMDef
@@ -6913,7 +6938,8 @@ LE762:  LDA RandNumUB
 LE764:  AND #$07
 LE766:  CLC
 LE767:  ADC #$3A
-LE769:  JMP $E694
+LE769:  JMP SetEnDmg2           ;($E694)Set damage enemy will take.
+
 LE76C:  CMP #$02
 LE76E:  BNE $E78A
 LE770:  LDA EnBaseAgi
@@ -6944,10 +6970,16 @@ LE79B:  ORA #$20
 LE79D:  STA PlayerFlags
 LE79F:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
-LE7A2:  CMP #$03
+;----------------------------------------------------------------------------------------------------
+
+ChkPlyrItem:
+LE7A2:  CMP #CC_ITEM
 LE7A4:  BEQ $E7A9
-LE7A6:  JMP $E87F
+
+LE7A6:  JMP ChkPlyrRun          ;($E87F)Check if player is trying to run.
+
 LE7A9:  JSR CreateInvList       ;($DF77)Create inventory list in description buffer.
+
 LE7AC:  CPX #$01
 LE7AE:  BNE $E7BC
 LE7B0:  LDA #WND_CMD_CMB
@@ -7039,6 +7071,7 @@ LE82E:  .byte $03, $17          ;($815E)WaitForMusicEnd, bank 1.
 LE830:  LDA EnNumber
 LE832:  CMP #EN_DRAGONLORD2
 LE834:  BEQ $E83B
+
 LE836:  LDA #MSC_REG_FGHT
 LE838:  JMP $E83D
 
@@ -7085,12 +7118,16 @@ LE879:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
 LE87C:  JMP $E6FD
 
-LE87F:  CMP #$01
-LE881:  BEQ $E886
+;----------------------------------------------------------------------------------------------------
 
-LE883:  JMP $E5EF
+ChkPlyrRun:
+LE87F:  CMP #CC_RUN             ;Did player try to run?
+LE881:  BEQ PlyrRun             ;If so, branch.
 
-LE886:  LDA #WND_CMD_CMB
+LE883:  JMP ShowCmbtCmd         ;($E5EF)Show command dialog.
+
+PlyrRun:
+LE886:  LDA #WND_CMD_CMB        ;Remove the command window from the screen.
 LE888:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
 
 LE88B:  LDA #SFX_RUN            ;Run away SFX.
@@ -7100,17 +7137,18 @@ LE88E:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 LE890:  JSR DoDialogLoBlock     ;($C7CB)Player started to run away...
 LE893:  .byte $F5               ;TextBlock16, entry 5.
 
-LE894:  BIT PlayerFlags
-LE896:  BVS $E8A4
+LE894:  BIT PlayerFlags         ;Is the enemy asleep?
+LE896:  BVS RunSuccessful       ;If so, branch for a successful run.
 
-LE898:  JSR CalcNextTurn        ;($EE91)Randomly determine who attacks next.
-LE89B:  BCS $E8A4
+LE898:  JSR TryRun              ;($EE91)Determine if player can run.
+LE89B:  BCS RunSuccessful       ;Was player able to run? If so, branch.
 
 LE89D:  JSR DoDialogLoBlock     ;($C7CB)But was blocked in front...
 LE8A0:  .byte $F6               ;TextBlock16, entry 6.
 
 LE8A1:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
+RunSuccessful:
 LE8A4:  LDX MapNumber           ;Get current map number.
 LE8A6:  LDA ResumeMusicTbl,X    ;Use current map number to resume music.
 LE8A9:  BRK                     ;
@@ -7119,14 +7157,17 @@ LE8AA:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 LE8AC:  LDA EnNumber
 LE8AE:  CMP #EN_DRAGONLORD2
 LE8B0:  BNE $E8D4
+
 LE8B2:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LE8B5:  LDA $9A18
+LE8B5:  LDA BlackPalPtr
 LE8B8:  STA PalPtrLB
-LE8BA:  LDA $9A19
+LE8BA:  LDA BlackPalPtr+1
 LE8BD:  STA PalPtrUB
+
 LE8BF:  LDA #$00
 LE8C1:  STA PalModByte
 LE8C3:  STA EnNumber
+
 LE8C5:  JSR PrepSPPalLoad       ;($C632)Load sprite palette data into PPU buffer.
 LE8C8:  JSR PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
 LE8CB:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
@@ -7136,13 +7177,17 @@ LE8D1:  JMP MapChngNoSound      ;($B091)Change maps with no stairs sound.
 LE8D4:  LDA MapNumber
 LE8D6:  CMP #MAP_HAUKSNESS
 LE8D8:  BNE $E8FB
+
 LE8DA:  LDA CharXPos
 LE8DC:  CMP #$12
 LE8DE:  BNE $E8FB
+
 LE8E0:  LDA CharYPos
 LE8E2:  CMP #$0C
 LE8E4:  BNE $E8FB
+
 LE8E6:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
+
 LE8E9:  DEC CharXPos
 LE8EB:  DEC _CharXPos
 LE8ED:  LDA CharXPixelsLB
@@ -7150,21 +7195,27 @@ LE8EF:  SEC
 LE8F0:  SBC #$10
 LE8F2:  STA CharXPixelsLB
 LE8F4:  BCS $E8F8
+
 LE8F6:  DEC CharXPixelsUB
 LE8F8:  JMP MapChngWithSound    ;($B097)Change maps with stairs sound.
 LE8FB:  LDA MapNumber
 LE8FD:  CMP #MAP_SWAMPCAVE
 LE8FF:  BNE $E928
+
 LE901:  LDA CharXPos
 LE903:  CMP #$04
 LE905:  BNE $E928
+
 LE907:  LDA CharYPos
 LE909:  CMP #$0E
 LE90B:  BNE $E928
+
 LE90D:  LDA StoryFlags
 LE90F:  AND #F_GDRG_DEAD
 LE911:  BNE $E928
+
 LE913:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
+
 LE916:  DEC CharYPos
 LE918:  DEC _CharYPos
 LE91A:  LDA CharYPixelsLB
@@ -7172,42 +7223,53 @@ LE91C:  SEC
 LE91D:  SBC #$10
 LE91F:  STA CharYPixelsLB
 LE921:  BCS $E925
+
 LE923:  DEC CharYPixelsUB
 LE925:  JMP MapChngWithSound    ;($B097)Change maps with stairs sound.
 LE928:  LDA MapNumber
 LE92A:  CMP #MAP_OVERWORLD
 LE92C:  BNE $E940
+
 LE92E:  LDA CharXPos
 LE930:  CMP #$49
 LE932:  BNE $E940
+
 LE934:  LDA CharYPos
 LE936:  CMP #$64
 LE938:  BNE $E940
+
 LE93A:  LDA StoryFlags
 LE93C:  AND #F_GOLEM_DEAD
 LE93E:  BEQ $E913
+
 LE940:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
 LE943:  JMP $EE5A
+
 LE946:  STA $3E
 LE948:  JSR UpdateRandNum       ;($C55B)Get random number.
 LE94B:  LDA RandNumUB
 LE94D:  AND #$0F
 LE94F:  CMP $3E
 LE951:  BCC $E954
+
 LE953:  RTS
 
 LE954:  PLA
 LE955:  PLA
 
-LE956:  JSR DoDialogLoBlock     ;($C7CB)
-LE959:  .byte $EB
+LE956:  JSR DoDialogLoBlock     ;($C7CB)The spell will not work...
+LE959:  .byte $EB               ;TextBlock15, entry 11.
 
 LE95A:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
-LE95D:  LDA EnCurntHP
-LE95F:  SEC
-LE960:  SBC $00
-LE962:  STA EnCurntHP
+;----------------------------------------------------------------------------------------------------
+
+UpdateEnHP:
+LE95D:  LDA EnCurntHP           ;
+LE95F:  SEC                     ;Subtract damage caused by player from the enemy HP.
+LE960:  SBC EnDamage            ;
+LE962:  STA EnCurntHP           ;
+
 LE964:  BCC EnemyDefeated       ;($E96B)Enemy overkill! Branch to end fight.
 LE966:  BEQ EnemyDefeated       ;($E96B)Enemy dead! Branch to end fight.
 LE968:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
@@ -7267,6 +7329,7 @@ LE9AE:  JMP InitFight           ;($E4DF)Load the final fight.
 NotDL1Defeated:
 LE9B1:  CMP #EN_DRAGONLORD2
 LE9B3:  BNE $EA0A
+
 LE9B5:  STA DrgnLrdPal
 LE9B8:  LDA #$02
 LE9BA:  STA CharDirection
@@ -7280,16 +7343,20 @@ LE9C9:  LDA #$06
 LE9CB:  STA $3C
 LE9CD:  LDY #$07
 LE9CF:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
+
 LE9D2:  DEY
 LE9D3:  BNE $E9CF
+
 LE9D5:  LDA PPUAddrLB
 LE9D7:  CLC
 LE9D8:  ADC #$19
 LE9DA:  STA PPUAddrLB
 LE9DC:  BCC $E9E0
+
 LE9DE:  INC PPUAddrUB
 LE9E0:  DEC $3C
 LE9E2:  BNE $E9CD
+
 LE9E4:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LE9E7:  JSR WaitForNMI          ;($FF74)
 
@@ -7600,12 +7667,12 @@ LEBC9:  JSR DoDialogLoBlock     ;($C7CB)The enemy attacks...
 LEBCC:  .byte $F9               ;TextBlock16, entry 9.
 
 LEBCD:  LDA EnBaseAtt           ;Make a copy of enemy's attack stat.
-LEBD0:  STA GenByte42           ;
+LEBD0:  STA AttackStat          ;
 LEBD2:  LDA DisplayedDefns      ;Make a copy of player's defense stat.
-LEBD4:  STA GenByte43           ;
+LEBD4:  STA DefenseStat         ;
 LEBD6:  JSR EnCalcHitDmg        ;($EFF4)Calculate enemy hit damage on player.
 
-LEBD9:  LDA GenByte3C           ;Did enemy do damage to the player?
+LEBD9:  LDA CalcDamage          ;Did enemy do damage to the player?
 LEBDB:  BNE EnHitsPlayer        ;If so, branch to subtract damage from player's HP.
 
 LEBDD:  LDA #SFX_MISSED2        ;Attack missed 2 SFX.
@@ -7968,16 +8035,19 @@ LEE06:  .byte $13
 LEE07:  JSR WaitForBtnRelease   ;($CFE4)Wait for player to release then press joypad buttons.
 LEE0A:  LDA #WND_DIALOG
 LEE0C:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
+
 LEE0F:  LDA #NPC_MOVE
 LEE11:  STA StopNPCMove
 LEE13:  RTS
 
 RedFlashScreen:
 LEE14:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
+
 LEE17:  LDA RedFlashPalPtr
 LEE1A:  STA PalPtrLB
 LEE1C:  LDA RedFlashPalPtr+1
 LEE1F:  STA PalPtrUB
+
 LEE21:  LDA #$00
 LEE23:  STA PalModByte
 LEE25:  JMP PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
@@ -7989,10 +8059,12 @@ LEE28:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LEE2B:  LDA EnNumber
 LEE2D:  CMP #EN_DRAGONLORD2
 LEE2F:  BNE $EE3E
-LEE31:  LDA FnlBsBGPalPtr
+
+LEE31:  LDA FnlNormBGPalPtr
 LEE34:  STA PalPtrLB
-LEE36:  LDA FnlBsBGPalPtr+1
+LEE36:  LDA FnlNormBGPalPtr+1
 LEE39:  STA PalPtrUB
+
 LEE3B:  JMP $EE4D
 
 LEE3E:  LDA OverworldPalPtr
@@ -8044,74 +8116,76 @@ LEE90:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-CalcNextTurn:
+TryRun:
 LEE91:  JSR UpdateRandNum       ;($C55B)Get random number.
-LEE94:  LDA EnNumber
-LEE96:  CMP #EN_STONEMAN
-LEE98:  BCC $EE9F
 
-LEE9A:  LDA RandNumUB
-LEE9C:  JMP CalcNextOdds
+LEE94:  LDA EnNumber            ;Is player running from an Armored Knight, Red Dragon, -->
+LEE96:  CMP #EN_STONEMAN        ;Dragonlord 1 or Dragonlord 2?
+LEE98:  BCC ChkGrDrgnRun        ;If not, branch.
 
-LEE9F:  CMP #EN_GDRAGON
-LEEA1:  BCC $EEAA
+LEE9A:  LDA RandNumUB           ;Load a random number and keep all the bits(0-255).
+LEE9C:  JMP CalcNextOdds        ;
 
-LEEA3:  LDA RandNumUB
-LEEA5:  AND #$7F
-LEEA7:  JMP CalcNextOdds
+ChkGrDrgnRun:
+LEE9F:  CMP #EN_GDRAGON         ;Is player running from a Starwyvern, Wizard, Axe Knight, -->
+LEEA1:  BCC ChkDrollMRun        ;Blue Dragon or Stoneman? If not, branch.
 
-LEEAA:  CMP #EN_DROLLMAGI
-LEEAC:  BCC CalcWhoIsNext
+LEEA3:  LDA RandNumUB           ;
+LEEA5:  AND #$7F                ;Load a random number and keep lower 7 bits(0-127).
+LEEA7:  JMP CalcNextOdds        ;
 
-LEEAE:  LDA RandNumUB
-LEEB0:  AND #$3F
-LEEB2:  STA $3E
+ChkDrollMRun:
+LEEAA:  CMP #EN_DROLLMAGI       ;Is player running from a Wyvern to a Green Dragon?
+LEEAC:  BCC CalcWhoIsNext       ;If not, branch.
+
+LEEAE:  LDA RandNumUB           ;Get a random nuber and keep lower 6 bits.
+LEEB0:  AND #$3F                ;
+LEEB2:  STA MultNum2LB          ;
 LEEB4:  JSR UpdateRandNum       ;($C55B)Get random number.
 
-LEEB7:  LDA RandNumUB
-LEEB9:  AND #$1F
-LEEBB:  ADC $3E
-LEEBD:  JMP CalcNextOdds
+LEEB7:  LDA RandNumUB           ;Get a random number and keep lower 5 bits. Add it to -->
+LEEB9:  AND #$1F                ;previous number to get a range of 0-95.
+LEEBB:  ADC MultNum2LB          ;
+LEEBD:  JMP CalcNextOdds        ;
 
 ;----------------------------------------------------------------------------------------------------
 
 CalcWhoIsNext:
 LEEC0:  JSR UpdateRandNum       ;($C55B)Get random number.
-LEEC3:  LDA RandNumUB
-LEEC5:  AND #$3F
+LEEC3:  LDA RandNumUB           ;
+LEEC5:  AND #$3F                ;Keep only lower 6 bits(0-63).
 
 CalcNextOdds:
-LEEC7:  STA MultNum1LB
-LEEC9:  LDA EnBaseDef
-LEECC:  STA MultNum2LB
-LEECE:  LDA #$00
-LEED0:  STA MultNum1UB
-LEED2:  STA MultNum2UB
+LEEC7:  STA MultNum1LB          ;Store random number as a multiplier.
+LEEC9:  LDA EnBaseDef           ;
+LEECC:  STA MultNum2LB          ;
+LEECE:  LDA #$00                ;Multiply the random number by the enemy's defense.
+LEED0:  STA MultNum1UB          ;
+LEED2:  STA MultNum2UB          ;
 LEED4:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
 
-LEED7:  LDA MultRsltLB
-LEED9:  STA $42
-LEEDB:  LDA MultRsltUB
-LEEDD:  STA $43
+LEED7:  LDA MultRsltLB          ;
+LEED9:  STA GenWord42LB         ;Save the results for later.
+LEEDB:  LDA MultRsltUB          ;
+LEEDD:  STA GenWord42UB         ;
 
 LEEDF:  JSR UpdateRandNum       ;($C55B)Get random number.
 
-LEEE2:  LDA RandNumUB
-LEEE4:  STA MultNum1LB
-LEEE6:  LDA DisplayedAgi
-LEEE8:  STA MultNum2LB
-LEEEA:  LDA #$00
-LEEEC:  STA MultNum1UB
-LEEEE:  STA MultNum2UB
+LEEE2:  LDA RandNumUB           ;Store random number as a multiplier.
+LEEE4:  STA MultNum1LB          ;
+LEEE6:  LDA DisplayedAgi        ;
+LEEE8:  STA MultNum2LB          ;Multiply the random number by the player's agility.
+LEEEA:  LDA #$00                ;
+LEEEC:  STA MultNum1UB          ;
+LEEEE:  STA MultNum2UB          ;
 LEEF0:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
 
-LEEF3:  LDA MultRsltLB
-LEEF5:  SEC
-LEEF6:  SBC $42
-
-LEEF8:  LDA MultRsltUB
-LEEFA:  SBC $43
-LEEFC:  RTS
+LEEF3:  LDA MultRsltLB          ;
+LEEF5:  SEC                     ;Subtract the enemy's defense*rnd from player's agility*rnd. 
+LEEF6:  SBC GenWord42LB         ;If number comes out negative, that's bad for the -->
+LEEF8:  LDA MultRsltUB          ;player(carry clear). The higher the enemy's defense, the -->
+LEEFA:  SBC GenWord42UB         ;harder it is for the player to come out on top.
+LEEFC:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -8159,76 +8233,98 @@ LEF37:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 PaletteFlash:
-LEF38:  LDA #$05
-LEF3A:  STA $DE
-LEF3C:  LDA $42
-LEF3E:  STA PalPtrLB
-LEF40:  LDA $43
-LEF42:  STA PalPtrUB
+LEF38:  LDA #$05                ;Prepare to flash palette 5 times.
+LEF3A:  STA PalFlashCntr        ;
+
+PalFlashLoop:
+LEF3C:  LDA GenPtr42LB          ;
+LEF3E:  STA PalPtrLB            ;Copy red flash palette pointer to the working palette pointer.
+LEF40:  LDA GenPtr42UB          ;
+LEF42:  STA PalPtrUB            ;
+
 LEF44:  JSR WaitForNMI          ;($FF74)
 LEF47:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LEF4A:  JSR WaitForNMI          ;($FF74)
-LEF4D:  LDA #$00
-LEF4F:  STA PalModByte
+
+LEF4D:  LDA #$00                ;Disable fade-in/fade-out.
+LEF4F:  STA PalModByte          ;
+
 LEF51:  JSR PrepSPPalLoad       ;($C632)Load sprite palette data into PPU buffer.
-LEF54:  LDA EnNumber
-LEF56:  CMP #EN_DRAGONLORD2
-LEF58:  BNE $EF67
-LEF5A:  LDA $EF9B
-LEF5D:  STA PalPtrLB
-LEF5F:  LDA $EF9C
-LEF62:  STA PalPtrUB
+
+LEF54:  LDA EnNumber            ;Is the player fighting the end boss?
+LEF56:  CMP #EN_DRAGONLORD2     ;
+LEF58:  BNE +                   ;If not, branch.
+
+LEF5A:  LDA FnlRedBGPalPtr      ;
+LEF5D:  STA PalPtrLB            ;Red flash the background palette for the end boss.
+LEF5F:  LDA FnlRedBGPalPtr+1    ;
+LEF62:  STA PalPtrUB            ;
+
 LEF64:  JSR PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
-LEF67:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
+
+LEF67:* JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LEF6A:  JSR WaitForNMI          ;($FF74)
-LEF6D:  LDA $42
-LEF6F:  PHA
-LEF70:  LDA $43
-LEF72:  PHA
+
+LEF6D:  LDA GenPtr42LB          ;
+LEF6F:  PHA                     ;Save pointer to red flash palette on stack.
+LEF70:  LDA GenPtr42UB          ;
+LEF72:  PHA                     ;
+
 LEF73:  JSR LoadEnPalette       ;($EEFD)Load enemy palette data.
-LEF76:  PLA
-LEF77:  STA $43
-LEF79:  PLA
-LEF7A:  STA $42
-LEF7C:  LDA #$00
-LEF7E:  STA PalModByte
+
+LEF76:  PLA                     ;
+LEF77:  STA GenPtr42UB          ;Restore pointer to red flash palette from stack.
+LEF79:  PLA                     ;
+LEF7A:  STA GenPtr42LB          ;
+
+LEF7C:  LDA #$00                ;Disable fade-in/fade-out.
+LEF7E:  STA PalModByte          ;
+
 LEF80:  JSR PrepSPPalLoad       ;($C632)Load sprite palette data into PPU buffer.
-LEF83:  LDA EnNumber
-LEF85:  CMP #EN_DRAGONLORD2
-LEF87:  BNE $EF96
-LEF89:  LDA $EF9D
-LEF8C:  STA PalPtrLB
-LEF8E:  LDA $EF9E
-LEF91:  STA PalPtrUB
+
+LEF83:  LDA EnNumber            ;Is the player fighting the end boss?
+LEF85:  CMP #EN_DRAGONLORD2     ;
+LEF87:  BNE +                   ;If not, branch.
+
+LEF89:  LDA FnlNormBGPalPtr     ;
+LEF8C:  STA PalPtrLB            ;Restore the normal background palette for the end boss.
+LEF8E:  LDA FnlNormBGPalPtr+1   ;
+LEF91:  STA PalPtrUB            ;
+
 LEF93:  JSR PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
-LEF96:  DEC $DE
-LEF98:  BNE $EF3C
-LEF9A:  RTS
 
-EnemyBGPalPtr:
-LEF9B:  .word EnemyBGPal        ;Pointer to BG palette for regular enemies.
+LEF96:* DEC PalFlashCntr        ;Does the palette need to be flashed again?
+LEF98:  BNE PalFlashLoop        ;
+LEF9A:  RTS                     ;If so, branch to flash again.
 
-FnlBsBGPalPtr:
-LEF9D:  .word FinalBossBGPal    ;Pointer to BG plaette for end boss.
+FnlRedBGPalPtr:
+LEF9B:  .word FinalRedBGPal     ;Pointer to BG palette red flash for end boss.
 
-EnemyBGPal:
+FnlNormBGPalPtr:
+LEF9D:  .word FinalNormBGPal    ;Pointer to BG plaette normal colors for end boss.
+
+;The following palettes are for the end boss. The background is supposed to flash red when
+;the end boss is hit. The only problem is there is no background on the final boss. Maybe
+;at one time there was a background but it was cut from the final game.
+
+FinalRedBGPal:
 LEF9F:  .byte $30, $0E, $30, $16, $16, $16, $16, $16, $16, $16, $16, $16
 
-FinalBossBGPal:
+FinalNormBGPal:
 LEFAB:  .byte $30, $0E, $30, $17, $15, $30, $21, $22, $27, $0F, $27, $27
 
 ;----------------------------------------------------------------------------------------------------
 
 CheckEnRun:
-LEFB7:  LDA DisplayedStr
-LEFB9:  LSR
-LEFBA:  CMP EnBaseAtt
-LEFBD:  BCC $EFE4
+LEFB7:  LDA DisplayedStr        ;Is player's strength at least double the enemy's attack?
+LEFB9:  LSR                     ;
+LEFBA:  CMP EnBaseAtt           ;
+LEFBD:  BCC EnRunExit           ;If not, branch. Enemy will not run.
 
 LEFBF:  JSR UpdateRandNum       ;($C55B)Get random number.
-LEFC2:  LDA RandNumUB
-LEFC4:  AND #$03
-LEFC6:  BNE $EFE4
+LEFC2:  LDA RandNumUB           ;
+LEFC4:  AND #$03                ;Player is very strong. 25% chance enemy will run.
+LEFC6:  BNE EnRunExit           ;
 
 LEFC8:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
 
@@ -8246,73 +8342,85 @@ LEFD9:  LDA ResumeMusicTbl,X    ;Use current map number to resume music.
 LEFDC:  BRK                     ;
 LEFDD:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LEFDF:  PLA
-LEFE0:  PLA
+LEFDF:  PLA                     ;Pull return address from stack and exit to map.
+LEFE0:  PLA                     ;
 LEFE1:  JMP ExitFight           ;($EE54)Return to map after fight.
-LEFE4:  RTS
+
+EnRunExit:
+LEFE4:  RTS                     ;Enemy did not run away. Return.
 
 ;----------------------------------------------------------------------------------------------------
 
-LEFE5:  LSR $43
-LEFE7:  LDA $42
-LEFE9:  SEC
-LEFEA:  SBC $43
-LEFEC:  BCC $F026
-LEFEE:  CMP #$02
-LEFF0:  BCS $F030
-LEFF2:  BCC $F026
+PlyrCalcHitDmg:
+LEFE5:  LSR DefenseStat         ;
+LEFE7:  LDA AttackStat          ;
+LEFE9:  SEC                     ; A = AttackStat - DefenseStat/2. 
+LEFEA:  SBC DefenseStat         ;
+LEFEC:  BCC PlyrWeakAttack      ;
+
+LEFEE:  CMP #$02                ;Did A go negative or is only 1 greater than enemy defense/2?
+LEFF0:  BCS NormalAttack        ;If so, branch to do a weak attack. enemy is strong!
+LEFF2:  BCC PlyrWeakAttack      ;Else branch to do a normal attack.
 
 EnCalcHitDmg:
-LEFF4:  LSR $43
-LEFF6:  LDA $42
-LEFF8:  LSR
-LEFF9:  STA MultNum2LB
-LEFFB:  INC MultNum2LB
-LEFFD:  LDA $42
-LEFFF:  SEC
-LF000:  SBC $43
-LF002:  BCC $F008
+LEFF4:  LSR DefenseStat         ;
+LEFF6:  LDA AttackStat          ;
+LEFF8:  LSR                     ;A = AttackStat - DefenseStat/2.
+LEFF9:  STA MultNum2LB          ;
+LEFFB:  INC MultNum2LB          ;
+LEFFD:  LDA AttackStat          ;Save a compy of AttackStat/2.
+LEFFF:  SEC                     ;
+LF000:  SBC DefenseStat         ;
+LF002:  BCC +                   ;Enemy will do a weak attack if player is much stronger.
 
-LF004:  CMP MultNum2LB
-LF006:  BCS $F030
+LF004:  CMP MultNum2LB          ;Is enemy AttackStat more than 2X player DefenseStat?
+LF006:  BCS NormalAttack        ;If so, branch to do normal attack damage.
 
-LF008:  JSR UpdateRandNum       ;($C55B)Get random number.
-LF00B:  LDA RandNumUB
-LF00D:  STA MultNum1LB
-LF00F:  LDA #$00
-LF011:  STA MultNum1UB
-LF013:  STA MultNum2UB
+EnWeakAttack:
+LF008:* JSR UpdateRandNum       ;($C55B)Get random number.
+LF00B:  LDA RandNumUB           ;
+LF00D:  STA MultNum1LB          ;
+LF00F:  LDA #$00                ;A = A * rnd(255).
+LF011:  STA MultNum1UB          ;
+LF013:  STA MultNum2UB          ;
 LF015:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
-LF018:  LDA MultRsltUB
-LF01A:  CLC
-LF01B:  ADC #$02
-LF01D:  STA DivNum1LB
-LF01F:  LDA #$03
-LF021:  STA DivNum2
-LF023:  JMP ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
-LF026:  JSR UpdateRandNum       ;($C55B)Get random number.
-LF029:  LDA RandNumUB
-LF02B:  AND #$01
-LF02D:  STA DivQuotient
-LF02F:  RTS
 
-LF030:  STA $42
-LF032:  STA MultNum2LB
-LF034:  INC MultNum2LB
+LF018:  LDA MultRsltUB          ;
+LF01A:  CLC                     ;A = (A/256+2)/3.
+LF01B:  ADC #$02                ;
+LF01D:  STA DivNum1LB           ;Total equation for weak enemy attack:
+LF01F:  LDA #$03                ;Damage=(((AttackStat-DefenseStat/2)*rnd(255))/256+2)/3.
+LF021:  STA DivNum2             ;
+LF023:  JMP ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
+
+PlyrWeakAttack:
+LF026:  JSR UpdateRandNum       ;($C55B)Get random number.
+
+LF029:  LDA RandNumUB           ;
+LF02B:  AND #$01                ;Player is too weak to fight this enemy. 50% chance -->
+LF02D:  STA CalcDamage          ;of doing 1 point of damage or 50% chance of missing.
+LF02F:  RTS                     ;
+
+NormalAttack:
+LF030:  STA BaseAttack          ;
+LF032:  STA MultNum2LB          ;A = A+1.
+LF034:  INC MultNum2LB          ;
 LF036:  JSR UpdateRandNum       ;($C55B)Get random number.
-LF039:  LDA RandNumUB
-LF03B:  STA MultNum1LB
-LF03D:  LDA #$00
-LF03F:  STA MultNum1UB
-LF041:  STA MultNum2UB
+
+LF039:  LDA RandNumUB           ;
+LF03B:  STA MultNum1LB          ;
+LF03D:  LDA #$00                ;A = rand(0-255) * A.
+LF03F:  STA MultNum1UB          ;
+LF041:  STA MultNum2UB          ;
 LF043:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
-LF046:  LDA MultRsltUB
-LF048:  CLC
-LF049:  ADC $42
-LF04B:  ROR
-LF04C:  LSR
-LF04D:  STA $3C
-LF04F:  RTS
+
+LF046:  LDA MultRsltUB          ;A = (A/256 + BaseAttack) / 4.
+LF048:  CLC                     ;
+LF049:  ADC BaseAttack          ;
+LF04B:  ROR                     ;Total equation for normal attack damage:
+LF04C:  LSR                     ;Damage=(((AttackStat+1-DefenseStat/2)*rnd(255))/256+BaseAttack)/4.
+LF04D:  STA CalcDamage          ;
+LF04F:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 

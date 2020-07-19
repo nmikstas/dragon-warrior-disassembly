@@ -59,6 +59,9 @@
 
 ;-----------------------------------------[Variable Defines]-----------------------------------------
 
+.alias EnDamage         $00     ;Amount of damage player caused to the enemy. Subtracted from HP.
+.alias DmgNotUsed       $01     ;Always set to 0.
+
 .alias TrsrGoldLB       $00     ;Lower byte of gold received trom treasure chest.
 .alias TrsrGoldUB       $01     ;Upper byte of gold received trom treasure chest.
 .alias NMIStatus        $02     ;#$00 = in NMI(VBlank).
@@ -171,6 +174,7 @@
 
 .alias BufByteCntr      $3C     ;Buffer byte load counter.
 .alias _EnNumber        $3C     ;Working copy of enemy number.
+.alias CalcDamage       $3C     ;Calculated damage to player/enemy.
 
 .alias CharYScrPos      $3C     ;Character sprite Y position on the screen.
 .alias CharXScrPos      $3D     ;Character sprite X position on the screen.
@@ -268,6 +272,10 @@
 
 .alias _TargetX         $42     ;Target block, X position.
 .alias _TargetY         $43     ;Target block, Y position.
+
+.alias BaseAttack       $42     ;Base calculation of attack damage.
+.alias AttackStat       $42     ;Copy of player/enemy attack stat.
+.alias DefenseStat      $43     ;Copy of player/enemy defense stat.
 
 .alias ThisNPCXPos      $42     ;Copy of current NPCs X block position on map.
 .alias ThisNPCYPos      $43     ;Copy of current NPCs y block position on map.
@@ -452,6 +460,7 @@
 
 .alias DialogTemp       $DE     ;Dialog byte used for finding correct dialog.
 .alias DescTemp         $DE     ;Temporary storage of item description byte.
+.alias PalFlashCntr     $DE     ;Counter used when flashing palette when enemy hit.
 .alias PlayerFlags      $DF     ;Additional player flags.
                                 ;%00000001-Carrying Gwaelin.
                                 ;%00000010-Gwaelin returned.
@@ -1292,6 +1301,9 @@
 
 ;Combat command window commands.
 .alias CC_FIGHT         $00     ;Fight.
+.alias CC_RUN           $01     ;Run.
+.alias CC_SPELL         $02     ;Spell.
+.alias CC_ITEM          $03     ;Item.
 
 ;Map types.
 .alias MAP_OVRWLD       $00     ;Overworld map.
