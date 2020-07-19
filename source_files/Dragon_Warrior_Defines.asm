@@ -546,6 +546,7 @@
 .alias SpriteRAM        $0200   ;Through $02FF. Sprite DMA RAM.
 .alias BlockRAM         $0300   ;Through $03FF. Multipurpose RAM for buffering.
 .alias TrsrArray        $0320   ;Through $039B. Array of all trasure chest data.
+.alias EnPalData        $03A0   ;Through $03AB. Palette data for current enemy.
 .alias WinBufRAM        $0400   ;Through $07BF. Window data buffer. 32 by 30 bytes.  
 
 ;--------------------------------------[Hardware defines]--------------------------------------------
@@ -1288,6 +1289,9 @@
 .alias NCC_ITEM         $05     ;Item.
 .alias NCC_DOOR         $06     ;Door.
 .alias NCC_TAKE         $07     ;Take.
+
+;Combat command window commands.
+.alias CC_FIGHT         $00     ;Fight.
 
 ;Map types.
 .alias MAP_OVRWLD       $00     ;Overworld map.

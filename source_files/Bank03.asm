@@ -6606,44 +6606,48 @@ LE57C:  JSR LoadEnemyGFX        ;($E44F)Display enemy sprites.
 LE57F:  JSR Dowindow            ;($C6F0)display on-screen window.
 LE582:  .byte WND_DIALOG        ;Dialog window.
 
-LE583:  LDA EnNumber
-LE585:  CMP #EN_DRAGONLORD2
-LE587:  BNE $E592
+LE583:  LDA EnNumber            ;Is this the end boss?
+LE585:  CMP #EN_DRAGONLORD2     ;
+LE587:  BNE EnAppearText        ;If not, branch to display standard enemy approaching text.
 
 LE589:  JSR DoDialogHiBlock     ;($C7C5)The dragonlord reveals his true self...
 LE58C:  .byte $19               ;TextBlock18, entry 9.
 
-LE58D:  LDA EnBaseHP
-LE590:  BNE $E5BA
+LE58D:  LDA EnBaseHP            ;Dragonlord's HP is set to a constant value every time.
+LE590:  BNE SetEnHP             ;Branch always.
 
+EnAppearText:
 LE592:  JSR CopyEnUpperBytes    ;($DBE4)Copy enemy upper bytes to description RAM.
 
 LE595:  JSR DoDialogLoBlock     ;($C7CB)An enemy draws near...
 LE598:  .byte $E2               ;TextBlock15, entry 2.
 
 ModEnHitPoints:
-LE599:  LDA EnBaseHP
-LE59C:  STA MultNum2LB
+LE599:  LDA EnBaseHP            ;Prepare to multiply enemy HP by random number(0 to 255).
+LE59C:  STA MultNum2LB          ;
 LE59E:  JSR UpdateRandNum       ;($C55B)Get random number.
 
-LE5A1:  LDA RandNumUB
-LE5A3:  STA MultNum1LB
-LE5A5:  LDA #$00
-LE5A7:  STA MultNum1UB
-LE5A9:  STA MultNum2UB
+LE5A1:  LDA RandNumUB           ;
+LE5A3:  STA MultNum1LB          ;
+LE5A5:  LDA #$00                ;Multiply enemy HP by random byte.
+LE5A7:  STA MultNum1UB          ;
+LE5A9:  STA MultNum2UB          ;
 LE5AB:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
 
-LE5AE:  LDA MultRsltUB
-LE5B0:  LSR
-LE5B1:  LSR
-LE5B2:  STA MultRsltLB
-LE5B4:  LDA EnBaseHP
-LE5B7:  SEC
-LE5B8:  SBC MultRsltLB
+LE5AE:  LDA MultRsltUB          ;
+LE5B0:  LSR                     ;Take upper byte of result and divide it by 4.
+LE5B1:  LSR                     ;
+LE5B2:  STA MultRsltLB          ;
 
-LE5BA:  STA EnCurntHP
+LE5B4:  LDA EnBaseHP            ;
+LE5B7:  SEC                     ;Subtract resulting upper byte from enemy HP.
+LE5B8:  SBC MultRsltLB          ;
+
+SetEnHP:
+LE5BA:  STA EnCurntHP           ;Store final enemy HP calculation.
+
 LE5BC:  JSR CheckEnRun          ;($EFB7)Check if enemy is going to run away.
-LE5BF:  JSR $EEC0
+LE5BF:  JSR CalcWhoIsNext       ;($EEC0)Randomly calculate who attacks next.
 
 LE5C2:  BCS StartPlayerTurn     ;($E5CE)It's the player's turn to attack.
 
@@ -6660,12 +6664,13 @@ StartPlayerTurn:
 LE5CE:  JSR Dowindow            ;($C6F0)display on-screen window.
 LE5D1:  .byte WND_POPUP         ;Pop-up window.
 
-LE5D2:  LDA PlayerFlags
-LE5D4:  BPL $E5EF
+LE5D2:  LDA PlayerFlags         ;Is player asleep?
+LE5D4:  BPL ShowCmbtCmd         ;If not, branch.
+
 LE5D6:  JSR UpdateRandNum       ;($C55B)Get random number.
-LE5D9:  LDA RandNumUB
-LE5DB:  LSR
-LE5DC:  BCS PlayerAwakes
+LE5D9:  LDA RandNumUB           ;
+LE5DB:  LSR                     ;Player is asleep. 50% chance they wake up.
+LE5DC:  BCS PlayerAwakes        ;Did player wake up? If so, branch.
 
 PlayerAsleepDialog:
 LE5DE:  JSR DoDialogHiBlock     ;($C7C5)Thou art still asleep...
@@ -6681,35 +6686,41 @@ LE5E9:  STA PlayerFlags         ;
 LE5EB:  JSR DoDialogHiBlock     ;($C7C5)Player awakes...
 LE5EE:  .byte $08               ;TextBlock17, entry 8.
 
+ShowCmbtCmd:
 LE5EF:  JSR DoDialogLoBlock     ;($C7CB)Command?...
 LE5F2:  .byte $E8               ;TextBlock15, entry 8.
 
 LE5F3:  JSR Dowindow            ;($C6F0)display on-screen window.
 LE5F6:  .byte WND_CMD_CMB       ;Combat command window.
 
-LE5F7:  LDA SpellToCast
-LE5F9:  BEQ $E5FE
-LE5FB:  JMP $E6B6
+LE5F7:  LDA WndSelResults       ;Is player choosing to attack enemy?
+LE5F9:  BEQ PlyrFight           ;If so, branch.
 
-LE5FE:  LDA #WND_CMD_CMB
+LE5FB:  JMP ChkPlyrSpell        ;($E6B6)Check if player attempted to cast a spell.
+
+PlyrFight:
+LE5FE:  LDA #WND_CMD_CMB        ;Remove combat window from screen.
 LE600:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
 
 LE603:  LDA #SFX_ATTACK         ;Player attack SFX.
 LE605:  BRK                     ;
 LE606:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LE608:  JSR DoDialogLoBlock     ;($C7CB)
-LE60B:  .byte $E5 
+LE608:  JSR DoDialogLoBlock     ;($C7CB)Player attacks...
+LE60B:  .byte $E5               ;TextBlock15, entry 5.
 
 LE60C:  LDA $CC
 LE60E:  STA $42
 LE610:  LDA EnBaseDef
 LE613:  STA $43
+
 LE615:  LDA EnNumber
 LE617:  CMP #EN_DRAGONLORD1
 LE619:  BEQ $E651
+
 LE61B:  CMP #EN_DRAGONLORD2
 LE61D:  BEQ $E651
+
 LE61F:  JSR UpdateRandNum       ;($C55B)Get random number.
 LE622:  LDA RandNumUB
 LE624:  AND #$1F
@@ -6799,9 +6810,12 @@ LE6B2:  .byte $E6
 
 LE6B3:  JMP $E95D
 
+ChkPlyrSpell:
 LE6B6:  CMP #$02
 LE6B8:  BEQ $E6BD
+
 LE6BA:  JMP $E7A2
+
 LE6BD:  LDA SpellFlags
 LE6BF:  STA SpellFlagsLB
 LE6C1:  LDA ModsnSpells
@@ -6809,7 +6823,8 @@ LE6C3:  AND #$03
 LE6C5:  STA SpellFlagsUB
 LE6C7:  ORA SpellFlagsLB
 LE6C9:  BNE $E6D7
-LE6CB:  LDA #WND_CMD_CMB
+
+LE6CB:  LDA #WND_CMD_CMB        ;Remove command window.
 LE6CD:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
 
 LE6D0:  JSR DoDialogLoBlock     ;($C7CB)Player cannot yet use the spell.
@@ -7069,8 +7084,10 @@ LE877:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 LE879:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
 LE87C:  JMP $E6FD
+
 LE87F:  CMP #$01
 LE881:  BEQ $E886
+
 LE883:  JMP $E5EF
 
 LE886:  LDA #WND_CMD_CMB
@@ -7080,16 +7097,17 @@ LE88B:  LDA #SFX_RUN            ;Run away SFX.
 LE88D:  BRK                     ;
 LE88E:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LE890:  JSR DoDialogLoBlock     ;($C7CB)
-LE893:  .byte $F5 
+LE890:  JSR DoDialogLoBlock     ;($C7CB)Player started to run away...
+LE893:  .byte $F5               ;TextBlock16, entry 5.
 
 LE894:  BIT PlayerFlags
 LE896:  BVS $E8A4
-LE898:  JSR ModEnemyStats       ;($EE91)Randomly modify enemy stats.
+
+LE898:  JSR CalcNextTurn        ;($EE91)Randomly determine who attacks next.
 LE89B:  BCS $E8A4
 
-LE89D:  JSR DoDialogLoBlock     ;($C7CB)
-LE8A0:  .byte $F6 
+LE89D:  JSR DoDialogLoBlock     ;($C7CB)But was blocked in front...
+LE8A0:  .byte $F6               ;TextBlock16, entry 6.
 
 LE8A1:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
@@ -8026,37 +8044,43 @@ LEE90:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-ModEnemyStats:
+CalcNextTurn:
 LEE91:  JSR UpdateRandNum       ;($C55B)Get random number.
 LEE94:  LDA EnNumber
 LEE96:  CMP #EN_STONEMAN
 LEE98:  BCC $EE9F
+
 LEE9A:  LDA RandNumUB
-LEE9C:  JMP $EEC7
+LEE9C:  JMP CalcNextOdds
 
 LEE9F:  CMP #EN_GDRAGON
 LEEA1:  BCC $EEAA
+
 LEEA3:  LDA RandNumUB
 LEEA5:  AND #$7F
-LEEA7:  JMP $EEC7
+LEEA7:  JMP CalcNextOdds
 
 LEEAA:  CMP #EN_DROLLMAGI
-LEEAC:  BCC $EEC0
+LEEAC:  BCC CalcWhoIsNext
+
 LEEAE:  LDA RandNumUB
 LEEB0:  AND #$3F
 LEEB2:  STA $3E
 LEEB4:  JSR UpdateRandNum       ;($C55B)Get random number.
+
 LEEB7:  LDA RandNumUB
 LEEB9:  AND #$1F
 LEEBB:  ADC $3E
-LEEBD:  JMP $EEC7
+LEEBD:  JMP CalcNextOdds
 
 ;----------------------------------------------------------------------------------------------------
 
+CalcWhoIsNext:
 LEEC0:  JSR UpdateRandNum       ;($C55B)Get random number.
 LEEC3:  LDA RandNumUB
 LEEC5:  AND #$3F
 
+CalcNextOdds:
 LEEC7:  STA MultNum1LB
 LEEC9:  LDA EnBaseDef
 LEECC:  STA MultNum2LB
@@ -8064,11 +8088,14 @@ LEECE:  LDA #$00
 LEED0:  STA MultNum1UB
 LEED2:  STA MultNum2UB
 LEED4:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
+
 LEED7:  LDA MultRsltLB
 LEED9:  STA $42
 LEEDB:  LDA MultRsltUB
 LEEDD:  STA $43
+
 LEEDF:  JSR UpdateRandNum       ;($C55B)Get random number.
+
 LEEE2:  LDA RandNumUB
 LEEE4:  STA MultNum1LB
 LEEE6:  LDA DisplayedAgi
@@ -8077,9 +8104,11 @@ LEEEA:  LDA #$00
 LEEEC:  STA MultNum1UB
 LEEEE:  STA MultNum2UB
 LEEF0:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
+
 LEEF3:  LDA MultRsltLB
 LEEF5:  SEC
 LEEF6:  SBC $42
+
 LEEF8:  LDA MultRsltUB
 LEEFA:  SBC $43
 LEEFC:  RTS
@@ -8087,39 +8116,45 @@ LEEFC:  RTS
 ;----------------------------------------------------------------------------------------------------
 
 LoadEnPalette:
-LEEFD:  LDA EnNumber
-LEEFF:  STA MultNum1LB
-LEF01:  LDA #$0C
-LEF03:  STA MultNum2LB
-LEF05:  LDA #$00
-LEF07:  STA MultNum1UB
-LEF09:  STA MultNum2UB
+LEEFD:  LDA EnNumber            ;
+LEEFF:  STA MultNum1LB          ;
+LEF01:  LDA #$0C                ;
+LEF03:  STA MultNum2LB          ;Multiply the enemy number by 12. There are 12 bytes of -->
+LEF05:  LDA #$00                ;palette data per enemy. The result contains the index to -->
+LEF07:  STA MultNum1UB          ;the desired enemy palette data.
+LEF09:  STA MultNum2UB          ;
 LEF0B:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
-LEF0E:  LDA MultRsltLB
-LEF10:  CLC
-LEF11:  ADC EnSPPalsPtr
-LEF14:  STA $3C
-LEF16:  LDA MultRsltUB
-LEF18:  ADC EnSPPalsPtr+1
-LEF1B:  STA $3D
-LEF1D:  TYA
-LEF1E:  PHA
-LEF1F:  LDY #$0B
 
-LEF21:  LDA ($3C),Y
-LEF23:  STA $03A0,Y
-LEF26:  DEY
-LEF27:  BPL $EF21
+LEF0E:  LDA MultRsltLB          ;
+LEF10:  CLC                     ;
+LEF11:  ADC EnSPPalsPtr         ;Add the base address of the enemy palette data -->
+LEF14:  STA GenPtr3CLB          ;to the calculated index from above. The pointer -->
+LEF16:  LDA MultRsltUB          ;Now points to the proper enemy palette data.
+LEF18:  ADC EnSPPalsPtr+1       ;
+LEF1B:  STA GenPtr3CUB          ;
 
-LEF29:  PLA
-LEF2A:  TAY
-LEF2B:  LDA #$03
-LEF2D:  STA $3F
-LEF2F:  STA PalPtrUB
-LEF31:  LDA #$A0
-LEF33:  STA $3E
-LEF35:  STA PalPtrLB
-LEF37:  RTS
+LEF1D:  TYA                     ;Save Y on the stack.
+LEF1E:  PHA                     ;
+
+LEF1F:  LDY #$0B                ;Prepare to transfer 12 bytes of palette data.
+
+EnPalLoop:
+LEF21:  LDA (GenPtr3C),Y        ;Copy enemy palette data byte to buffer.
+LEF23:  STA EnPalData,Y         ;
+
+LEF26:  DEY                     ;Have all palette bytes been transferred?
+LEF27:  BPL EnPalLoop           ;If not, branch to get another byte.
+
+LEF29:  PLA                     ;Restore Y from the stack.
+LEF2A:  TAY                     ;
+
+LEF2B:  LDA #$03                ;
+LEF2D:  STA SprtPalPtrUB        ;
+LEF2F:  STA PalPtrUB            ;
+LEF31:  LDA #$A0                ;Set copy pointers to buffered data.
+LEF33:  STA SprtPalPtrLB        ;
+LEF35:  STA PalPtrLB            ;
+LEF37:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
