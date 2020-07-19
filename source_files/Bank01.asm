@@ -3968,7 +3968,7 @@ L99E3:  RTS                     ;
 ;The following table contains the pointers to the enemy sprites.  The MSB for the pointer is not
 ;set for some entries.  The enemies that have the MSB set in the table below are mirrored from left
 ;to right on the display.  For example, the knight and armored knight have the same foot forward
-;while the axe knoght has the opposite foot forward.  This is because the axe knight is mirrored
+;while the axe knight has the opposite foot forward.  This is because the axe knight is mirrored
 ;while the other two are not. The code that accesses the table sets the MSB when it accesses it.
 
 EnSpritesPtrTbl:

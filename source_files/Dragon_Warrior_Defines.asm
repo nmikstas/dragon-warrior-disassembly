@@ -19,6 +19,9 @@
 
 .alias GenByte24        $24     ;General use byte.
 
+.alias NotUsed26        $26     ;Byte written to but never read.
+.alias NotUsed27        $27     ;Byte written to but never read.
+
 .alias GenByte2C        $2C     ;General use byte.
 
 .alias GenByte3C        $3C     ;General use byte.
@@ -65,7 +68,7 @@
 .alias ActiveNmTbl      $06     ;Active name table $#00= nametable0, #$01=nametable1.
 .alias ScrollY          $07     ;PPU scroll y position.
 .alias PPUDataByte      $08     ;Data byte to be stored in PPU.
-
+.alias IsEnMirrored     $09     ;#$80=Enemy sprites mirrored, #$00=Enemy sprites not mirrored.
 .alias PPUBufPtr        $0A     ;Pointer to RAM buffer for PPU image.
 .alias PPUBufPtrLB      $0A     ;Pointer to RAM buffer for PPU image, lower byte.
 .alias PPUBufPtrUB      $0B     ;Pointer to RAM buffer for PPU image, upper byte.
@@ -178,6 +181,9 @@
 .alias LevelDatPtr      $3C     ;Pointer into BaseStatsTbl.
 .alias PalModByte       $3C     ;Added to palette data to change it in some cases.
 .alias LoadBGPal        $3D     ;#$00-skip loading BG palette, #$FF-Load BG palette.
+
+.alias EnSprtAttribDat  $3C     ;Attribute data for enemy sprites.
+.alias EnSprtXPos       $3D     ;X position data for enemy sprite.
 
 .alias CoveredStsNext   $3D     ;Indicates the covered status after player movement.
 
@@ -327,6 +333,10 @@
 .alias BlockAddr        $99     ;Current block address in buffer.
 .alias BlockAddrLB      $99     ;Current block address in buffer, lower byte.
 .alias BlockAddrUB      $9A     ;Current block address in buffer, upper byte.
+
+.alias EnSpritePtr      $99     ;Pointer to enemy sprite data.
+.alias EnSpritePtrLB    $99     ;Pointer to enemy sprite data, lower byte.
+.alias EnSpritePtrUB    $9A     ;Pointer to enemy sprite data, upper byte.
 
 .alias DatPntr1         $99     ;
 .alias DatPntr1LB       $99     ;Stores a pointer to the start of data tables.

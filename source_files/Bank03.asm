@@ -6385,79 +6385,95 @@ LE459:  BRK                     ;Load the final boss!
 LE45A:  .byte $02, $07          ;($BABD)DoEndFight, bank 0.
 LE45C:  RTS                     ;
 
-LE45D:* LDA #$00
-LE45F:  STA RAMTrgtPtrLB
-LE461:  STA CopyCounterUB
-LE463:  LDA #$03
-LE465:  STA RAMTrgtPtrUB
-LE467:  LDA #$A0
-LE469:  STA CopyCounterLB
+LE45D:* LDA #$00                ;
+LE45F:  STA RAMTrgtPtrLB        ;
+LE461:  STA CopyCounterUB       ;Copy enemy sprite data into $0300 to $03A0. -->
+LE463:  LDA #$03                ;Always copy 160 bytes(53 sprites worth of data). -->
+LE465:  STA RAMTrgtPtrUB        ;Not all the data copied may be used.
+LE467:  LDA #$A0                ;
+LE469:  STA CopyCounterLB       ;
 
 LE46B:  BRK                     ;Copy ROM table into RAM.
 LE46C:  .byte $0A, $17          ;($9981)CopyROMToRAM, bank 1.
 
-LE46E:  LDX #$10
-LE470:  LDY #$00
-LE472:  STY $99
-LE474:  LDA #$03
-LE476:  STA $9A
+LE46E:  LDX #$10                ;Index to store enemy sprites. Starts after player sprites.
 
-LE478:  LDA ($99),Y
-LE47A:  BEQ $E4C8
-LE47C:  STA SpriteRAM+1,X
+LE470:  LDY #$00                ;
+LE472:  STY EnSpritePtrLB       ;Copy enemy sprite data from base address $0300.
+LE474:  LDA #$03                ;
+LE476:  STA EnSpritePtrUB       ;
 
-LE47F:  INY
-LE480:  LDA ($99),Y
-LE482:  AND #$3F
-LE484:  CLC
-LE485:  ADC #$44
-LE487:  STA SpriteRAM,X
+EnSpriteLoop:
+LE478:  LDA (EnSpritePtr),Y     ;Null terminated sprite data. Has end been reached?
+LE47A:  BEQ EnLoadPalData       ;If so, branch to stop loading sprite data.
 
-LE48A:  LDA ($99),Y
-LE48C:  AND #$C0
-LE48E:  STA $3C
-LE490:  INY
-LE491:  LDA ($99),Y
-LE493:  AND #$03
-LE495:  ORA $3C
-LE497:  STA $3C
-LE499:  LDA ($99),Y
-LE49B:  LSR
-LE49C:  LSR
-LE49D:  SEC
-LE49E:  SBC #$1C
-LE4A0:  STA $3D
-LE4A2:  LDA $09
-LE4A4:  BEQ $E4B4
+LE47C:  STA SpriteRAM+1,X       ;Store tile pattern for sprite.
 
-LE4A6:  LDA $3D
-LE4A8:  EOR #$FF
-LE4AA:  STA $3D
-LE4AC:  INC $3D
-LE4AE:  LDA $3C
-LE4B0:  EOR #$40
-LE4B2:  STA $3C
-LE4B4:  LDA $3C
-LE4B6:  STA SpriteRAM+2,X
+LE47F:  INY                     ;Move to next sprite byte.
 
-LE4B9:  LDA $3D
-LE4BB:  CLC
-LE4BC:  ADC #$84
-LE4BE:  STA SpriteRAM+3,X
+LE480:  LDA (EnSpritePtr),Y     ;Get the 6 bits of Y position data for the enemy sprite.
+LE482:  AND #$3F                ;
+
+LE484:  CLC                     ;
+LE485:  ADC #$44                ;Move the sprite down to the central region of the screen.
+LE487:  STA SpriteRAM,X         ;
+
+LE48A:  LDA (EnSpritePtr),Y     ;
+LE48C:  AND #$C0                ;Get the horizontal and vertical mirrioring bits for the sprite.
+LE48E:  STA EnSprtAttribDat     ;
+
+LE490:  INY                     ;Move to next sprite byte.
+
+LE491:  LDA (EnSpritePtr),Y     ;
+LE493:  AND #$03                ;Get the palette data for the sprite.
+LE495:  ORA EnSprtAttribDat     ;           
+LE497:  STA EnSprtAttribDat     ;
+
+LE499:  LDA (EnSpritePtr),Y     ;
+LE49B:  LSR                     ;Get the X position data of the prite.
+LE49C:  LSR                     ;
+
+LE49D:  SEC                     ;Move sprite 28 pixels left. Not sure -->
+LE49E:  SBC #$1C                ;why data was formatted this way.
+LE4A0:  STA EnSprtXPos          ;
+
+LE4A2:  LDA IsEnMirrored        ;Is the enemy mirrored?
+LE4A4:  BEQ SetEnSprtAttrib     ;If not, branch to skip inverting the X position of the sprite.
+
+LE4A6:  LDA EnSprtXPos          ;
+LE4A8:  EOR #$FF                ;Enemy is mirrored. 2's compliment the X position of the sprite.
+LE4AA:  STA EnSprtXPos          ;
+LE4AC:  INC EnSprtXPos          ;
+
+LE4AE:  LDA EnSprtAttribDat     ;Since the enemy is mirrored in the X direction, the -->
+LE4B0:  EOR #$40                ;horizontal mirroring of the sprite needs to be inverted.
+LE4B2:  STA EnSprtAttribDat     ;
+
+SetEnSprtAttrib:
+LE4B4:  LDA EnSprtAttribDat     ;Store the attribute data for the enemy sprite.
+LE4B6:  STA SpriteRAM+2,X       ;
+
+LE4B9:  LDA EnSprtXPos          ;
+LE4BB:  CLC                     ;Move the sprite to the central region of the screen.
+LE4BC:  ADC #$84                ;
+LE4BE:  STA SpriteRAM+3,X       ;
 
 LE4C1:  INX                     ;
 LE4C2:  INX                     ;Move to next sprite in sprite RAM.
 LE4C3:  INX                     ;Each sprite is 4 bytes.
 LE4C4:  INX                     ;
 
-LE4C5:  INY
-LE4C6:  BNE $E478
-LE4C8:  JSR $EEFD
-LE4CB:  JSR $FCB8
-LE4CE:  LDA #$00
-LE4D0:  STA $3D
-LE4D2:  LDA #$30
-LE4D4:  STA $3C
+LE4C5:  INY                     ;More sprite data to load?
+LE4C6:  BNE EnSpriteLoop        ;If so, branch to do another enemy sprite.
+
+EnLoadPalData:
+LE4C8:  JSR LoadEnPalette       ;($EEFD)Load enemy palette data.
+LE4CB:  JSR Bank3ToNT1          ;($FCB8)Load data into nametable 1.
+
+LE4CE:  LDA #$00                ;
+LE4D0:  STA EnSprtXPos          ;Clear out sprite working variables. -->
+LE4D2:  LDA #$30                ;Doesn't appear to have an effect.
+LE4D4:  STA EnSprtAttribDat     ;
 
 LE4D6:  JSR PrepSPPalLoad       ;($C632)Load sprite palette data into PPU buffer.
 LE4D9:  JSR PalFadeIn           ;($C529)Fade in both background and sprite palettes.
@@ -6473,9 +6489,12 @@ LE4E3:  CMP #EN_DRAGONLORD2     ;Is this the final boss?
 LE4E5:  BNE +                   ;If not, branch to play enter fight music.
 
 LE4E7:  LDA #MSC_END_BOSS       ;End boss music.
-LE4E9:  BNE ++                  ;Branch always.
+LE4E9:  BNE LoadFightMusic      ;Branch always.
+
 LE4EB:* LDA #MSC_ENTR_FGHT      ;Enter fight music.
-LE4ED:* BRK                     ;
+
+LoadFightMusic:
+LE4ED:  BRK                     ;Start the fight music.
 LE4EE:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
 LE4F0:  LDA #$00                ;
@@ -6506,11 +6525,12 @@ LE515:  LDA #$46                ;Load additional description bytes for the red d
 LE517:  STA Stack               ;These bytes do not appear to be used for any enemy.
 LE51A:  LDA #$FA                ;
 LE51C:  STA Stack+1             ;
-LE51F:  BNE ++                  ;
+LE51F:  BNE ContInitFight       ;
 LE521:* LDA #$FA                ;
 LE523:  STA Stack               ;
 
-LE526:* JSR DoSprites           ;($B6DA)Update player and NPC sprites.
+ContInitFight:
+LE526:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 
 LE529:  LDA PlayerFlags         ;
 LE52B:  AND #$0F                ;Clear combat status flags.
@@ -6526,9 +6546,10 @@ LE536:  JSR LoadStats           ;($F050)Update player attributes.
 LE539:  PLA                     ;Restore enemy number data.
 LE53A:  STA EnNumber            ;
 
-LE53C:  ASL
-LE53D:  TAY
-LE53E:  LDX #$22
+LE53C:  ASL                     ;*2 Pointer to enemy sprite data is 2 bytes.
+LE53D:  TAY                     ;Use Y as index into EnSpritesPtrTbl.
+
+LE53E:  LDX #$22                ;Save base address for EnSpritesPtrTbl in GenPtr22.
 
 LE540:  BRK                     ;Table of pointers to enemy sprites.
 LE541:  .byte $8B, $17          ;($99E4)EnSpritesPtrTbl, bank 1.
@@ -6536,43 +6557,49 @@ LE541:  .byte $8B, $17          ;($99E4)EnSpritesPtrTbl, bank 1.
 LE543:  LDA #PRG_BANK_1         ;Get lower byte of sprite data pointer-->
 LE545:  JSR GetBankDataByte     ;($FD1C)from PRG bank 1 and store in A.
 
-LE548:  CLC
-LE549:  ADC #$00
-LE54B:  STA $3C                 
-LE54D:  PHP
+LE548:  CLC                     ;Add with carry does nothing.
+LE549:  ADC #$00                ;
+LE54B:  STA ROMSrcPtrLB         ;Store lower byte of enemy sprite data pointer.
 
-LE54E:  INY
+LE54D:  PHP                     ;Carry should always be clear.
+
+LE54E:  INY                     ;Increment to next byte in EnSpritesPtrTbl
 LE54F:  LDA #PRG_BANK_1         ;Get upper byte of sprite data pointer-->
 LE551:  JSR GetBankDataByte     ;($FD1C)from PRG bank 1 and store in A.
 
-LE554:  TAY                     ;
+LE554:  TAY                     ;Save a copy of upper byte to check enemy mirroring later.
+
 LE555:  AND #$7F                ;
 LE557:  PLP                     ;Set MSB of upper byte if not already set.
-LE558:  ADC #$80                ;
+LE558:  ADC #$80                ;Carry should always be clear.
 LE55A:  STA ROMSrcPtrUB         ;
 
-LE55C:  TYA
-LE55D:  PHA
-LE55E:  LDA ROMSrcPtrLB
-LE560:  STA $26
-LE562:  PHA
-LE563:  LDA ROMSrcPtrUB
-LE565:  STA $27
-LE567:  PHA
+LE55C:  TYA                     ;Store enemy mirroring bit on stack.
+LE55D:  PHA                     ;
+
+LE55E:  LDA ROMSrcPtrLB         ;
+LE560:  STA NotUsed26           ;Save a copy of the ROM location of eney sprite data, lower byte.
+LE562:  PHA                     ;
+
+LE563:  LDA ROMSrcPtrUB         ;
+LE565:  STA NotUsed27           ;Save a copy of the ROM location of eney sprite data, upper byte.
+LE567:  PHA                     ;
 
 LE568:  JSR LoadCombatBckgrnd   ;($E3CD)Show combat scene background.
 
-LE56B:  PLA
-LE56C:  STA ROMSrcPtrUB
-LE56E:  PLA
-LE56F:  STA ROMSrcPtrLB
+LE56B:  PLA                     ;Restore ROM location of eney sprite data, upper byte.
+LE56C:  STA ROMSrcPtrUB         ;
 
-LE571:  PLA
-LE572:  AND #$80
-LE574:  STA $09
-LE576:  LDA NPCUpdateCntr
-LE578:  ORA #$80
-LE57A:  STA NPCUpdateCntr
+LE56E:  PLA                     ;Restore ROM location of eney sprite data, lower byte.
+LE56F:  STA ROMSrcPtrLB         ;
+
+LE571:  PLA                     ;
+LE572:  AND #$80                ;Get byte containing mirrored bit and keep only mirroring bit.
+LE574:  STA IsEnMirrored        ;
+
+LE576:  LDA NPCUpdateCntr       ;
+LE578:  ORA #$80                ;This appears to have no effect and is cleared when fight ends.
+LE57A:  STA NPCUpdateCntr       ;
 
 LE57C:  JSR LoadEnemyGFX        ;($E44F)Display enemy sprites.
 
@@ -6587,8 +6614,8 @@ LE589:  JSR DoDialogHiBlock     ;($C7C5)The dragonlord reveals his true self...
 LE58C:  .byte $19               ;TextBlock18, entry 9.
 
 LE58D:  LDA EnBaseHP
-
 LE590:  BNE $E5BA
+
 LE592:  JSR CopyEnUpperBytes    ;($DBE4)Copy enemy upper bytes to description RAM.
 
 LE595:  JSR DoDialogLoBlock     ;($C7CB)An enemy draws near...
@@ -6598,12 +6625,14 @@ ModEnHitPoints:
 LE599:  LDA EnBaseHP
 LE59C:  STA MultNum2LB
 LE59E:  JSR UpdateRandNum       ;($C55B)Get random number.
+
 LE5A1:  LDA RandNumUB
 LE5A3:  STA MultNum1LB
 LE5A5:  LDA #$00
 LE5A7:  STA MultNum1UB
 LE5A9:  STA MultNum2UB
 LE5AB:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
+
 LE5AE:  LDA MultRsltUB
 LE5B0:  LSR
 LE5B1:  LSR
@@ -7887,9 +7916,12 @@ LEDD1:  AND #$FE
 LEDD3:  STA PlayerFlags
 LEDD5:  LDA EnNumber
 LEDD7:  STA DrgnLrdPal
+
 LEDDA:  LDA #$00
 LEDDC:  STA EnNumber
+
 LEDDE:  JSR StartAtThroneRoom   ;($CB47)Start player at throne room.
+
 LEDE1:  LDA ModsnSpells
 LEDE3:  AND #$C0
 LEDE5:  BEQ $EDF2
@@ -7972,11 +8004,14 @@ LEE65:  STA PalPtrUB            ;
 LEE67:  LDA #$00
 LEE69:  STA $3C
 LEE6B:  JSR PrepSPPalLoad       ;($C632)Load sprite palette data into PPU buffer.
+
 LEE6E:  LDA NPCUpdateCntr
 LEE70:  AND #$70
 LEE72:  BEQ $EE76
+
 LEE74:  LDA #$FF
 LEE76:  STA NPCUpdateCntr
+
 LEE78:  LDA #WND_DIALOG
 LEE7A:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
 LEE7D:  LDA #WND_ALPHBT
@@ -8051,6 +8086,7 @@ LEEFC:  RTS
 
 ;----------------------------------------------------------------------------------------------------
 
+LoadEnPalette:
 LEEFD:  LDA EnNumber
 LEEFF:  STA MultNum1LB
 LEF01:  LDA #$0C
@@ -8114,7 +8150,7 @@ LEF6D:  LDA $42
 LEF6F:  PHA
 LEF70:  LDA $43
 LEF72:  PHA
-LEF73:  JSR $EEFD
+LEF73:  JSR LoadEnPalette       ;($EEFD)Load enemy palette data.
 LEF76:  PLA
 LEF77:  STA $43
 LEF79:  PLA
