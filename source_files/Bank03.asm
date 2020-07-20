@@ -7384,40 +7384,41 @@ LE9AC:  LDA #EN_DRAGONLORD2     ;Fight the final boss!
 LE9AE:  JMP InitFight           ;($E4DF)Load the final fight.
 
 NotDL1Defeated:
-LE9B1:  CMP #EN_DRAGONLORD2
-LE9B3:  BNE $EA0A
+LE9B1:  CMP #EN_DRAGONLORD2     ;Was it the end boss that was defeated?
+LE9B3:  BNE RegEnDefeated       ;If not, branch.
 
-LE9B5:  STA DrgnLrdPal
+LE9B5:  STA DrgnLrdPal          ;Indicate the final boss was just defeated.
 
-LE9B8:  LDA #$02
-LE9BA:  STA CharDirection
+LE9B8:  LDA #DIR_DOWN           ;Player will be facing down when map is loaded.
+LE9BA:  STA CharDirection       ;
 
-LE9BD:  LDA #$2C
-LE9BF:  STA PPUAddrLB
-LE9C1:  LDA #$21
-LE9C3:  STA PPUAddrUB
+LE9BD:  LDA #$2C                ;Prepare to erase the background blocks of the end boss.
+LE9BF:  STA PPUAddrLB           ;
+LE9C1:  LDA #$21                ;The starting address is $212C on nametable 0.
+LE9C3:  STA PPUAddrUB           ;
 
-LE9C5:  LDA #TL_BLANK_TILE1
-LE9C7:  STA PPUDataByte
+LE9C5:  LDA #TL_BLANK_TILE1     ;Load a blank block as the replacement tile.
+LE9C7:  STA PPUDataByte         ;
 
-LE9C9:  LDA #$06
-LE9CB:  STA $3C
+LE9C9:  LDA #$06                ;6 rows of end boss tiles need to be erased. 
+LE9CB:  STA GenByte3C           ;
 
-LE9CD:  LDY #$07
-LE9CF:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
+EndBossEraseLoop:
+LE9CD:  LDY #$07                ;7 tiles per row.
 
-LE9D2:  DEY
-LE9D3:  BNE $E9CF
+LE9CF:* JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
+LE9D2:  DEY                     ;Have all the tiles in the row been cleared?
+LE9D3:  BNE -                   ;If not, branch to delete another tile.
 
-LE9D5:  LDA PPUAddrLB
-LE9D7:  CLC
-LE9D8:  ADC #$19
-LE9DA:  STA PPUAddrLB
-LE9DC:  BCC $E9E0
+LE9D5:  LDA PPUAddrLB           ;
+LE9D7:  CLC                     ;
+LE9D8:  ADC #$19                ;Move to the start of the next row to clear.
+LE9DA:  STA PPUAddrLB           ;
+LE9DC:  BCC +                   ;
+LE9DE:  INC PPUAddrUB           ;
 
-LE9DE:  INC PPUAddrUB
-LE9E0:  DEC $3C
-LE9E2:  BNE $E9CD
+LE9E0:* DEC GenByte3C           ;Does another row need to be cleared?
+LE9E2:  BNE EndBossEraseLoop    ;If so, branch to clear the row.
 
 LE9E4:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LE9E7:  JSR WaitForNMI          ;($FF74)
@@ -7434,83 +7435,92 @@ LE9F6:  STA StoryFlags          ;
 
 LE9F8:  JSR WaitForBtnRelease   ;($CFE4)Wait for player to release then press joypad buttons.
 
-LE9FB:  LDA DisplayedMaxHP
-LE9FD:  STA HitPoints
+LE9FB:  LDA DisplayedMaxHP      ;
+LE9FD:  STA HitPoints           ;Max out the player's HP and MP.
+LE9FF:  LDA DisplayedMaxMP      ;
+LEA01:  STA MagicPoints         ;
 
-LE9FF:  LDA DisplayedMaxMP
-LEA01:  STA MagicPoints
-
-LEA03:  LDX #$12
-LEA05:  LDA #$02
+LEA03:  LDX #$12                ;Overworld at Dragonlord's castle entrance.
+LEA05:  LDA #DIR_DOWN           ;Player will be facing down.
 LEA07:  JMP ChangeMaps          ;($D9E2)Load a new map.
 
-LEA0A:  LDA EnBaseExp
-LEA0D:  STA $00
-LEA0F:  LDA #$00
-LEA11:  STA $01
+RegEnDefeated:
+LEA0A:  LDA EnBaseExp           ;
+LEA0D:  STA FightExpLB          ;Save the experience gained from the fight.
+LEA0F:  LDA #$00                ;
+LEA11:  STA FightExpUB          ;
 
-LEA13:  JSR DoDialogLoBlock     ;($C7CB)
-LEA16:  .byte $EF
+LEA13:  JSR DoDialogLoBlock     ;($C7CB)Thy experience increases by...
+LEA16:  .byte $EF               ;TextBlock15, entry 15.
 
-LEA17:  LDA $00
-LEA19:  CLC
-LEA1A:  ADC ExpLB
-LEA1C:  STA ExpLB
-LEA1E:  BCC $EA2A
-LEA20:  INC ExpUB
-LEA22:  BNE $EA2A
-LEA24:  LDA #$FF
-LEA26:  STA ExpLB
-LEA28:  STA ExpUB
-LEA2A:  LDA EnBaseGld
-LEA2D:  STA MultNum2LB
+LEA17:  LDA FightExpLB          ;
+LEA19:  CLC                     ;
+LEA1A:  ADC ExpLB               ;Add fight experience to player's total experience.
+LEA1C:  STA ExpLB               ;
+LEA1E:  BCC CalcPlyrGold        ;
+LEA20:  INC ExpUB               ;Did player's experience roll over?
+LEA22:  BNE CalcPlyrGold        ;If not, branch.
+
+LEA24:  LDA #$FF                ;
+LEA26:  STA ExpLB               ;Max out player's experience.
+LEA28:  STA ExpUB               ;
+
+CalcPlyrGold:
+LEA2A:  LDA EnBaseGld           ;Prepare to multiply enemy's base gold by a random number.
+LEA2D:  STA MultNum2LB          ;
+
 LEA2F:  JSR UpdateRandNum       ;($C55B)Get random number.
-LEA32:  LDA RandNumUB
-LEA34:  AND #$3F
-LEA36:  CLC
-LEA37:  ADC #$C0
-LEA39:  STA MultNum1LB
-LEA3B:  LDA #$00
-LEA3D:  STA MultNum1UB
-LEA3F:  STA MultNum2UB
+LEA32:  LDA RandNumUB           ;Keep only 6 bytes(0-63).
+LEA34:  AND #$3F                ;
+
+LEA36:  CLC                     ;
+LEA37:  ADC #$C0                ;Add 192 to random number(63-255).
+LEA39:  STA MultNum1LB          ;
+
+LEA3B:  LDA #$00                ;Multiply enemy's base gold with random number.
+LEA3D:  STA MultNum1UB          ;
+LEA3F:  STA MultNum2UB          ;
 LEA41:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
-LEA44:  LDA MultRsltUB
-LEA46:  STA $00
-LEA48:  LDA #$00
-LEA4A:  STA $01
 
-LEA4C:  JSR DoDialogLoBlock     ;($C7CB)
-LEA4F:  .byte $F0 
+LEA44:  LDA MultRsltUB          ;
+LEA46:  STA FightGoldLB         ;Final equation for gained gold:
+LEA48:  LDA #$00                ;Gold=EnBaseGold*(192+rnd(63))/256.
+LEA4A:  STA FightGoldUB         ;
 
-LEA50:  LDA $00
-LEA52:  CLC
-LEA53:  ADC GoldLB
-LEA55:  STA GoldLB
-LEA57:  BCC $EA63
-LEA59:  INC GoldUB
-LEA5B:  BNE $EA63
-LEA5D:  LDA #$FF
-LEA5F:  STA GoldLB
-LEA61:  STA GoldUB
+LEA4C:  JSR DoDialogLoBlock     ;($C7CB)Thy gold increases by...
+LEA4F:  .byte $F0               ;TextBlock16, entry 0. 
 
+LEA50:  LDA $00                 ;
+LEA52:  CLC                     ;
+LEA53:  ADC GoldLB              ;Add fight gold to player's total gold.
+LEA55:  STA GoldLB              ;
+LEA57:  BCC ChkLevelUp          ;
+LEA59:  INC GoldUB              ;Did player's gold roll over?
+LEA5B:  BNE ChkLevelUp          ;If not, branch.
+
+LEA5D:  LDA #$FF                ;
+LEA5F:  STA GoldLB              ;Max out player's gold.
+LEA61:  STA GoldUB              ;
+
+ChkLevelUp:
 LEA63:  JSR Dowindow            ;($C6F0)display on-screen window.
 LEA66:  .byte WND_POPUP         ;Pop-up window.
 
-LEA67:  LDA DisplayedMaxMP
-LEA69:  PHA
-LEA6A:  LDA DisplayedMaxHP
-LEA6C:  PHA
-LEA6D:  LDA DisplayedAgi
-LEA6F:  PHA
-LEA70:  LDA DisplayedStr
-LEA72:  PHA
-LEA73:  LDA DisplayedLevel
-LEA75:  PHA
+LEA67:  LDA DisplayedMaxMP      ;
+LEA69:  PHA                     ;
+LEA6A:  LDA DisplayedMaxHP      ;
+LEA6C:  PHA                     ;
+LEA6D:  LDA DisplayedAgi        ;Save the player's current stats on the stack.
+LEA6F:  PHA                     ;
+LEA70:  LDA DisplayedStr        ;
+LEA72:  PHA                     ;
+LEA73:  LDA DisplayedLevel      ;
+LEA75:  PHA                     ;
 LEA76:  JSR LoadStats           ;($F050)Update player attributes.
 
-LEA79:  PLA
-LEA7A:  CMP DisplayedLevel
-LEA7C:  BNE $EA90
+LEA79:  PLA                     ;Did player level up?
+LEA7A:  CMP DisplayedLevel      ;
+LEA7C:  BNE DoLevelUp           ;If so, branch.
 
 LEA7E:  BRK                     ;Wait for the music clip to end.
 LEA7F:  .byte $03, $17          ;($815E)WaitForMusicEnd, bank 1.
@@ -7520,12 +7530,14 @@ LEA83:  LDA ResumeMusicTbl,X    ;Use current map number to resume music.
 LEA86:  BRK                     ;
 LEA87:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LEA89:  PLA
-LEA8A:  PLA
-LEA8B:  PLA
-LEA8C:  PLA
+LEA89:  PLA                     ;
+LEA8A:  PLA                     ;Remove player's stored stats from the stack.
+LEA8B:  PLA                     ;
+LEA8C:  PLA                     ;
+
 LEA8D:  JMP ExitFight           ;($EE54)Return to map after fight.
 
+DoLevelUp:
 LEA90:  LDA #MSC_LEVEL_UP       ;Level up music.
 LEA92:  BRK                     ;
 LEA93:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
@@ -7541,51 +7553,60 @@ LEA9E:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 LEAA0:  JSR DoDialogLoBlock     ;($C7CB)Thou hast been promoted to the next level...
 LEAA3:  .byte $F1               ;TextBlock16, entry 1.
 
-LEAA4:  LDA #$00
-LEAA6:  STA $01
-LEAA8:  PLA
-LEAA9:  STA $3C
-LEAAB:  LDA DisplayedStr
-LEAAD:  SEC
-LEAAE:  SBC $3C
-LEAB0:  BEQ $EAB8
-LEAB2:  STA $00
+LEAA4:  LDA #$00                ;Always set upper amount to 0.
+LEAA6:  STA AmountUB
 
-LEAB4:  JSR DoDialogHiBlock     ;($C7C5)
-LEAB7:  .byte $0E 
+ChkStrengthUp:
+LEAA8:  PLA                     ;
+LEAA9:  STA PlyrTempStat        ;
+LEAAB:  LDA DisplayedStr        ;Did the player's strength increase this level?
+LEAAD:  SEC                     ;
+LEAAE:  SBC PlyrTempStat        ;
+LEAB0:  BEQ ChkAgilityUp        ;If not, branch.
 
-LEAB8:  PLA
-LEAB9:  STA $3C
-LEABB:  LDA DisplayedAgi
-LEABD:  SEC
-LEABE:  SBC $3C
-LEAC0:  BEQ $EAC8
-LEAC2:  STA $00
+LEAB2:  STA AmountLB            ;Store the amount the player's strength increased.
 
-LEAC4:  JSR DoDialogHiBlock     ;($C7C5)
-LEAC7:  .byte $0F
+LEAB4:  JSR DoDialogHiBlock     ;($C7C5)Thy power increases by...
+LEAB7:  .byte $0E               ;TextBlock17, entry 14.
 
-LEAC8:  PLA
-LEAC9:  STA $3C
-LEACB:  LDA DisplayedMaxHP
-LEACD:  SEC
-LEACE:  SBC $3C
-LEAD0:  STA $00
+ChkAgilityUp:
+LEAB8:  PLA                     ;
+LEAB9:  STA PlyrTempStat        ;
+LEABB:  LDA DisplayedAgi        ;Did the player's agility increase this level?
+LEABD:  SEC                     ;
+LEABE:  SBC PlyrTempStat        ;
+LEAC0:  BEQ ChkHPUp             ;If not, branch.
 
-LEAD2:  JSR DoDialogHiBlock     ;($C7C5)
-LEAD5:  .byte $10
+LEAC2:  STA AmountLB            ;Store the amount the player's agility increased.
 
-LEAD6:  PLA
-LEAD7:  STA $3C
-LEAD9:  LDA DisplayedMaxMP
-LEADB:  SEC
-LEADC:  SBC $3C
-LEADE:  BEQ $EAE6
-LEAE0:  STA $00
+LEAC4:  JSR DoDialogHiBlock     ;($C7C5)Thy response speed increases by...
+LEAC7:  .byte $0F               ;TextBlock17, entry 15.
+
+ChkHPUp:
+LEAC8:  PLA                     ;
+LEAC9:  STA PlyrTempStat        ;
+LEACB:  LDA DisplayedMaxHP      ;Player's HP goes up every level.
+LEACD:  SEC                     ;
+LEACE:  SBC PlyrTempStat        ;
+LEAD0:  STA AmountLB            ;Store the amount the player's HP increased.
+
+LEAD2:  JSR DoDialogHiBlock     ;($C7C5)Thy maximum hit points Increase by... 
+LEAD5:  .byte $10               ;TextBlock18, entry 0.
+
+ChkMPUp:
+LEAD6:  PLA                     ;
+LEAD7:  STA PlyrTempStat        ;
+LEAD9:  LDA DisplayedMaxMP      ;Did the player's MP increase this level?
+LEADB:  SEC                     ;
+LEADC:  SBC PlyrTempStat        ;
+LEADE:  BEQ ChkNewSpell         ;If not, branch.
+
+LEAE0:  STA AmountLB            ;Store the amount the player's MP increased.
 
 LEAE2:  JSR DoDialogHiBlock     ;($C7C5)Thy maximum magic points increased...
 LEAE5:  .byte $11               ;TextBlock18, entry 1.
 
+ChkNewSpell:
 LEAE6:  LDA DisplayedLevel      ;
 LEAE8:  CMP #LVL_03             ;
 LEAEA:  BEQ NewSpellDialog      ;
@@ -7970,6 +7991,7 @@ LED29:  LDA HitPoints
 LED2B:  SEC
 LED2C:  SBC $00
 LED2E:  BCS $ED32
+
 LED30:  LDA #$00
 LED32:  STA HitPoints
 LED34:  LDA #$08
@@ -7981,15 +8003,19 @@ LED3E:  STA $10
 LED40:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LED43:  LDA HitPoints
 LED45:  BEQ $ED4D
+
 LED47:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LED4A:  JMP $ED56
+
 LED4D:  LDA EnNumber
 LED4F:  CMP #EN_DRAGONLORD2
 LED51:  BEQ $ED56
+
 LED53:  JSR RedFlashScreen      ;($EE14)Flash the screen red.
 LED56:  LDA $42
 LED58:  AND #$01
 LED5A:  BNE $ED66
+
 LED5C:  LDA $0F
 LED5E:  CLC
 LED5F:  ADC #$02
@@ -8002,12 +8028,15 @@ LED6B:  STA ScrollY
 LED6D:  LDA EnNumber
 LED6F:  CMP #EN_DRAGONLORD2
 LED71:  BNE $ED7B
+
 LED73:  LDA $0F
 LED75:  STA ScrollX
 LED77:  LDA $10
 LED79:  STA ScrollY
+
 LED7B:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LED7E:  JSR LoadRegBGPal        ;($EE28)Load the normal background palette.
+
 LED81:  LDA $0F
 LED83:  STA ScrollX
 LED85:  LDA $10

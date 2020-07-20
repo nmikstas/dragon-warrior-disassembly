@@ -61,6 +61,12 @@
 
 .alias EnDamage         $00     ;Amount of damage player caused to the enemy. Subtracted from HP.
 .alias DmgNotUsed       $01     ;Always set to 0.
+.alias FightExpLB       $00     ;Experience gained from fight, lower byte.
+.alias FightExpUB       $01     ;Experience gained from fight, upper byte.
+.alias FightGoldLB      $00     ;Gold gained from fight, lower byte.
+.alias FightGoldUB      $01     ;Gold gained from fight, upper byte.
+.alias AmountLB         $00     ;Calculated amount used in text, lower byte.
+.alias AmountUB         $01     ;Calculated amount used in text, upper byte.
 
 .alias TrsrGoldLB       $00     ;Lower byte of gold received trom treasure chest.
 .alias TrsrGoldUB       $01     ;Upper byte of gold received trom treasure chest.
@@ -175,6 +181,7 @@
 .alias BufByteCntr      $3C     ;Buffer byte load counter.
 .alias _EnNumber        $3C     ;Working copy of enemy number.
 .alias CalcDamage       $3C     ;Calculated damage to player/enemy.
+.alias PlyrTempStat     $3C     ;Temporary register for the player's various stats.
 
 .alias CharYScrPos      $3C     ;Character sprite Y position on the screen.
 .alias CharXScrPos      $3D     ;Character sprite X position on the screen.
