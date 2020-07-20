@@ -6801,7 +6801,7 @@ LE690:  .byte $0A               ;TextBlock17, entry 10.
 
 LE691:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
-SetEnDmg2:
+SetSpellDmg:
 LE694:  STA EnDamage            ;
 LE696:  LDA #$00                ;Set the damage the player will do. Enemy can't dodge spells.
 LE698:  STA DmgNotUsed          ;
@@ -6827,19 +6827,19 @@ LE6B3:  JMP UpdateEnHP          ;($E95D)Subtract damage from enemy HP.
 ;----------------------------------------------------------------------------------------------------
 
 ChkPlyrSpell:
-LE6B6:  CMP #CC_SPELL
-LE6B8:  BEQ PlyrSpell
+LE6B6:  CMP #CC_SPELL           ;Did player try to cast a spell?
+LE6B8:  BEQ PlyrSpell           ;If so, branch.
 
 LE6BA:  JMP ChkPlyrItem         ;($E7A2)Check if player is trying to use an item.
 
 PlyrSpell:
-LE6BD:  LDA SpellFlags
-LE6BF:  STA SpellFlagsLB
-LE6C1:  LDA ModsnSpells
-LE6C3:  AND #$03
-LE6C5:  STA SpellFlagsUB
-LE6C7:  ORA SpellFlagsLB
-LE6C9:  BNE ShowSpellWnd
+LE6BD:  LDA SpellFlags          ;
+LE6BF:  STA SpellFlagsLB        ;
+LE6C1:  LDA ModsnSpells         ;
+LE6C3:  AND #$03                ;Does player have any spells yet?
+LE6C5:  STA SpellFlagsUB        ;If so, branch to show available spells.
+LE6C7:  ORA SpellFlagsLB        ;
+LE6C9:  BNE ShowSpellWnd        ;
 
 LE6CB:  LDA #WND_CMD_CMB        ;Remove command window.
 LE6CD:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
@@ -6851,175 +6851,205 @@ LE6D4:  JMP StartPlayerTurn     ;($E5CE)It's the player's turn to attack.
 
 ShowSpellWnd:
 LE6D7:  JSR ShowSpells          ;($DB56)Bring up the spell window.
-LE6DA:  CMP #WND_ABORT
-LE6DC:  BNE $E6E6
+LE6DA:  CMP #WND_ABORT          ;Did player abort spell?
+LE6DC:  BNE PlyrSpellChosen     ;If not, branch.
 
-LE6DE:  LDA #WND_CMD_CMB
+LE6DE:  LDA #WND_CMD_CMB        ;Remove command window from the screen.
 LE6E0:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
 LE6E3:  JMP StartPlayerTurn     ;($E5CE)It's the player's turn to attack.
 
-LE6E6:  PHA
-LE6E7:  LDA #WND_CMD_CMB
+PlyrSpellChosen:
+LE6E6:  PHA                     ;Save a copy of the spell chosen on the stack.
+
+LE6E7:  LDA #WND_CMD_CMB        ;Remove the command window from the screen.
 LE6E9:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-LE6EC:  PLA
-LE6ED:  CMP #$03
-LE6EF:  BEQ $E6FD
 
-LE6F1:  CMP #$07
-LE6F3:  BEQ $E6FD
+LE6EC:  PLA                     ;Restore the spell chosen from the stack.
 
-LE6F5:  CMP #$05
-LE6F7:  BEQ $E6FD
+LE6ED:  CMP #SPL_RADIANT        ;Did player cast radiant?
+LE6EF:  BEQ InvalidCombatSpell  ;If so, branch. Invalid combat spell.
 
-LE6F9:  CMP #$06
-LE6FB:  BNE $E704
+LE6F1:  CMP #SPL_REPEL          ;Did player cast repel?
+LE6F3:  BEQ InvalidCombatSpell  ;If so, branch. Invalid combat spell.
 
-LE6FD:  JSR DoDialogLoBlock     ;($C7CB)
-LE700:  .byte $E9
+LE6F5:  CMP #SPL_OUTSIDE        ;Did player cast outside?
+LE6F7:  BEQ InvalidCombatSpell  ;If so, branch. Invalid combat spell.
+
+LE6F9:  CMP #SPL_RETURN         ;Did player cast return?
+LE6FB:  BNE ValidCombatSpell    ;If not, branch. Remaining spells are valid.
+
+InvalidCombatSpell:
+LE6FD:  JSR DoDialogLoBlock     ;($C7CB)That cannot be used in battle...
+LE700:  .byte $E9               ;TextBlock15, entry 9.
 
 LE701:  JMP StartPlayerTurn     ;($E5CE)It's the player's turn to attack.
 
+ValidCombatSpell:
 LE704:  JSR CheckMP             ;($DB85)Check if MP is high enough to cast the spell.
 LE707:  CMP #$32                ;TextBlock4, entry 2.
 LE709:  BNE +
 LE70B:  JSR DoMidDialog         ;($C7BD)Thy MP is too low...
 LE70E:  JMP StartPlayerTurn     ;($E5CE)It's the player's turn to attack.
 
-LE711:* STA SpellToCast
-LE713:  LDA PlayerFlags
-LE715:  AND #$10
-LE717:  BEQ $E720
+LE711:* STA SpellToCast         ;Has stop spell been cast on player?
+LE713:  LDA PlayerFlags         ;
+LE715:  AND #F_PLR_STOPSPEL     ;
+LE717:  BEQ PlyrPrepSpell       ;If not, branch.
 
-LE719:  JSR DoDialogLoBlock     ;($C7CB)
-LE71C:  .byte $EA
+LE719:  JSR DoDialogLoBlock     ;($C7CB)But that spell hath been blocked...
+LE71C:  .byte $EA               ;TextBlock15, entry 10.
 
 LE71D:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
+PlyrPrepSpell:
 LE720:  LDA SpellToCast         ;Get cast spell.
 
 LE722:  CMP #SPL_HEAL           ;Was the heal spell cast?
 LE724:  BNE +                   ;If not, branch to move on.
+
 LE726:  JSR DoHeal              ;($DBB8)Increase HP from heal spell.
 LE729:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
 LE72C:* CMP #SPL_HEALMORE       ;Was the healmore spell cast?
 LE72E:  BNE +                   ;If not, branch to move on.
+
 LE730:  JSR DoHealmore          ;($DBD7)Increase health from healmore spell.
 LE733:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
-LE736:* CMP #$01
-LE738:  BNE $E751
+LE736:* CMP #SPL_HURT           ;Was the hurt spell cast?
+LE738:  BNE +                   ;If not, branch to move on.
 
-LE73A:  LDA EnBaseMDef
-LE73D:  LSR
-LE73E:  LSR
-LE73F:  LSR
-LE740:  LSR
-LE741:  JSR $E946
+LE73A:  LDA EnBaseMDef          ;
+LE73D:  LSR                     ;
+LE73E:  LSR                     ;Get the enemy's magical defense and divide by 16.
+LE73F:  LSR                     ;
+LE740:  LSR                     ;
 
+LE741:  JSR ChkSpellFail        ;($E946)Check if the spell will fail or succeed.
 LE744:  JSR UpdateRandNum       ;($C55B)Get random number.
 
-LE747:  LDA RandNumUB
-LE749:  AND #$07
-LE74B:  CLC
-LE74C:  ADC #$05
-LE74E:  JMP SetEnDmg2           ;($E694)Set damage enemy will take.
+LE747:  LDA RandNumUB           ;
+LE749:  AND #$07                ;Hurt will do between 5 and 12 damage.
+LE74B:  CLC                     ;
+LE74C:  ADC #$05                ;
 
-LE751:  CMP #$09
-LE753:  BNE $E76C
-LE755:  LDA EnBaseMDef
-LE758:  LSR
-LE759:  LSR
-LE75A:  LSR
-LE75B:  LSR
-LE75C:  JSR $E946
+LE74E:  JMP SetSpellDmg         ;($E694)Set damage enemy will take.
+
+LE751:* CMP #SPL_HURTMORE       ;Was the hurtmore spell cast?
+LE753:  BNE +                   ;If not, branch to move on.
+
+LE755:  LDA EnBaseMDef          ;
+LE758:  LSR                     ;
+LE759:  LSR                     ;Get the enemy's magical defense and divide by 16.
+LE75A:  LSR                     ;
+LE75B:  LSR                     ;
+
+LE75C:  JSR ChkSpellFail        ;($E946)Check if the spell will fail or succeed.
 LE75F:  JSR UpdateRandNum       ;($C55B)Get random number.
-LE762:  LDA RandNumUB
-LE764:  AND #$07
-LE766:  CLC
-LE767:  ADC #$3A
-LE769:  JMP SetEnDmg2           ;($E694)Set damage enemy will take.
 
-LE76C:  CMP #$02
-LE76E:  BNE $E78A
-LE770:  LDA EnBaseAgi
-LE773:  LSR
-LE774:  LSR
-LE775:  LSR
-LE776:  LSR
-LE777:  JSR $E946
+LE762:  LDA RandNumUB           ;
+LE764:  AND #$07                ;Hurtmore will do between 58 and 65 damage.
+LE766:  CLC                     ;
+LE767:  ADC #$3A                ;
+
+LE769:  JMP SetSpellDmg         ;($E694)Set damage enemy will take.
+
+LE76C:* CMP #SPL_SLEEP          ;Was the sleep spell cast?
+LE76E:  BNE +
+
+LE770:  LDA EnBaseAgi           ;
+LE773:  LSR                     ;
+LE774:  LSR                     ;Get the enemy's magical defense and divide by 16.
+LE775:  LSR                     ;
+LE776:  LSR                     ;
+
+LE777:  JSR ChkSpellFail        ;($E946)Check if the spell will fail or succeed.
 LE77A:  JSR CopyEnUpperBytes    ;($DBE4)Copy enemy upper bytes to description RAM.
 
-LE77D:  JSR DoDialogLoBlock     ;($C7CB)
-LE780:  .byte $EC
+LE77D:  JSR DoDialogLoBlock     ;($C7CB)Thou hast put the enemy to sleep...
+LE780:  .byte $EC               ;TextBlock15, entry 12.
 
-LE781:  LDA PlayerFlags
-LE783:  ORA #$40
-LE785:  STA PlayerFlags
-LE787:  JMP $EB3E
-LE78A:  LDA EnBaseAgi
-LE78D:  AND #$0F
-LE78F:  JSR $E946
+LE781:  LDA PlayerFlags         ;Set flag indicating the enemy is asleep.
+LE783:  ORA #F_EN_ASLEEP        ;
+LE785:  STA PlayerFlags         ;
+LE787:  JMP EnStillAsleep       ;($EB3E)Indicate enemy is asleep.
+
+LE78A:* LDA EnBaseAgi           ;The only spell left is stopspell.
+LE78D:  AND #$0F                ;Get the enemy's agility and keep the 4 MSBs(0-15).
+LE78F:  JSR ChkSpellFail        ;($E946)Check if the spell will fail or succeed.
+
 LE792:  JSR CopyEnUpperBytes    ;($DBE4)Copy enemy upper bytes to description RAM.
 
-LE795:  JSR DoDialogLoBlock     ;($C7CB)
-LE798:  .byte $ED
+LE795:  JSR DoDialogLoBlock     ;($C7CB)The enemy's spell hath been blocked...
+LE798:  .byte $ED               ;TextBlock15, entry 13.
 
-LE799:  LDA PlayerFlags
-LE79B:  ORA #$20
-LE79D:  STA PlayerFlags
+LE799:  LDA PlayerFlags         ;Set flag indicating the enemy has been stopspelled.
+LE79B:  ORA #F_EN_STOPSPEL      ;
+LE79D:  STA PlayerFlags         ;
 LE79F:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
 ;----------------------------------------------------------------------------------------------------
 
 ChkPlyrItem:
-LE7A2:  CMP #CC_ITEM
-LE7A4:  BEQ $E7A9
+LE7A2:  CMP #CC_ITEM            ;Is player trying to use an item?
+LE7A4:  BEQ PlyrItem            ;If so, branch.
 
 LE7A6:  JMP ChkPlyrRun          ;($E87F)Check if player is trying to run.
 
+PlyrItem:
 LE7A9:  JSR CreateInvList       ;($DF77)Create inventory list in description buffer.
 
-LE7AC:  CPX #$01
-LE7AE:  BNE $E7BC
-LE7B0:  LDA #WND_CMD_CMB
+LE7AC:  CPX #INV_NONE           ;Does the player have any inventory?
+LE7AE:  BNE PlyrShowInv         ;If so, branch to show inventory window.
+
+LE7B0:  LDA #WND_CMD_CMB        ;Remove command window.
 LE7B2:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
 
-LE7B5:  JSR DoDialogLoBlock     ;($C7CB)
-LE7B8:  .byte $3D
+LE7B5:  JSR DoDialogLoBlock     ;($C7CB)Nothing of use has yet been given to thee...
+LE7B8:  .byte $3D               ;TextBlock4, entry 13.
 
 LE7B9:  JMP StartPlayerTurn     ;($E5CE)It's the player's turn to attack.
 
+PlyrShowInv:
 LE7BC:  JSR Dowindow            ;($C6F0)display on-screen window.
 LE7BF:  .byte WND_INVTRY1       ;Player inventory window.
 
-LE7C0:  CMP #$FF
-LE7C2:  BNE $E7CC
-LE7C4:  LDA #WND_CMD_CMB
+LE7C0:  CMP #WND_ABORT          ;Did player abort the item window?
+LE7C2:  BNE ChkCmbtItemUsed     ;If not, branch to figure out which item player used.
+
+LE7C4:  LDA #WND_CMD_CMB        ;Remove command window from the screen.
 LE7C6:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
 LE7C9:  JMP StartPlayerTurn     ;($E5CE)It's the player's turn to attack.
 
-LE7CC:  PHA
-LE7CD:  LDA #WND_CMD_CMB
+ChkCmbtItemUsed:
+LE7CC:  PHA                     ;Store copy of item used.
+
+LE7CD:  LDA #WND_CMD_CMB        ;Remove command window.
 LE7CF:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-LE7D2:  PLA
-LE7D3:  TAX
-LE7D4:  LDA DescBuf+1,X
-LE7D6:  CMP #$02
-LE7D8:  BNE $E7E6
-LE7DA:  DEC InventoryHerbs
+
+LE7D2:  PLA                     ;Restore item used.
+
+LE7D3:  TAX                     ;Get description of item used.
+LE7D4:  LDA DescBuf+1,X         ;
+
+ChkUseHerb:
+LE7D6:  CMP #INV_HERB           ;Did player use an herb?
+LE7D8:  BNE ChkUseFlute         ;If not, branch to check next item.
+
+LE7DA:  DEC InventoryHerbs      ;Remove 1 herb from player's inventory.
 
 LE7DC:  JSR DoDialogLoBlock     ;($C7CB)Player used the herb...
 LE7DF:  .byte $F7               ;TextBlock16, entry 7.
 
-LE7E0:  JSR $DCFE
+LE7E0:  JSR HerbHeal            ;($DCFE)Heal player from an herb.
 LE7E3:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
-LE7E6:  CMP #$08
-LE7E8:  BNE $E820
+ChkUseFlute:
+LE7E6:  CMP #INV_FLUTE          ;Did player use the flute?
+LE7E8:  BNE ChkUseHarp          ;If not, branch to check next item.
 
-LE7EA:  JSR DoDialogLoBlock     ;($C7CB)
-LE7ED:  .byte $3C
+LE7EA:  JSR DoDialogLoBlock     ;($C7CB)Player blew the fairie's flute...
+LE7ED:  .byte $3C               ;TextBlock4, entry 12.
 
 LE7EE:  LDA #MSC_FRY_FLUTE      ;Fairy flute music.
 LE7F0:  BRK                     ;
@@ -7028,38 +7058,43 @@ LE7F1:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 LE7F3:  BRK                     ;Wait for the music clip to end.
 LE7F4:  .byte $03, $17          ;($815E)WaitForMusicEnd, bank 1.
 
-LE7F6:  LDA EnNumber
-LE7F8:  CMP #EN_DRAGONLORD2
-LE7FA:  BEQ $E801
-LE7FC:  LDA #$18
-LE7FE:  JMP $E803
+LE7F6:  LDA EnNumber            ;Restart fight music.
+LE7F8:  CMP #EN_DRAGONLORD2     ;Is player fighting the end boss?
+LE7FA:  BEQ PlayEndBossMusic1   ;If so, branch to restart end boss music.
 
+LE7FC:  LDA #MSC_REG_FGHT       ;Regular fight music.
+LE7FE:  JMP +                   ;
+
+PlayEndBossMusic1:
 LE801:  LDA #MSC_END_BOSS       ;End boss music.
-LE803:  BRK                     ;
+
+LE803:* BRK                     ;
 LE804:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LE806:  LDA EnNumber
-LE808:  CMP #EN_GOLEM
-LE80A:  BNE $E819
+LE806:  LDA EnNumber            ;Is player fighting the golem?
+LE808:  CMP #EN_GOLEM           ;
+LE80A:  BNE FluteFail           ;If not, branch. Flute has no effect.
 
-LE80C:  JSR DoDialogLoBlock     ;($C7CB)
-LE80F:  .byte $F3
+LE80C:  JSR DoDialogLoBlock     ;($C7CB)Quietly golem closes his eyes...
+LE80F:  .byte $F3               ;TextBlock16, entry 3.
 
-LE810:  LDA PlayerFlags
-LE812:  ORA #$40
-LE814:  STA PlayerFlags
-LE816:  JMP $EB3E
+LE810:  LDA PlayerFlags         ;Set flag indicating golem is asleep.
+LE812:  ORA #F_EN_ASLEEP        ;
+LE814:  STA PlayerFlags         ;
+LE816:  JMP EnStillAsleep       ;($EB3E)Indicate enemy is asleep.
 
-LE819:  JSR DoDialogLoBlock     ;($C7CB)
-LE81C:  .byte $33
+FluteFail:
+LE819:  JSR DoDialogLoBlock     ;($C7CB)But nothing happened...
+LE81C:  .byte $33               ;TextBlock4, entry 3.
 
 LE81D:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
-LE820:  CMP #$0D
-LE822:  BNE $E84A
+ChkUseHarp:
+LE820:  CMP #INV_HARP           ;Did player use the harp?
+LE822:  BNE ChkUseScale         ;If not, branch.
 
-LE824:  JSR DoDialogLoBlock     ;($C7CB)
-LE827:  .byte $41
+LE824:  JSR DoDialogLoBlock     ;($C7CB)Player played sweet melody on the harp...
+LE827:  .byte $41               ;TextBlock5, entry 1.
 
 LE828:  LDA #MSC_SILV_HARP      ;Silver harp music.
 LE829:  BRK                     ;
@@ -7068,15 +7103,17 @@ LE82B:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 LE82D:  BRK                     ;Wait for the music clip to end.
 LE82E:  .byte $03, $17          ;($815E)WaitForMusicEnd, bank 1.
 
-LE830:  LDA EnNumber
-LE832:  CMP #EN_DRAGONLORD2
-LE834:  BEQ $E83B
+LE830:  LDA EnNumber            ;Is the player fighting the end boss?
+LE832:  CMP #EN_DRAGONLORD2     ;
+LE834:  BEQ PlayEndBossMusic2   ;If so, branch to restart end boss music.
 
-LE836:  LDA #MSC_REG_FGHT
-LE838:  JMP $E83D
+LE836:  LDA #MSC_REG_FGHT       ;Restart regular fight music.
+LE838:  JMP +                   ;
 
+PlayEndBossMusic2:
 LE83B:  LDA #MSC_END_BOSS       ;End boss music.
-LE83D:  BRK                     ;
+
+LE83D:* BRK                     ;
 LE83E:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
 LE840:  JSR CopyEnUpperBytes    ;($DBE4)Copy enemy upper bytes to description RAM.
@@ -7086,18 +7123,24 @@ LE846:  .byte $F4               ;TextBlock16, entry 4.
 
 LE847:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
-LE84A:  CMP #$07
-LE84C:  BNE $E854
+ChkUseScale:
+LE84A:  CMP #INV_SCALE          ;Did player use the dragon's scale?
+LE84C:  BNE ChkUseRing          ;If not, branch.
+
 LE84E:  JSR ChkDragonScale      ;($DFB9)Check if player is wearing the dragon's scale.
 LE851:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
-LE854:  CMP #$09
-LE856:  BNE $E85E
+ChkUseRing:
+LE854:  CMP #INV_RING           ;Did player use the fighter's ring?
+LE856:  BNE ChkUseBelt          ;If not, branch.
+
 LE858:  JSR ChkRing             ;($DFD1)Check if player is wearing the ring.
 LE85B:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
-LE85E:  CMP #$0C
-LE860:  BNE $E86D
+ChkUseBelt:
+LE85E:  CMP #INV_BELT           ;Did player use the cursed belt?
+LE860:  BNE ChkUseNecklace      ;If not, branch.
+
 LE862:  JSR WearCursedItem      ;($DFE7)Player puts on cursed item.
 
 LE865:  LDA #MSC_REG_FGHT       ;Regular fight music.
@@ -7106,8 +7149,10 @@ LE868:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
 LE86A:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
-LE86D:  CMP #$0E
-LE86F:  BNE $E87C
+ChkUseNecklace:
+LE86D:  CMP #INV_NECKLACE       ;Did player use the death necklace?
+LE86F:  BNE UseInvalidItem      ;If not, branch. No more items can be used in battle.
+
 LE871:  JSR ChkDeathNecklace    ;($E00A)Check if player is wearking the death necklace.
 
 LE874:  LDA #MSC_REG_FGHT       ;Regular fight music.
@@ -7116,7 +7161,8 @@ LE877:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
 LE879:  JMP StartEnemyTurn      ;($EB1B)It's the enemy's turn to attack.
 
-LE87C:  JMP $E6FD
+UseInvalidItem:
+LE87C:  JMP InvalidCombatSpell  ;($E6FD)Tell player item cannot be used in combat.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -7154,19 +7200,20 @@ LE8A6:  LDA ResumeMusicTbl,X    ;Use current map number to resume music.
 LE8A9:  BRK                     ;
 LE8AA:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LE8AC:  LDA EnNumber
-LE8AE:  CMP #EN_DRAGONLORD2
-LE8B0:  BNE $E8D4
+LE8AC:  LDA EnNumber            ;Was player fighting the end boss?
+LE8AE:  CMP #EN_DRAGONLORD2     ;
+LE8B0:  BNE ChkMapHauksness     ;If not, branch.
 
 LE8B2:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LE8B5:  LDA BlackPalPtr
-LE8B8:  STA PalPtrLB
-LE8BA:  LDA BlackPalPtr+1
-LE8BD:  STA PalPtrUB
 
-LE8BF:  LDA #$00
-LE8C1:  STA PalModByte
-LE8C3:  STA EnNumber
+LE8B5:  LDA BlackPalPtr         ;
+LE8B8:  STA PalPtrLB            ;Prepare to load the black palette.
+LE8BA:  LDA BlackPalPtr+1       ;
+LE8BD:  STA PalPtrUB            ;
+
+LE8BF:  LDA #$00                ;
+LE8C1:  STA PalModByte          ;Disable fande-in/fade-out.
+LE8C3:  STA EnNumber            ;
 
 LE8C5:  JSR PrepSPPalLoad       ;($C632)Load sprite palette data into PPU buffer.
 LE8C8:  JSR PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
@@ -7174,88 +7221,98 @@ LE8CB:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LE8CE:  JSR ClearWinBufRAM2     ;($A788)Clear RAM buffer used for drawing text windows.
 LE8D1:  JMP MapChngNoSound      ;($B091)Change maps with no stairs sound.
 
-LE8D4:  LDA MapNumber
-LE8D6:  CMP #MAP_HAUKSNESS
-LE8D8:  BNE $E8FB
+ChkMapHauksness:
+LE8D4:  LDA MapNumber           ;Is player in Hauksness?
+LE8D6:  CMP #MAP_HAUKSNESS      ;
+LE8D8:  BNE ChkMapSwampCave     ;If not, branch to check other maps.
 
-LE8DA:  LDA CharXPos
-LE8DC:  CMP #$12
-LE8DE:  BNE $E8FB
-
-LE8E0:  LDA CharYPos
-LE8E2:  CMP #$0C
-LE8E4:  BNE $E8FB
+LE8DA:  LDA CharXPos            ;
+LE8DC:  CMP #$12                ;
+LE8DE:  BNE ChkMapSwampCave     ;Was the player fighting the fixed axe knight fight?
+LE8E0:  LDA CharYPos            ;
+LE8E2:  CMP #$0C                ;
+LE8E4:  BNE ChkMapSwampCave     ;If not, branch to move on.
 
 LE8E6:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
 
-LE8E9:  DEC CharXPos
-LE8EB:  DEC _CharXPos
-LE8ED:  LDA CharXPixelsLB
-LE8EF:  SEC
-LE8F0:  SBC #$10
-LE8F2:  STA CharXPixelsLB
-LE8F4:  BCS $E8F8
+LE8E9:  DEC CharXPos            ;Move player 1 block left so they cannot search -->
+LE8EB:  DEC _CharXPos           ;for Erdrick's armor after running.
 
-LE8F6:  DEC CharXPixelsUB
-LE8F8:  JMP MapChngWithSound    ;($B097)Change maps with stairs sound.
-LE8FB:  LDA MapNumber
-LE8FD:  CMP #MAP_SWAMPCAVE
-LE8FF:  BNE $E928
+LE8ED:  LDA CharXPixelsLB       ;
+LE8EF:  SEC                     ;
+LE8F0:  SBC #$10                ;Move player's X pixel position 1 block to the left.
+LE8F2:  STA CharXPixelsLB       ;
+LE8F4:  BCS +                   ;
+LE8F6:  DEC CharXPixelsUB       ;
+LE8F8:* JMP MapChngWithSound    ;($B097)Change maps with stairs sound.
 
-LE901:  LDA CharXPos
-LE903:  CMP #$04
-LE905:  BNE $E928
+ChkMapSwampCave:
+LE8FB:  LDA MapNumber           ;Is player in the swamp cave?
+LE8FD:  CMP #MAP_SWAMPCAVE      ;
+LE8FF:  BNE ChkMapOverworld     ;If not, branch to check other maps.
 
-LE907:  LDA CharYPos
-LE909:  CMP #$0E
-LE90B:  BNE $E928
+LE901:  LDA CharXPos            ;
+LE903:  CMP #$04                ;
+LE905:  BNE ChkMapOverworld     ;Was player fighting the fixed green dragon fight?
+LE907:  LDA CharYPos            ;
+LE909:  CMP #$0E                ;
+LE90B:  BNE ChkMapOverworld     ;If not, branch to move on.
 
-LE90D:  LDA StoryFlags
-LE90F:  AND #F_GDRG_DEAD
-LE911:  BNE $E928
+LE90D:  LDA StoryFlags          ;Has player already killed the green dragon?
+LE90F:  AND #F_GDRG_DEAD        ;
+LE911:  BNE ChkMapOverworld     ;If so, branch.
 
+MovePlyrUp1Block:
 LE913:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
 
-LE916:  DEC CharYPos
-LE918:  DEC _CharYPos
-LE91A:  LDA CharYPixelsLB
-LE91C:  SEC
-LE91D:  SBC #$10
-LE91F:  STA CharYPixelsLB
-LE921:  BCS $E925
+LE916:  DEC CharYPos            ;Move player 1 block up so they cannot bypass -->
+LE918:  DEC _CharYPos           ;the green dragon fight and save Gwaelin after running.
 
-LE923:  DEC CharYPixelsUB
-LE925:  JMP MapChngWithSound    ;($B097)Change maps with stairs sound.
-LE928:  LDA MapNumber
-LE92A:  CMP #MAP_OVERWORLD
-LE92C:  BNE $E940
+LE91A:  LDA CharYPixelsLB       ;
+LE91C:  SEC                     ;
+LE91D:  SBC #$10                ;Move player's Y pixel position 1 block up.
+LE91F:  STA CharYPixelsLB       ;
+LE921:  BCS +                   ;
+LE923:  DEC CharYPixelsUB       ;
+LE925:* JMP MapChngWithSound    ;($B097)Change maps with stairs sound.
 
-LE92E:  LDA CharXPos
-LE930:  CMP #$49
-LE932:  BNE $E940
+ChkMapOverworld:
+LE928:  LDA MapNumber           ;Is player on the overworld map?
+LE92A:  CMP #MAP_OVERWORLD      ;
+LE92C:  BNE ChkMapsDone         ;If not, branch to end checks for special map locations.
 
-LE934:  LDA CharYPos
-LE936:  CMP #$64
-LE938:  BNE $E940
+LE92E:  LDA CharXPos            ;
+LE930:  CMP #$49                ;
+LE932:  BNE ChkMapsDone         ;Is player running from the golem fight?
+LE934:  LDA CharYPos            ;
+LE936:  CMP #$64                ;
+LE938:  BNE ChkMapsDone         ;If not, branch to end special map checks.
 
-LE93A:  LDA StoryFlags
-LE93C:  AND #F_GOLEM_DEAD
-LE93E:  BEQ $E913
+LE93A:  LDA StoryFlags          ;Has player already killed golem?
+LE93C:  AND #F_GOLEM_DEAD       ;
+LE93E:  BEQ MovePlyrUp1Block    ;If not, branch. Move player so they cannot enter town on run.
 
+ChkMapsDone:
 LE940:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
-LE943:  JMP $EE5A
+LE943:  JMP ExitFight2          ;($EE5A)Exit the combat engine.
 
-LE946:  STA $3E
+;----------------------------------------------------------------------------------------------------
+
+ChkSpellFail:
+LE946:  STA GenByte3E           ;Store spell test byte.
 LE948:  JSR UpdateRandNum       ;($C55B)Get random number.
-LE94B:  LDA RandNumUB
-LE94D:  AND #$0F
-LE94F:  CMP $3E
-LE951:  BCC $E954
 
-LE953:  RTS
+LE94B:  LDA RandNumUB           ;Get 4 bits from the random number(0-15).
+LE94D:  AND #$0F                ;
 
-LE954:  PLA
-LE955:  PLA
+LE94F:  CMP GenByte3E           ;Is the spell test byte greater than the random number?
+LE951:  BCC SpellFailed         ;If so, branch. The spell failed.
+
+LE953:  RTS                     ;Spell succeeded. Return.
+
+SpellFailed:
+LE954:  PLA                     ;Spell failed. Remove return address from -->
+LE955:  PLA                     ;stack and start enemy's turn.
 
 LE956:  JSR DoDialogLoBlock     ;($C7CB)The spell will not work...
 LE959:  .byte $EB               ;TextBlock15, entry 11.
@@ -7331,16 +7388,21 @@ LE9B1:  CMP #EN_DRAGONLORD2
 LE9B3:  BNE $EA0A
 
 LE9B5:  STA DrgnLrdPal
+
 LE9B8:  LDA #$02
 LE9BA:  STA CharDirection
+
 LE9BD:  LDA #$2C
 LE9BF:  STA PPUAddrLB
 LE9C1:  LDA #$21
 LE9C3:  STA PPUAddrUB
+
 LE9C5:  LDA #TL_BLANK_TILE1
 LE9C7:  STA PPUDataByte
+
 LE9C9:  LDA #$06
 LE9CB:  STA $3C
+
 LE9CD:  LDY #$07
 LE9CF:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
@@ -7371,13 +7433,17 @@ LE9F4:  ORA #F_DGNLRD_DEAD      ;Set flag indicating the dragonlord has been def
 LE9F6:  STA StoryFlags          ;
 
 LE9F8:  JSR WaitForBtnRelease   ;($CFE4)Wait for player to release then press joypad buttons.
+
 LE9FB:  LDA DisplayedMaxHP
 LE9FD:  STA HitPoints
+
 LE9FF:  LDA DisplayedMaxMP
 LEA01:  STA MagicPoints
+
 LEA03:  LDX #$12
 LEA05:  LDA #$02
 LEA07:  JMP ChangeMaps          ;($D9E2)Load a new map.
+
 LEA0A:  LDA EnBaseExp
 LEA0D:  STA $00
 LEA0F:  LDA #$00
@@ -8084,6 +8150,8 @@ LEE51:  JMP PrepBGPalLoad       ;($C63D)Load background palette data into PPU bu
 ExitFight:
 LEE54:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
 LEE57:  JSR WaitForBtnRelease   ;($CFE4)Wait for player to release then press joypad buttons.
+
+ExitFight2:
 LEE5A:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LEE5D:  LDA RegSPPalPtr         ;
