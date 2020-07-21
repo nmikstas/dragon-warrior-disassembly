@@ -4501,7 +4501,7 @@ LDAD9:  JMP SpellFizzle         ;($DA55)Print text indicating spell did not work
 
 OutsideDLCastle:
 LDADC:  LDX #$12                ;Overworld at dragon lord's castle.
-LDADE:  LDA #$02                ;Player will be facing down.
+LDADE:  LDA #DIR_DOWN           ;Player will be facing down.
 LDAE0:  JMP ChangeMaps          ;($D9E2)Load a new map.
 
 ChkHealmore:
@@ -7819,29 +7819,34 @@ LEC25:  STA SpellToCast         ;
 LEC27:  JSR EnCastSpell         ;($EBEE)Enemy casts a spell.
 
 LEC2A:  JSR UpdateRandNum       ;($C55B)Get random number.
-LEC2D:  LDA RandNumUB
-LEC2F:  AND #$07
-LEC31:  CLC
-LEC32:  ADC #$03
+LEC2D:  LDA RandNumUB           ;
+LEC2F:  AND #$07                ;Keep 3 bits of random number(0-7).
+LEC31:  CLC                     ;
+LEC32:  ADC #$03                ;Hurt spel will do between 7 and 10 damage.
 
 EnCalcSpllDmg:
-LEC34:  STA GenByte00
-LEC36:  LDA EqippedItems
-LEC38:  AND #AR_ARMOR
-LEC3A:  CMP #AR_ERDK_ARMR
-LEC3C:  BEQ $EC42
+LEC34:  STA PlyrDamage          ;Store base damage player will take.
 
-LEC3E:  CMP #AR_MAGIC_ARMR
-LEC40:  BNE $EC52
+LEC36:  LDA EqippedItems        ;
+LEC38:  AND #AR_ARMOR           ;Does player have Erdrick's armor?
+LEC3A:  CMP #AR_ERDK_ARMR       ;If so, branch to reduce damage to 2/3.
+LEC3C:  BEQ ReducedSpellDmg     ;
 
-LEC42:  LDA GenByte00
-LEC44:  STA DivNum1LB
-LEC46:  LDA #$03
-LEC48:  STA DivNum2
+LEC3E:  CMP #AR_MAGIC_ARMR      ;Does player have magic armor?
+LEC40:  BNE DoPlyrDmg           ;If not, branch. Player takes regular damage.
+
+ReducedSpellDmg:
+LEC42:  LDA PlyrDamage          ;
+LEC44:  STA DivNum1LB           ;Divide player damage by 3.
+LEC46:  LDA #$03                ;
+LEC48:  STA DivNum2             ;
 LEC4A:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
-LEC4D:  LDA DivQuotient
-LEC4F:  ASL
-LEC50:  STA GenByte00
+
+LEC4D:  LDA DivQuotient         ;
+LEC4F:  ASL                     ;Multiply player damage by 2. Result is 2/3 damage.
+LEC50:  STA PlyrDamage          ;
+
+DoPlyrDmg:
 LEC52:  JMP PlayerHit           ;($ED20)Player takes damage.
 
 EnCastHurtmore:
@@ -7939,34 +7944,37 @@ LECDF:  BNE EnemyAddHP          ;Branch always.
 
 EnCastFire2:
 LECE1:  JSR UpdateRandNum       ;($C55B)Get random number.
-LECE4:  LDA RandNumUB
-LECE6:  AND #$07
-LECE8:  CLC
-LECE9:  ADC #$41
-LECEB:  BNE $ECF6
+LECE4:  LDA RandNumUB           ;Keep 3 bits(0-7).
+LECE6:  AND #$07                ;
+LECE8:  CLC                     ;
+LECE9:  ADC #$41                ;Fire2 damage ranges from 65 to 72.
+LECEB:  BNE CalcPlyrDmg         ;
 
 EnCastFire1:
 LECED:  JSR UpdateRandNum       ;($C55B)Get random number.
-LECF0:  LDA RandNumUB
-LECF2:  AND #$07
-LECF4:  ORA #$10
+LECF0:  LDA RandNumUB           ;Keep 3 bits(0-7).
+LECF2:  AND #$07                ;
+LECF4:  ORA #$10                ;Fire1 damage ranges from 16 to 23.
 
-LECF6:  STA $00
-LECF8:  LDA #$00
-LECFA:  STA $01
-LECFC:  LDA EqippedItems
-LECFE:  AND #AR_ARMOR
-LED00:  CMP #AR_ERDK_ARMR
-LED02:  BNE DoFireSFX
+CalcPlyrDmg:
+LECF6:  STA PlyrDamage          ;
+LECF8:  LDA #$00                ;Store base damage player will take.
+LECFA:  STA DmgNotUsed          ;
 
-LED04:  LDA $00
-LED06:  STA DivNum1LB
-LED08:  LDA #$03
-LED0A:  STA DivNum2
+LECFC:  LDA EqippedItems        ;
+LECFE:  AND #AR_ARMOR           ;Does player have Erdrick's armor?
+LED00:  CMP #AR_ERDK_ARMR       ;If so, branch to reduce damage to 2/3.
+LED02:  BNE DoFireSFX           ;
+
+LED04:  LDA $00                 ;
+LED06:  STA DivNum1LB           ;Divide player damage by 3.
+LED08:  LDA #$03                ;
+LED0A:  STA DivNum2             ;
 LED0C:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
-LED0F:  LDA DivQuotient
-LED11:  ASL
-LED12:  STA $00
+
+LED0F:  LDA DivQuotient         ;
+LED11:  ASL                     ;Multiply player damage by 2. Result is 2/3 damage.
+LED12:  STA $00                 ;
 
 DoFireSFX:
 LED14:  LDA #SFX_FIRE           ;Fire SFX.
@@ -7985,70 +7993,84 @@ LED20:  LDA #SFX_PLYR_HIT1      ;Player hit 1 SFX.
 LED22:  BRK                     ;
 LED23:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LED25:  LDA #$00
-LED27:  STA $01
-LED29:  LDA HitPoints
-LED2B:  SEC
-LED2C:  SBC $00
-LED2E:  BCS $ED32
+LED25:  LDA #$00                ;
+LED27:  STA DmgNotUsed          ;Subtract damage from player's HP.
+LED29:  LDA HitPoints           ;
+LED2B:  SEC                     ;
+LED2C:  SBC PlyrDamage          ;Did HP go below 0?
+LED2E:  BCS +                   ;If not, branch.
 
-LED30:  LDA #$00
-LED32:  STA HitPoints
-LED34:  LDA #$08
-LED36:  STA $42
-LED38:  LDA ScrollX
-LED3A:  STA $0F
-LED3C:  LDA ScrollY
-LED3E:  STA $10
+LED30:  LDA #$00                ;Set player HP to zero. Player died.
+
+LED32:* STA HitPoints           ;Update player HP.
+
+LED34:  LDA #$08                ;Prepare to run the shake counter loop 8 times.
+LED36:  STA ShakeCounter        ;
+
+LED38:  LDA ScrollX             ;
+LED3A:  STA ShakeX              ;Ititialize the shake X and Y with current scroll positions.
+LED3C:  LDA ScrollY             ;
+LED3E:  STA ShakeY              ;
+
+ShakeScreenLoop:
 LED40:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LED43:  LDA HitPoints
-LED45:  BEQ $ED4D
+
+LED43:  LDA HitPoints           ;Did player just die?
+LED45:  BEQ +                   ;If so, branch.
 
 LED47:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LED4A:  JMP $ED56
+LED4A:  JMP ChkShakeCounter     ;Player did not die. Update screen shake.
 
-LED4D:  LDA EnNumber
-LED4F:  CMP #EN_DRAGONLORD2
-LED51:  BEQ $ED56
+LED4D:* LDA EnNumber            ;Player died. Is player fighting the end boss?
+LED4F:  CMP #EN_DRAGONLORD2     ;
+LED51:  BEQ ChkShakeCounter     ;If so, branch to update the screen shake.
 
 LED53:  JSR RedFlashScreen      ;($EE14)Flash the screen red.
-LED56:  LDA $42
-LED58:  AND #$01
-LED5A:  BNE $ED66
 
-LED5C:  LDA $0F
-LED5E:  CLC
-LED5F:  ADC #$02
-LED61:  STA ScrollX
-LED63:  JMP $ED6D
-LED66:  LDA $10
-LED68:  CLC
-LED69:  ADC #$02
-LED6B:  STA ScrollY
-LED6D:  LDA EnNumber
-LED6F:  CMP #EN_DRAGONLORD2
-LED71:  BNE $ED7B
+ChkShakeCounter:
+LED56:  LDA ShakeCounter        ;
+LED58:  AND #$01                ;Shake screen in X or Y directions every other counter decrement.
+LED5A:  BNE UpdateShakeY        ;
 
-LED73:  LDA $0F
-LED75:  STA ScrollX
-LED77:  LDA $10
-LED79:  STA ScrollY
+UpdateShakeX:
+LED5C:  LDA ShakeX              ;
+LED5E:  CLC                     ;
+LED5F:  ADC #$02                ;Shake screen 2 pixels to the right.
+LED61:  STA ScrollX             ;
+LED63:  JMP DoShake             ;
 
-LED7B:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
+UpdateShakeY:
+LED66:  LDA ShakeY              ;
+LED68:  CLC                     ;Shake screen 2 pixels down.
+LED69:  ADC #$02                ;
+LED6B:  STA ScrollY             ;
+
+DoShake:
+LED6D:  LDA EnNumber            ;Is player fighting the end boss?
+LED6F:  CMP #EN_DRAGONLORD2     ;
+LED71:  BNE +                   ;If not, branch.
+
+LED73:  LDA ShakeX              ;
+LED75:  STA ScrollX             ;Reset scroll registers to original values if fighting -->
+LED77:  LDA ShakeY              ;the end boss. Screen does not shake while fighting end boss.
+LED79:  STA ScrollY             ;
+
+LED7B:* JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LED7E:  JSR LoadRegBGPal        ;($EE28)Load the normal background palette.
 
-LED81:  LDA $0F
-LED83:  STA ScrollX
-LED85:  LDA $10
-LED87:  STA ScrollY
-LED89:  DEC $42
-LED8B:  BNE $ED40
+LED81:  LDA ShakeX              ;
+LED83:  STA ScrollX             ;Reset scroll registers to original values.
+LED85:  LDA ShakeY              ;
+LED87:  STA ScrollY             ;
 
-LED8D:  JSR DoDialogLoBlock     ;($C7CB)
-LED90:  .byte $FA
+LED89:  DEC ShakeCounter        ;Does screen shake need to continue?
+LED8B:  BNE ShakeScreenLoop     ;If so, branch to keep shaking the screen.
+
+LED8D:  JSR DoDialogLoBlock     ;($C7CB)Thy hit points decreased...
+LED90:  .byte $FA               ;TextBlock16, entry 10.
 
 LED91:  JSR Dowindow            ;($C6F0)display on-screen window.
-LED94:  .byte WND_POPUP
+LED94:  .byte WND_POPUP         ;Show pop-up window.
 
 LED95:  LDA HitPoints           ;Has player died?
 LED97:  BEQ PlayerHasDied       ;
@@ -8062,7 +8084,7 @@ LED9F:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 LEDA1:  BRK                     ;Wait for the music clip to end.
 LEDA2:  .byte $03, $17          ;($815E)WaitForMusicEnd, bank 1.
 
-LEDA4:  JMP $EDB4
+LEDA4:  JMP DeathText           ;($EDB4)Tell player they have died.
 
 InitDeathSequence:
 LEDA7:  LDA #MSC_DEATH          ;Death music.
@@ -8075,6 +8097,7 @@ LEDAD:  .byte $03, $17          ;($815E)WaitForMusicEnd, bank 1.
 LEDAF:  LDA #WND_DIALOG         ;Dialog window.
 LEDB1:  JSR _DoWindow           ;($C703)Show dialog window.
 
+DeathText:
 LEDB4:  JSR DoDialogLoBlock     ;($C7CB)Thou art dead...
 LEDB7:  .byte $01               ;TextBlock1, entry 1.
 
@@ -8085,91 +8108,102 @@ LEDBD:  LDA #$00                ;Character will be facing up on next restart.
 LEDBF:  STA CharDirection       ;
 
 LEDC2:* JSR GetJoypadStatus     ;($C608)Get input button presses.
-LEDC5:  LDA JoypadBtns
-LEDC7:  AND #$09
-LEDC9:  BEQ -
+LEDC5:  LDA JoypadBtns          ;
+LEDC7:  AND #$09                ;Wait for player to press start or A.
+LEDC9:  BEQ -                   ;
 
-LEDCB:  LSR GoldUB
-LEDCD:  ROR GoldLB
-LEDCF:  LDA PlayerFlags
-LEDD1:  AND #$FE
-LEDD3:  STA PlayerFlags
-LEDD5:  LDA EnNumber
-LEDD7:  STA DrgnLrdPal
+LEDCB:  LSR GoldUB              ;Cut the player's gold in half.
+LEDCD:  ROR GoldLB              ;
 
-LEDDA:  LDA #$00
-LEDDC:  STA EnNumber
+LEDCF:  LDA PlayerFlags         ;
+LEDD1:  AND #$FE                ;Clear flag indicating player is carrying Gwaelin.
+LEDD3:  STA PlayerFlags         ;
+
+LEDD5:  LDA EnNumber            ;Appears to have no effect.
+LEDD7:  STA DrgnLrdPal          ;
+
+LEDDA:  LDA #$00                ;Clear out enemy number.
+LEDDC:  STA EnNumber            ;
 
 LEDDE:  JSR StartAtThroneRoom   ;($CB47)Start player at throne room.
 
-LEDE1:  LDA ModsnSpells
-LEDE3:  AND #$C0
-LEDE5:  BEQ $EDF2
+LEDE1:  LDA ModsnSpells         ;Is player cursed?
+LEDE3:  AND #$C0                ;
+LEDE5:  BEQ KingDeathDialog     ;If not, branch so player can start in the throne room.
 
 LEDE7:  JSR DoDialogHiBlock     ;($C7C5)Thou hast failed and thou art cursed...
 LEDEA:  .byte $14               ;TextBlock18, entry 4.
 
-LEDEB:  LDX #$0C
-LEDED:  LDA #$02
+LEDEB:  LDX #$0C                ;Start player outside of Tantagel castle because they are cursed.
+LEDED:  LDA #DIR_DOWN           ;Player will be facing down.
 LEDEF:  JMP ChangeMaps          ;($D9E2)Load a new map.
 
-LEDF2:  JSR DoDialogHiBlock     ;($C7C5)
-LEDF5:  .byte $0D 
+KingDeathDialog:
+LEDF2:  JSR DoDialogHiBlock     ;($C7C5)Death should not have taken thee...
+LEDF5:  .byte $0D               ;TextBlock17, entry 13.
 
-LEDF6:  LDA $C7
-LEDF8:  CMP #$1E
-LEDFA:  BEQ $EE03
+LEDF6:  LDA DisplayedLevel      ;Is player the maximum level?
+LEDF8:  CMP #LVL_30             ;
+LEDFA:  BEQ NowGoText           ;If so, branch to skip experience dialog.
+
 LEDFC:  JSR GetExpRemaining     ;($F134)Calculate experience needed for next level.
 
-LEDFF:  JSR DoDialogHiBlock     ;($C7C5)
-LEE02:  .byte $12
+LEDFF:  JSR DoDialogHiBlock     ;($C7C5)To reach the next level, thy experience must increase...
+LEE02:  .byte $12               ;TextBlock18, entry 2.
 
-LEE03:  JSR DoDialogHiBlock     ;($C7C5)
-LEE06:  .byte $13
+NowGoText:
+LEE03:  JSR DoDialogHiBlock     ;($C7C5)Now go player...
+LEE06:  .byte $13               ;TextBlock18, entry 3.
 
 LEE07:  JSR WaitForBtnRelease   ;($CFE4)Wait for player to release then press joypad buttons.
-LEE0A:  LDA #WND_DIALOG
+LEE0A:  LDA #WND_DIALOG         ;Remove dialog window from the screen.
 LEE0C:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
 
-LEE0F:  LDA #NPC_MOVE
-LEE11:  STA StopNPCMove
-LEE13:  RTS
+LEE0F:  LDA #NPC_MOVE           ;
+LEE11:  STA StopNPCMove         ;Allow the NPCs to move.
+LEE13:  RTS                     ;
+
+;----------------------------------------------------------------------------------------------------
 
 RedFlashScreen:
 LEE14:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
-LEE17:  LDA RedFlashPalPtr
-LEE1A:  STA PalPtrLB
-LEE1C:  LDA RedFlashPalPtr+1
-LEE1F:  STA PalPtrUB
+LEE17:  LDA RedFlashPalPtr      ;
+LEE1A:  STA PalPtrLB            ;Set palette pointer to the red flash palette.
+LEE1C:  LDA RedFlashPalPtr+1    ;
+LEE1F:  STA PalPtrUB            ;
 
-LEE21:  LDA #$00
-LEE23:  STA PalModByte
+LEE21:  LDA #$00                ;No palette modification.
+LEE23:  STA PalModByte          ;
 LEE25:  JMP PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
 
 ;----------------------------------------------------------------------------------------------------
 
 LoadRegBGPal:
 LEE28:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LEE2B:  LDA EnNumber
-LEE2D:  CMP #EN_DRAGONLORD2
-LEE2F:  BNE $EE3E
 
-LEE31:  LDA FnlNormBGPalPtr
-LEE34:  STA PalPtrLB
-LEE36:  LDA FnlNormBGPalPtr+1
-LEE39:  STA PalPtrUB
+LEE2B:  LDA EnNumber            ;Is player fighting the end boss?
+LEE2D:  CMP #EN_DRAGONLORD2     ;
+LEE2F:  BNE LoadRegMapPal       ;If not, branch.
 
-LEE3B:  JMP $EE4D
+LEE31:  LDA FnlNormBGPalPtr     ;
+LEE34:  STA PalPtrLB            ;Load regular background palette for end boss.
+LEE36:  LDA FnlNormBGPalPtr+1   ;
+LEE39:  STA PalPtrUB            ;
 
-LEE3E:  LDA OverworldPalPtr
-LEE41:  CLC
-LEE42:  ADC MapType
-LEE44:  STA PalPtrLB
-LEE46:  LDA OverworldPalPtr+1
-LEE49:  ADC #$00
-LEE4B:  STA PalPtrUB
+LEE3B:  JMP FinishRegPalLoad    ;Jump to finish loading palette.
 
+LoadRegMapPal:
+LEE3E:  LDA OverworldPalPtr     ;
+LEE41:  CLC                     ;Get index to proper palette for the current map.
+LEE42:  ADC MapType             ;
+
+LEE44:  STA PalPtrLB            ;
+LEE46:  LDA OverworldPalPtr+1   ;Load regular background palette for current map.
+LEE49:  ADC #$00                ;
+LEE4B:  STA PalPtrUB            ;
+
+FinishRegPalLoad:
 LEE4D:  LDA #$00                ;No palette modification.
 LEE4F:  STA PalModByte          ;
 LEE51:  JMP PrepBGPalLoad       ;($C63D)Load background palette data into PPU buffer
@@ -8188,23 +8222,24 @@ LEE60:  STA PalPtrLB            ;Load standard palette while on map.
 LEE62:  LDA RegSPPalPtr+1       ;
 LEE65:  STA PalPtrUB            ;
 
-LEE67:  LDA #$00
-LEE69:  STA $3C
+LEE67:  LDA #$00                ;Disable fade-in/fade-out.
+LEE69:  STA PalModByte          ;
 LEE6B:  JSR PrepSPPalLoad       ;($C632)Load sprite palette data into PPU buffer.
 
-LEE6E:  LDA NPCUpdateCntr
-LEE70:  AND #$70
-LEE72:  BEQ $EE76
+LEE6E:  LDA NPCUpdateCntr       ;Are NPCs on the current map?
+LEE70:  AND #$70                ;
+LEE72:  BEQ +                   ;If so, branch. to reset counter.
 
-LEE74:  LDA #$FF
-LEE76:  STA NPCUpdateCntr
+LEE74:  LDA #$FF                ;Indicate no NPCs on the current map.
+LEE76:* STA NPCUpdateCntr       ;Update NPCUpdateCntr.
 
-LEE78:  LDA #WND_DIALOG
+LEE78:  LDA #WND_DIALOG         ;Remove dialog window from screen.
 LEE7A:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-LEE7D:  LDA #WND_ALPHBT
+LEE7D:  LDA #WND_ALPHBT         ;Remove alphabet window from screen.
 LEE7F:  JSR RemoveWindow        ;($A7A2)Remove window from screen.
-LEE82:  LDA #$02
-LEE84:  STA CharDirection
+
+LEE82:  LDA #DIR_DOWN           ;Player will be facing down.
+LEE84:  STA CharDirection       ;
 
 LEE87:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LEE8A:  JSR Bank2ToNT1          ;($FCAD)Load CHR ROM bank 2 into nametable 1.

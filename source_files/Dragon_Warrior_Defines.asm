@@ -60,6 +60,7 @@
 ;-----------------------------------------[Variable Defines]-----------------------------------------
 
 .alias EnDamage         $00     ;Amount of damage player caused to the enemy. Subtracted from HP.
+.alias PlyrDamage       $00     ;Amount of damage enemy caused to the player. Subtracted from HP.
 .alias DmgNotUsed       $01     ;Always set to 0.
 .alias FightExpLB       $00     ;Experience gained from fight, lower byte.
 .alias FightExpUB       $01     ;Experience gained from fight, upper byte.
@@ -88,6 +89,9 @@
 
 .alias XPosFromCenter   $0F     ;Tile X position with respect to center of display. Signed.
 .alias YPosFromCenter   $10     ;Tile Y position with respect to center of display. Signed.
+
+.alias ShakeX           $0F     ;Scroll X offset during screen shake after player damage.
+.alias ShakeY           $10     ;Scroll Y offset during screen shake after player damage.
 
 .alias MapDatPtr        $11     ;Pointer to base address of map data.
 .alias MapDatPtrLB      $11     ;Pointer to base address of map data, lower byte.
@@ -280,6 +284,7 @@
 .alias _TargetX         $42     ;Target block, X position.
 .alias _TargetY         $43     ;Target block, Y position.
 
+.alias ShakeCounter     $42     ;Counter used to shake the screen after the player takes damage.
 .alias BaseAttack       $42     ;Base calculation of attack damage.
 .alias AttackStat       $42     ;Copy of player/enemy attack stat.
 .alias DefenseStat      $43     ;Copy of player/enemy defense stat.
@@ -327,7 +332,7 @@
 .alias GwaelinYPos      $8B     ;Princess Gwaelin's Y position at the end of the game.
 .alias GwaelinOffset    $8C     ;Princess Gwaelin's moving offset at the end of the game.
 
-.alias NPCUpdateCntr    $8D     ;Counts 0 to 4. Used to update NPCs.
+.alias NPCUpdateCntr    $8D     ;Counts 0 to 4. Used to update NPCs. #$FF=No NPCs on current map.
 .alias _CharXPos        $8E     ;Copy of player's X position.
 .alias _CharYPos        $8F     ;Copy of player's Y position.
 .alias CharXPixelsLB    $90     ;Player's X position in pixels, lower byte (CharXPos*16).
