@@ -4435,7 +4435,7 @@ LAE66:  STA PPUDataByte
 LAE68:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
 LAE6B:  LDA BlkRemoveFlgs
-LAE6D:  AND #$02
+LAE6D:  AND #BLK_UPPER_RIGHT
 LAE6F:  BEQ $AE89
 
 LAE71:  LDA MapType
@@ -4466,7 +4466,7 @@ LAE97:  STA PPUDataByte
 LAE99:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
 LAE9C:  LDA BlkRemoveFlgs
-LAE9E:  AND #$04
+LAE9E:  AND #BLK_LOWER_LEFT
 LAEA0:  BEQ $AEBA
 
 LAEA2:  LDA MapType
@@ -4483,13 +4483,14 @@ LAEB2:  DEC PPUBufCount
 LAEB4:  DEC PPUBufCount
 LAEB6:  DEC PPUBufCount
 LAEB8:  DEC PPUEntCount
+
 LAEBA:  INY
 LAEBB:  LDA (BlockDataPtr),Y
 LAEBD:  STA PPUDataByte
 LAEBF:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
 LAEC2:  LDA BlkRemoveFlgs
-LAEC4:  AND #$08
+LAEC4:  AND #BLK_LOWER_RIGHT
 LAEC6:  BEQ $AEE0
 
 LAEC8:  LDA MapType
@@ -4507,7 +4508,7 @@ LAEDA:  DEC PPUBufCount
 LAEDC:  DEC PPUBufCount
 LAEDE:  DEC PPUEntCount
 
-LAEE0:  INY
+LAEE0:  INY                     ;Increment to attribute table byte.
 
 LAEE1:  LDA XFromLeftTemp       ;
 LAEE3:  STA XPosFromLeft        ;Update X and Y position for next block.
@@ -4522,10 +4523,10 @@ LAEED:  JSR ModAttribBits       ;($C006)Set the attribute table bits for a namet
 LAEF0:  LDA PPUHorzVert         ;Is PPU set up to write in rows?
 LAEF2:  BNE ModBlockExit        ;If so, branch to exit.
 
-LAEF4:  LDA PPUAddrUB
-LAEF6:  CLC
-LAEF7:  ADC #$20
-LAEF9:  STA PPUAddrUB
+LAEF4:  LDA PPUAddrUB           ;
+LAEF6:  CLC                     ;Add in upper nibble of upper address byte.
+LAEF7:  ADC #$20                ;
+LAEF9:  STA PPUAddrUB           ;
 LAEFB:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
 ModBlockExit:
@@ -4533,107 +4534,115 @@ LAEFE:  RTS                     ;Done modifying graphics block. Return.
 
 ;----------------------------------------------------------------------------------------------------
 
-LAEFF:  LDA CharXPos
-LAF01:  STA XTarget
-LAF03:  LDA CharYPos
-LAF05:  STA YTarget
+GetBlockNoTrans:
+LAEFF:  LDA CharXPos            ;
+LAF01:  STA XTarget             ;Get block ID player is currently standing on.
+LAF03:  LDA CharYPos            ;
+LAF05:  STA YTarget             ;
 
 LAF07:  JSR GetBlockID          ;($AC17)Get description of block.
 
 LAF0A:  JSR HasCoverData        ;($AAE1)Check if current map has covered areas.
-LAF0D:  LDA CoveredStsNext
-LAF0F:  STA CoverStatus
-LAF11:  RTS
+LAF0D:  LDA CoveredStsNext      ;
+LAF0F:  STA CoverStatus         ;Set variables to indicate no transition in/out of covered area.
+LAF11:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
 InitMapData:
-LAF12:  LDA MapNumber
-LAF14:  CMP #MAP_DLCSTL_SL1
-LAF16:  BCS $AF1F
-LAF18:  LDA #$01
-LAF1A:  STA LightDiameter
-LAF1C:  LSR
-LAF1D:  STA RadiantTimer
+LAF12:  LDA MapNumber           ;Did player enter a dungeon?
+LAF14:  CMP #MAP_DLCSTL_SL1     ;
+LAF16:  BCS ChkThRoomMap        ;If not, branch.
 
-LAF1F:  LDA MapNumber
-LAF21:  CMP #MAP_THRONEROOM
-LAF23:  BEQ $AF2B
+LAF18:  LDA #$01                ;
+LAF1A:  STA LightDiameter       ;Player entered a dungeon. Minimize light diameter -->
+LAF1C:  LSR                     ;and clear the radiant timer.
+LAF1D:  STA RadiantTimer        ;
 
-LAF25:  LDA PlayerFlags
-LAF27:  ORA #F_LEFT_THROOM
-LAF29:  STA PlayerFlags
+ChkThRoomMap:
+LAF1F:  LDA MapNumber           ;Is player in the throne room?
+LAF21:  CMP #MAP_THRONEROOM     ;
+LAF23:  BEQ ChkOverworldMap     ;If so, branch.
 
-LAF2B:  LDA MapNumber
-LAF2D:  CMP #MAP_OVERWORLD
-LAF2F:  BNE $AF3C
+LAF25:  LDA PlayerFlags         ;
+LAF27:  ORA #F_LEFT_THROOM      ;Set flag indicating player has left throne room.
+LAF29:  STA PlayerFlags         ;
 
-LAF31:  LDX #$00
-LAF33:  TXA
+ChkOverworldMap:
+LAF2B:  LDA MapNumber           ;Is player on the overworld map?
+LAF2D:  CMP #MAP_OVERWORLD      ;
+LAF2F:  BNE ChkLeftThRoom       ;If not, branch.
 
-LAF34:  STA DoorXPos,X
-LAF37:  INX
-LAF38:  CPX #$20
-LAF3A:  BNE $AF34
+LAF31:  LDX #$00                ;Prepare to clear open door history.
+LAF33:  TXA                     ;
 
-LAF3C:  LDA PlayerFlags
-LAF3E:  AND #F_LEFT_THROOM
-LAF40:  BEQ $AF6A
+ClrOpenDoorsLoop:
+LAF34:  STA DoorXPos,X          ;Reset the history of opened doors.
+LAF37:  INX                     ;
+LAF38:  CPX #$20                ;Has the opened doors history been completely cleared?
+LAF3A:  BNE ClrOpenDoorsLoop    ;If not, branch to clear another byte.
 
-LAF42:  LDA MapNumber
-LAF44:  CMP #MAP_THRONEROOM
-LAF46:  BNE $AF6A
+ChkLeftThRoom:
+LAF3C:  LDA PlayerFlags         ;Has player left the throne room?
+LAF3E:  AND #F_LEFT_THROOM      ;
+LAF40:  BEQ SetNTAndScroll      ;If not, branch. Keep treasures and door in place.
 
-LAF48:  LDA #$04
-LAF4A:  STA $602A
-LAF4D:  STA $602B
-LAF50:  STA $6029
-LAF53:  STA $601A
+LAF42:  LDA MapNumber           ;Is player in the throne room?
+LAF44:  CMP #MAP_THRONEROOM     ;
+LAF46:  BNE SetNTAndScroll      ;If not, branch.
 
-LAF56:  LDA #$05
-LAF58:  STA $6028
+LAF48:  LDA #$04                ;
+LAF4A:  STA TrsrXPos+14         ;
+LAF4D:  STA TrsrYPos+14         ;
+LAF50:  STA TrsrYPos+12         ;
+LAF53:  STA DoorXPos+14         ;
+LAF56:  LDA #$05                ;Remove the 3 treasures and door from the throne room.
+LAF58:  STA TrsrXPos+12         ;
+LAF5B:  LDA #$06                ;
+LAF5D:  STA TrsrXPos+10         ;
+LAF60:  LDA #$01                ;
+LAF62:  STA TrsrYPos+10         ;
+LAF65:  LDA #$07                ;
+LAF67:  STA DoorYPos+14         ;
 
-LAF5B:  LDA #$06
-LAF5D:  STA $6026
+SetNTAndScroll:
+LAF6A:  LDA #$08                ;
+LAF6C:  STA NTBlockX            ;Set nametable block position at 8,7.
+LAF6E:  LDA #$07                ;
+LAF70:  STA NTBlockY            ;
 
-LAF60:  LDA #$01
-LAF62:  STA $6027
+LAF72:  LDA #$00                ;
+LAF74:  STA ScrollX             ;Reset the scroll registers.
+LAF76:  STA ScrollY             ;
 
-LAF65:  LDA #$07
-LAF67:  STA $601B
+LAF78:  STA ActiveNmTbl         ;Set active nametable as nametable 0.
 
-LAF6A:  LDA #$08
-LAF6C:  STA NTBlockX
-LAF6E:  LDA #$07
-LAF70:  STA NTBlockY
+LAF7A:  LDA MapNumber           ;
+LAF7C:  ASL                     ;
+LAF7D:  ASL                     ;*5. Map data is 5 bytes per map.
+LAF7E:  ADC MapNumber           ;
+LAF80:  TAY                     ;
 
-LAF72:  LDA #$00
-LAF74:  STA ScrollX
-LAF76:  STA ScrollY
-LAF78:  STA ActiveNmTbl
+LAF81:  LDA MapDatTbl,Y         ;
+LAF84:  STA MapDatPtrLB         ;
+LAF86:  INY                     ;Get the pointer to the map layout data.
+LAF87:  LDA MapDatTbl,Y         ;
+LAF8A:  STA MapDatPtrUB         ;
 
-LAF7A:  LDA MapNumber
-LAF7C:  ASL
-LAF7D:  ASL
-LAF7E:  ADC MapNumber
-LAF80:  TAY
-LAF81:  LDA MapDatTbl,Y
-LAF84:  STA $11
-LAF86:  INY
-LAF87:  LDA MapDatTbl,Y
-LAF8A:  STA $12
-LAF8C:  INY
-LAF8D:  LDA MapDatTbl,Y
-LAF90:  STA MapWidth
-LAF92:  INY
-LAF93:  LDA MapDatTbl,Y
-LAF96:  STA MapHeight
-LAF98:  INY
-LAF99:  LDA MapDatTbl,Y
-LAF9C:  STA BoundryBlock
+LAF8C:  INY                     ;
+LAF8D:  LDA MapDatTbl,Y         ;Get the map width.
+LAF90:  STA MapWidth            ;
 
-LAF9E:  LDA #$FF
-LAFA0:  STA NPCUpdateCntr
+LAF92:  INY                     ;
+LAF93:  LDA MapDatTbl,Y         ;Get the map height.
+LAF96:  STA MapHeight           ;
+
+LAF98:  INY                     ;
+LAF99:  LDA MapDatTbl,Y         ;Get the block used for out of bounds graphic.
+LAF9C:  STA BoundryBlock        ;
+
+LAF9E:  LDA #$FF                ;Assume no NPCs on the map.
+LAFA0:  STA NPCUpdateCntr       ;
 
 LAFA2:  LDA StoryFlags
 LAFA4:  AND #F_DGNLRD_DEAD
@@ -4650,14 +4659,17 @@ LAFB4:  SEC
 LAFB5:  SBC #$04
 LAFB7:  CMP #$0B
 LAFB9:  BCS $B01A
+
 LAFBB:  ASL
 LAFBC:  TAY
 LAFBD:  LDA #$00
 LAFBF:  STA NPCUpdateCntr
+
 LAFC1:  LDA NPCMobPtrTbl,Y
 LAFC4:  STA $3C
 LAFC6:  LDA NPCMobPtrTbl+1,Y
 LAFC9:  STA $3D
+
 LAFCB:  LDA #$00
 LAFCD:  TAX
 LAFCE:  STA NPCXPos,X
@@ -4668,9 +4680,11 @@ LAFD3:  BNE $AFCE
 LAFD5:  LDA MapNumber
 LAFD7:  CMP #MAP_DLCSTL_BF
 LAFD9:  BNE $AFE1
+
 LAFDB:  LDA StoryFlags
 LAFDD:  AND #F_DGNLRD_DEAD
 LAFDF:  BNE $B01A
+
 LAFE1:  LDY #$00
 LAFE3:  LDX #$00
 
@@ -4712,89 +4726,99 @@ LB017:  JMP $B001
 LB01A:  LDA MapNumber
 LB01C:  CMP #MAP_THRONEROOM
 LB01E:  BNE $B02E
+
 LB020:  LDA PlayerFlags
 LB022:  AND #F_RTN_GWAELIN
 LB024:  BNE $B02E
+
 LB026:  LDA #$00
 LB028:  STA $78
 LB02A:  STA $79
 LB02C:  STA $7A
 
-LB02E:  LDA MapNumber
-LB030:  CMP #MAP_DLCSTL_SL1
-LB032:  BCC $B03F
-LB034:  LDA #MAP_DUNGEON
-LB036:  STA MapType
+LB02E:  LDA MapNumber           ;Is player in a dungeon?
+LB030:  CMP #MAP_DLCSTL_SL1     ;
+LB032:  BCC ChkWorldMap         ;If not, branch.
 
-LB038:  LDA #$00
-LB03A:  STA CoverDatLB
-LB03C:  STA CoverDatUB
-LB03E:  RTS
+LB034:  LDA #MAP_DUNGEON        ;Indicate player is in a dungeon.
+LB036:  STA MapType             ;
 
-LB03F:  LDA MapNumber
-LB041:  CMP #MAP_OVERWORLD
-LB043:  BNE $B04B
+NoCoveredData:
+LB038:  LDA #$00                ;
+LB03A:  STA CoverDatLB          ;There is no covered area data for this map.
+LB03C:  STA CoverDatUB          ;
+LB03E:  RTS                     ;
 
-LB045:  LDA #MAP_OVRWLD
-LB047:  STA MapType
-LB049:  BEQ $B038
+ChkWorldMap:
+LB03F:  LDA MapNumber           ;Is player on the overworl map?
+LB041:  CMP #MAP_OVERWORLD      ;
+LB043:  BNE TownMap             ;If not, branch.
 
-LB04B:  LDA #MAP_TOWN
-LB04D:  STA MapType
+LB045:  LDA #MAP_OVRWLD         ;Indicate the player is on the overworld map.
+LB047:  STA MapType             ;
+LB049:  BEQ NoCoveredData       ;Branch always.
 
-LB04F:  LDA MapNumber
-LB051:  CMP #MAP_BRECCONARY
-LB053:  BNE $B060
+TownMap:
+LB04B:  LDA #MAP_TOWN           ;Indicate player is in a town.
+LB04D:  STA MapType             ;
 
-LB055:  LDA BrecCvrdDatPtr
-LB058:  STA CoverDatLB
-LB05A:  LDA BrecCvrdDatPtr+1
-LB05D:  STA CoverDatUB
-LB05F:  RTS
+ChkMapBrecconary:
+LB04F:  LDA MapNumber           ;Is the player in Brecconary?
+LB051:  CMP #MAP_BRECCONARY     ;
+LB053:  BNE ChkMapGarinham      ;If not, branch to check another map.
 
-LB060:  CMP #MAP_GARINHAM
-LB062:  BNE $B06F
+LB055:  LDA BrecCvrdDatPtr      ;
+LB058:  STA CoverDatLB          ;
+LB05A:  LDA BrecCvrdDatPtr+1    ;Load covered area data pointer for Brecconary.
+LB05D:  STA CoverDatUB          ;
+LB05F:  RTS                     ;
 
-LB064:  LDA GarinCvrdDatPtr
-LB067:  STA CoverDatLB
-LB069:  LDA GarinCvrdDatPtr+1
-LB06C:  STA CoverDatUB
-LB06E:  RTS
+ChkMapGarinham:
+LB060:  CMP #MAP_GARINHAM       ;Is the player in Garinham?
+LB062:  BNE ChkMapCantlin       ;If not, branch to check another map.
 
-LB06F:  CMP #MAP_CANTLIN
-LB071:  BNE $B07E
+LB064:  LDA GarinCvrdDatPtr     ;
+LB067:  STA CoverDatLB          ;
+LB069:  LDA GarinCvrdDatPtr+1   ;Load covered area data pointer for Garin.
+LB06C:  STA CoverDatUB          ;
+LB06E:  RTS                     ;
 
-LB073:  LDA CantCvrdDatPtr
-LB076:  STA CoverDatLB
-LB078:  LDA CantCvrdDatPtr+1
-LB07B:  STA CoverDatUB
-LB07D:  RTS
+ChkMapCantlin:
+LB06F:  CMP #MAP_CANTLIN        ;Is the player in Cantlin?
+LB071:  BNE ChkMapRimuldar      ;If not, branch to check another map.
 
-LB07E:  CMP #MAP_RIMULDAR
-LB080:  BNE $B038
+LB073:  LDA CantCvrdDatPtr      ;
+LB076:  STA CoverDatLB          ;
+LB078:  LDA CantCvrdDatPtr+1    ;Load covered area data pointer for Cantlin.
+LB07B:  STA CoverDatUB          ;
+LB07D:  RTS                     ;
 
-LB082:  LDA RimCvrdDatPtr
-LB085:  STA CoverDatLB
-LB087:  LDA RimCvrdDatPtr+1
-LB08A:  STA CoverDatUB
-LB08C:  RTS
+ChkMapRimuldar:
+LB07E:  CMP #MAP_RIMULDAR       ;Is the player in Rimuldar?
+LB080:  BNE NoCoveredData       ;If not, branch. No covered area data for this map.
+
+LB082:  LDA RimCvrdDatPtr       ;
+LB085:  STA CoverDatLB          ;
+LB087:  LDA RimCvrdDatPtr+1     ;Load covered area data pointer for Rimuldar.
+LB08A:  STA CoverDatUB          ;
+LB08C:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-MapChngNoFadeOut:
-LB08D:  LDA #$00
-LB08F:  BEQ SetSoundAndFade
+MapChngFadeNoSound:
+LB08D:  LDA #$00                ;Indicate no stairs SFX should play on map change.
+LB08F:  BEQ SetSoundAndFade     ;Branch always to fade out screen.
 
 MapChngNoSound:
-LB091:  LDA #$00
-LB093:  STA $25
-LB095:  BEQ ClearSprites
+LB091:  LDA #$00                ;Indicate no stairs SFX should play on map change.
+LB093:  STA GenByte25           ;
+LB095:  BEQ ClearSprites        ;Branch always and skip fade out.
 
 MapChngWithSound:
-LB097:  LDA #$01
+LB097:  LDA #$01                ;Indicate stairs SFX should play on map change.
 
 SetSoundAndFade:
-LB099:  STA $25
+LB099:  STA GenByte25           ;Store stair SFX flag.
 LB09B:  JSR ScreenFadeOut       ;($A743)Fade out screen.
 
 ClearSprites:
@@ -4807,53 +4831,62 @@ LB0A6:  STA DrgnLrdPal          ;Clear dragonlord palette register.
 LB0A9:  JSR Bank1ToCHR0         ;($FC98)Load CHR bank 1 into CHR0 memory.
 LB0AC:  JSR Bank2ToCHR1         ;($FCAD)Load CHR bank 2 into CHR1 memory.
 
-LB0AF:  LDA $25
-LB0B1:  BEQ $B0B8
+LB0AF:  LDA GenByte25           ;Shoud stair SFX be played on map change?
+LB0B1:  BEQ +                   ;If not, branch.
 
 LB0B3:  LDA #SFX_STAIRS         ;Stairs SFX.
 LB0B5:  BRK                     ;
 LB0B6:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LB0B8:  LDA #%00011000          ;Enable sprites and background.
+LB0B8:* LDA #%00011000          ;Enable sprites and background.
 LB0BA:  STA PPUControl1         ;
 
 LB0BD:  JSR InitMapData         ;($AF12)Initialize map data.
-LB0C0:  JSR $AEFF
+LB0C0:  JSR GetBlockNoTrans     ;($AEFF)Get block player is on and set no covered transition.
 
-LB0C3:  LDA #$F2
-LB0C5:  STA $10
+LB0C3:  LDA #$F2                ;Start changing blocks to current map -14 tiles above center.
+LB0C5:  STA YPosFromCenter      ;
 
+ChngMapRowLoop:
 LB0C7:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB0CA:  LDA #$EE
-LB0CC:  STA $0F
 
-LB0CE:  LDA #$00
-LB0D0:  STA BlkRemoveFlgs
-LB0D2:  STA PPUHorzVert
+LB0CA:  LDA #$EE                ;Start changing blocks to current map -18 tiles left of center.
+LB0CC:  STA XPosFromCenter      ;
+
+ChngMapLeftLoop:
+LB0CE:  LDA #$00                ;
+LB0D0:  STA BlkRemoveFlgs       ;Remove no tiles from the current block.
+LB0D2:  STA PPUHorzVert         ;PPU column write.
 
 LB0D4:  JSR ModMapBlock         ;($AD66)Change block on map.
 
-LB0D7:  INC $0F
-LB0D9:  INC $0F
-LB0DB:  BNE $B0CE
+LB0D7:  INC XPosFromCenter      ;Move to next block in row.
+LB0D9:  INC XPosFromCenter      ;
+
+LB0DB:  BNE ChngMapLeftLoop     ;Is left half of row changed? If not, branch to do another block.
 
 LB0DD:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
-LB0E0:  LDA #$00
-LB0E2:  STA BlkRemoveFlgs
-LB0E4:  STA PPUHorzVert
-LB0E6:  JSR ModMapBlock         ;($AD66)Change block on map.
-LB0E9:  INC $0F
-LB0EB:  INC $0F
-LB0ED:  LDA $0F
-LB0EF:  CMP #$12
-LB0F1:  BNE $B0E0
+ChngMapRightLoop:
+LB0E0:  LDA #$00                ;
+LB0E2:  STA BlkRemoveFlgs       ;Remove no tiles from the current block.
+LB0E4:  STA PPUHorzVert         ;PPU column write.
 
-LB0F3:  INC $10
-LB0F5:  INC $10
-LB0F7:  LDA $10
-LB0F9:  CMP #$10
-LB0FB:  BNE $B0C7
+LB0E6:  JSR ModMapBlock         ;($AD66)Change block on map.
+
+LB0E9:  INC XPosFromCenter      ;Move to next block in row.
+LB0EB:  INC XPosFromCenter      ;
+
+LB0ED:  LDA XPosFromCenter      ;Is right half of row changed?
+LB0EF:  CMP #$12                ;
+LB0F1:  BNE ChngMapRightLoop    ;If not, branch to do another block.
+
+LB0F3:  INC YPosFromCenter      ;Move to the next row.
+LB0F5:  INC YPosFromCenter      ;
+
+LB0F7:  LDA YPosFromCenter      ;Have all the rows for this view of the map been changed?
+LB0F9:  CMP #$10                ;
+LB0FB:  BNE ChngMapRowLoop      ;If not, branch to do another row.
 
 LB0FD:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
@@ -4877,16 +4910,16 @@ LB11B:  LDA RegSPPalPtr+1
 LB11E:  STA $3F
 
 LB120:  LDA #$FF
-LB122:  STA $3D
+LB122:  STA CoveredStsNext
 
 LB124:  LDA OverworldPalPtr
 LB127:  CLC
 LB128:  ADC MapType
-LB12A:  STA $40
+LB12A:  STA BGPalPtrLB
 
 LB12C:  LDA OverworldPalPtr+1
 LB12F:  ADC #$00
-LB131:  STA $41
+LB131:  STA BGPalPtrUB
 
 LB133:  JSR PalFadeIn           ;($C529)Fade in both background and sprite palettes.
 
@@ -4897,6 +4930,7 @@ LB13C:  STA PPUAddrUB
 
 LB13E:  LDA #TL_BLANK_TILE1
 LB140:  STA PPUDataByte
+
 LB142:  LDA #$0F
 LB144:  STA $4D
 

@@ -42,9 +42,9 @@ L8026:  .word TextBlock19       ;($BA65)
 ;The text below has special control characters in it.  The following is a description
 ;of those special control characters:
 
-;PLRL - Prints the letter "s " or " " (space).
+;PLRL - Prints the letter "s " or " "(space).
 ;PNTS - Prints the word "Point" or "Points".
-;ENM2 - An enemy's name.
+;ENM2 - An enemy's name, preceeded by "a" or "an".
 ;AMTP - Displays a numeric value followed by "Point" or "Points".
 ;ENMY - An enemy's name.
 ;AMNT - Displays a numeric value.

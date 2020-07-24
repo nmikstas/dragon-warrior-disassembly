@@ -30,7 +30,7 @@
 .alias RemoveWindow             $A7A2
 .alias GetBlockID               $AC17
 .alias ModMapBlock              $AD66
-.alias MapChngNoFadeOut         $B08D
+.alias MapChngFadeNoSound       $B08D
 .alias MapChngNoSound           $B091
 .alias MapChngWithSound         $B097
 .alias ResumeMusicTbl           $B1AE
@@ -4559,7 +4559,7 @@ LDB2A:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
 LDB2C:  LDA #DIR_DOWN           ;Set player facing direction to down.
 LDB2E:  STA CharDirection       ;
-LDB31:  JMP MapChngNoFadeOut    ;($B08D)Change map with no fade out or stairs sound.
+LDB31:  JMP MapChngFadeNoSound  ;($B08D)Change map with fade out and no stairs sound.
 
 UnknownSpell:
 LDB34:  JMP SpellFizzle         ;($DA55)Print text indicating spell did not work.

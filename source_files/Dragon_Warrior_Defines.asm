@@ -18,6 +18,7 @@
 .alias GenPtr22UB       $23     ;General use pointer, upper byte.
 
 .alias GenByte24        $24     ;General use byte.
+.alias GenByte25        $25     ;General use byte.
 
 .alias NotUsed26        $26     ;Byte written to but never read.
 .alias NotUsed27        $27     ;Byte written to but never read.
@@ -309,7 +310,7 @@
 
 .alias NTBlockX         $4A     ;Nametable X block position, #$00-#$1F(1/2 X tile position).
 .alias NTBlockY         $4B     ;Nametable Y block position, #$00-#$0E(1/2 y tile position).
-.alias BlkRemoveFlgs    $4C     ;Lower nibble is flags for tiles to keep when changing a map block.
+.alias BlkRemoveFlgs    $4C     ;Lower nibble is flags of tiles to remove when changing a map block.
                                 ;1-upper left, 2-upper right, 4-lower left, 8-lower right.
 .alias BridgeFlashCntr  $4C     ;Used to count palette flash cycles when rainbow bridge is created.
 .alias TileCounter      $4D     ;Used to count tiles when modifying blocks.
@@ -830,6 +831,12 @@
 .alias WP_WEAPONS       $E0     ;Bitmask for weapons.
 .alias AR_ARMOR         $1C     ;Bitmask for armor.
 .alias SH_SHIELDS       $03     ;Bitmask for shields.
+
+;Tile removal flags.
+.alias BLK_UPPER_LEFT   $01		;Remove upper left tile from a block.
+.alias BLK_UPPER_RIGHT  $02		;Remove upper right tile from a block.
+.alias BLK_LOWER_LEFT   $04		;Remove lower left tile from a block.
+.alias BLK_LOWER_RIGHT  $08		;Remove lower right tile from a block.
 
 ;Player direction
 .alias DIR_UP           $00     ;Player facing up.
