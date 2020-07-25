@@ -201,6 +201,10 @@
 .alias EnSprtAttribDat  $3C     ;Attribute data for enemy sprites.
 .alias EnSprtXPos       $3D     ;X position data for enemy sprite.
 
+.alias NPCDatPtr        $3C     ;Data pointer to NPC data.
+.alias NPCDatPtrLB      $3C     ;Data pointer to NPC data, lower byte.
+.alias NPCDatPtrUB      $3D     ;Data pointer to NPC data, upper byte.
+
 .alias CoveredStsNext   $3D     ;Indicates the covered status after player movement.
 
 .alias XPosFromLeft     $3C     ;Tile X position with respect to top left of display. 
@@ -314,6 +318,7 @@
                                 ;1-upper left, 2-upper right, 4-lower left, 8-lower right.
 .alias BridgeFlashCntr  $4C     ;Used to count palette flash cycles when rainbow bridge is created.
 .alias TileCounter      $4D     ;Used to count tiles when modifying blocks.
+.alias RowCounter       $4D     ;Used to count block rows when clearing out nametable on map change. 
 .alias BlockClear       $4D     ;Is always 0. Maybe had some other function in Dragon's Quest.
 .alias WndForeBack      $4D     ;#$FF=Background window, #$00=Foreground window(over another window).
 .alias NPCLoopCounter   $4E     ;Counter for controlling NPC update loops.
@@ -833,10 +838,10 @@
 .alias SH_SHIELDS       $03     ;Bitmask for shields.
 
 ;Tile removal flags.
-.alias BLK_UPPER_LEFT   $01		;Remove upper left tile from a block.
-.alias BLK_UPPER_RIGHT  $02		;Remove upper right tile from a block.
-.alias BLK_LOWER_LEFT   $04		;Remove lower left tile from a block.
-.alias BLK_LOWER_RIGHT  $08		;Remove lower right tile from a block.
+.alias BLK_UPPER_LEFT   $01     ;Remove upper left tile from a block.
+.alias BLK_UPPER_RIGHT  $02     ;Remove upper right tile from a block.
+.alias BLK_LOWER_LEFT   $04     ;Remove lower left tile from a block.
+.alias BLK_LOWER_RIGHT  $08     ;Remove lower right tile from a block.
 
 ;Player direction
 .alias DIR_UP           $00     ;Player facing up.

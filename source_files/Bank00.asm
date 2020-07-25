@@ -4405,109 +4405,122 @@ LAE3B:  STA BlockDataPtrUB      ;
 
 LAE3D:  LDY #$00                ;Initialize index for transferring GFX block data.
 
-LAE3F:  LDA (BlockDataPtr),Y
-LAE41:  STA PPUDataByte
+DoUpperLeftTile:
+LAE3F:  LDA (BlockDataPtr),Y    ;Store the Upper left tile data of block in buffer.
+LAE41:  STA PPUDataByte         ;
 LAE43:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
-LAE46:  LDA BlkRemoveFlgs
-LAE48:  LSR
-LAE49:  BCC $AE63
+ChkRmvUpperLeft:
+LAE46:  LDA BlkRemoveFlgs       ;Is the flag set for removing the upper left tile of block?
+LAE48:  LSR                     ;
+LAE49:  BCC DoUpperRightTile    ;If not, branch.
 
-LAE4B:  LDA MapType
-LAE4D:  CMP #MAP_DUNGEON
-LAE4F:  BNE $AE5B
+LAE4B:  LDA MapType             ;Is player in a dungeon?
+LAE4D:  CMP #MAP_DUNGEON        ;
+LAE4F:  BNE RmvNonDngnTileUL    ;If not, branch.
 
-LAE51:  LDX PPUBufCount
-LAE53:  DEX
-LAE54:  LDA #TL_BLANK_TILE1
-LAE56:  STA BlockRAM,X
-LAE59:  BNE $AE63
+LAE51:  LDX PPUBufCount         ;Load a blank tile in the upper left corner of block.
+LAE53:  DEX                     ;
+LAE54:  LDA #TL_BLANK_TILE1     ;
+LAE56:  STA BlockRAM,X          ;
+LAE59:  BNE DoUpperRightTile    ;Branch always.
 
-LAE5B:  DEC PPUBufCount
-LAE5D:  DEC PPUBufCount
-LAE5F:  DEC PPUBufCount
-LAE61:  DEC PPUEntCount
+RmvNonDngnTileUL:
+LAE5B:  DEC PPUBufCount         ;
+LAE5D:  DEC PPUBufCount         ;Each tile is 3 bytes. Remove those 3 bytes.
+LAE5F:  DEC PPUBufCount         ;
 
-LAE63:  INY
-LAE64:  LDA (BlockDataPtr),Y
-LAE66:  STA PPUDataByte
+LAE61:  DEC PPUEntCount         ;Remove a tile entry from the counter.
 
+DoUpperRightTile:
+LAE63:  INY                     ;Store the Upper right tile data of block in buffer.
+LAE64:  LDA (BlockDataPtr),Y    ;
+LAE66:  STA PPUDataByte         ;
 LAE68:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
-LAE6B:  LDA BlkRemoveFlgs
-LAE6D:  AND #BLK_UPPER_RIGHT
-LAE6F:  BEQ $AE89
+LAE6B:  LDA BlkRemoveFlgs       ;Is the flag set for removing the upper right tile of block?
+LAE6D:  AND #BLK_UPPER_RIGHT    ;
+LAE6F:  BEQ DoLowerLeftTile     ;If not, branch.
 
-LAE71:  LDA MapType
-LAE73:  CMP #MAP_DUNGEON
-LAE75:  BNE $AE81
+LAE71:  LDA MapType             ;Is player in a dungeon?
+LAE73:  CMP #MAP_DUNGEON        ;
+LAE75:  BNE RmvNonDngnTileUR    ;If not, branch.
 
-LAE77:  LDX PPUBufCount
-LAE79:  DEX
-LAE7A:  LDA #TL_BLANK_TILE1
-LAE7C:  STA BlockRAM,X
-LAE7F:  BNE $AE89
+LAE77:  LDX PPUBufCount         ;Load a blank tile in the upper right corner of block.
+LAE79:  DEX                     ;
+LAE7A:  LDA #TL_BLANK_TILE1     ;
+LAE7C:  STA BlockRAM,X          ;
+LAE7F:  BNE DoLowerLeftTile     ;Branch always.
 
-LAE81:  DEC PPUBufCount
-LAE83:  DEC PPUBufCount
-LAE85:  DEC PPUBufCount
-LAE87:  DEC PPUEntCount
+RmvNonDngnTileUR:
+LAE81:  DEC PPUBufCount         ;
+LAE83:  DEC PPUBufCount         ;Each tile is 3 bytes. Remove those 3 bytes.
+LAE85:  DEC PPUBufCount         ;
 
-LAE89:  INY
-LAE8A:  LDA PPUAddrLB
-LAE8C:  CLC
-LAE8D:  ADC #$1E
-LAE8F:  STA PPUAddrLB
-LAE91:  BCC $AE95
+LAE87:  DEC PPUEntCount         ;Remove a tile entry from the counter.
 
-LAE93:  INC PPUAddrUB
-LAE95:  LDA (BlockDataPtr),Y
-LAE97:  STA PPUDataByte
+DoLowerLeftTile:
+LAE89:  INY                     ;
+LAE8A:  LDA PPUAddrLB           ;
+LAE8C:  CLC                     ;
+LAE8D:  ADC #$1E                ;Move to next tile row in the PPU nametable.
+LAE8F:  STA PPUAddrLB           ;
+LAE91:  BCC +                   ;
+LAE93:  INC PPUAddrUB           ;
+
+LAE95:* LDA (BlockDataPtr),Y    ;Store the lower left tile data of block in buffer.
+LAE97:  STA PPUDataByte         ;
 LAE99:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
-LAE9C:  LDA BlkRemoveFlgs
-LAE9E:  AND #BLK_LOWER_LEFT
-LAEA0:  BEQ $AEBA
+LAE9C:  LDA BlkRemoveFlgs       ;Is the flag set for removing the lower left tile of block?
+LAE9E:  AND #BLK_LOWER_LEFT     ;
+LAEA0:  BEQ DoLowerRightTile    ;If not, branch.
 
-LAEA2:  LDA MapType
-LAEA4:  CMP #MAP_DUNGEON
-LAEA6:  BNE $AEB2
+LAEA2:  LDA MapType             ;Is player in a dungeon?
+LAEA4:  CMP #MAP_DUNGEON        ;
+LAEA6:  BNE RmvNonDngnTileLL    ;If not, branch.
 
-LAEA8:  LDX PPUBufCount
-LAEAA:  DEX
-LAEAB:  LDA #TL_BLANK_TILE1
-LAEAD:  STA BlockRAM,X
-LAEB0:  BNE $AEBA
+LAEA8:  LDX PPUBufCount         ;Load a blank tile in the lower left corner of block.
+LAEAA:  DEX                     ;
+LAEAB:  LDA #TL_BLANK_TILE1     ;
+LAEAD:  STA BlockRAM,X          ;
+LAEB0:  BNE DoLowerRightTile    ;Branch always.
 
-LAEB2:  DEC PPUBufCount
-LAEB4:  DEC PPUBufCount
-LAEB6:  DEC PPUBufCount
-LAEB8:  DEC PPUEntCount
+RmvNonDngnTileLL:
+LAEB2:  DEC PPUBufCount         ;
+LAEB4:  DEC PPUBufCount         ;Each tile is 3 bytes. Remove those 3 bytes.
+LAEB6:  DEC PPUBufCount         ;
 
-LAEBA:  INY
-LAEBB:  LDA (BlockDataPtr),Y
-LAEBD:  STA PPUDataByte
+LAEB8:  DEC PPUEntCount         ;Remove a tile entry from the counter.
+
+DoLowerRightTile:
+LAEBA:  INY                     ;Store the lower right tile data of block in buffer.
+LAEBB:  LDA (BlockDataPtr),Y    ;
+LAEBD:  STA PPUDataByte         ;
 LAEBF:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
 
-LAEC2:  LDA BlkRemoveFlgs
-LAEC4:  AND #BLK_LOWER_RIGHT
-LAEC6:  BEQ $AEE0
+LAEC2:  LDA BlkRemoveFlgs       ;Is the flag set for removing the lower right tile of block?
+LAEC4:  AND #BLK_LOWER_RIGHT    ;
+LAEC6:  BEQ DoAttribByte        ;If not, branch.
 
-LAEC8:  LDA MapType
-LAECA:  CMP #MAP_DUNGEON
-LAECC:  BNE $AED8
+LAEC8:  LDA MapType             ;Is player in a dungeon?
+LAECA:  CMP #MAP_DUNGEON        ;
+LAECC:  BNE RmvNonDngnTileLR    ;If not, branch.
 
-LAECE:  LDX PPUBufCount
-LAED0:  DEX
-LAED1:  LDA #TL_BLANK_TILE1
-LAED3:  STA BlockRAM,X
-LAED6:  BNE $AEE0
+LAECE:  LDX PPUBufCount         ;Load a blank tile in the lower right corner of block.
+LAED0:  DEX                     ;
+LAED1:  LDA #TL_BLANK_TILE1     ;
+LAED3:  STA BlockRAM,X          ;
+LAED6:  BNE DoAttribByte        ;Branch always.
 
-LAED8:  DEC PPUBufCount
-LAEDA:  DEC PPUBufCount
-LAEDC:  DEC PPUBufCount
-LAEDE:  DEC PPUEntCount
+RmvNonDngnTileLR:
+LAED8:  DEC PPUBufCount         ;
+LAEDA:  DEC PPUBufCount         ;Each tile is 3 bytes. Remove those 3 bytes.
+LAEDC:  DEC PPUBufCount         ;
 
+LAEDE:  DEC PPUEntCount         ;Remove a tile entry from the counter.
+
+DoAttribByte:
 LAEE0:  INY                     ;Increment to attribute table byte.
 
 LAEE1:  LDA XFromLeftTemp       ;
@@ -4644,98 +4657,125 @@ LAF9C:  STA BoundryBlock        ;
 LAF9E:  LDA #$FF                ;Assume no NPCs on the map.
 LAFA0:  STA NPCUpdateCntr       ;
 
-LAFA2:  LDA StoryFlags
-LAFA4:  AND #F_DGNLRD_DEAD
-LAFA6:  BEQ $AFB2
+LAFA2:  LDA StoryFlags          ;Is the dragonlord dead?
+LAFA4:  AND #F_DGNLRD_DEAD      ;
+LAFA6:  BEQ ChkMapDungeon       ;If not, branch.
 
-LAFA8:  LDA MapNumber
-LAFAA:  CMP #MAP_TANTCSTL_GF
-LAFAC:  BNE $AFB2
-LAFAE:  LDA #$0B
-LAFB0:  BNE $AFBB
+LAFA8:  LDA MapNumber           ;Is player on the ground floor of Tantagel castle?
+LAFAA:  CMP #MAP_TANTCSTL_GF    ;
+LAFAC:  BNE ChkMapDungeon       ;If not, branch.
 
-LAFB2:  LDA MapNumber
-LAFB4:  SEC
-LAFB5:  SBC #$04
-LAFB7:  CMP #$0B
-LAFB9:  BCS $B01A
+LAFAE:  LDA #$0B                ;Special NPC data pointer index for Tantagel castle -->
+LAFB0:  BNE GetNPCDataPointer   ;ground floor after end boss defeated. Branch always.
 
-LAFBB:  ASL
-LAFBC:  TAY
-LAFBD:  LDA #$00
-LAFBF:  STA NPCUpdateCntr
+ChkMapDungeon:
+LAFB2:  LDA MapNumber           ;First 3 maps don't have NPCs
+LAFB4:  SEC                     ;
+LAFB5:  SBC #MAP_TANTCSTL_GF    ;Tantagel castle ground floor is first map with NPCs.
 
-LAFC1:  LDA NPCMobPtrTbl,Y
-LAFC4:  STA $3C
-LAFC6:  LDA NPCMobPtrTbl+1,Y
-LAFC9:  STA $3D
+LAFB7:  CMP #MAP_RAINBOW-3      ;Does the current map have NPCs?
+LAFB9:  BCS ChkGwaelinNPC       ;If not, branch.
 
-LAFCB:  LDA #$00
-LAFCD:  TAX
-LAFCE:  STA NPCXPos,X
-LAFD0:  INX
-LAFD1:  CPX #$3C
-LAFD3:  BNE $AFCE
+GetNPCDataPointer:
+LAFBB:  ASL                     ;*2. Pointer to NPC data is 2 bytes.
+LAFBC:  TAY                     ;
 
-LAFD5:  LDA MapNumber
-LAFD7:  CMP #MAP_DLCSTL_BF
-LAFD9:  BNE $AFE1
+LAFBD:  LDA #$00                ;Reset NPC update counter.
+LAFBF:  STA NPCUpdateCntr       ;
 
-LAFDB:  LDA StoryFlags
-LAFDD:  AND #F_DGNLRD_DEAD
-LAFDF:  BNE $B01A
+LAFC1:  LDA NPCMobPtrTbl,Y      ;
+LAFC4:  STA NPCDatPtrLB         ;Get pointer to NPC data for current map.
+LAFC6:  LDA NPCMobPtrTbl+1,Y    ;
+LAFC9:  STA NPCDatPtrUB         ;
 
-LAFE1:  LDY #$00
-LAFE3:  LDX #$00
+LAFCB:  LDA #$00                ;Prepare to clear all NPC data.
+LAFCD:  TAX                     ;
 
-LAFE5:  LDA ($3C),Y
-LAFE7:  CMP #$FF
-LAFE9:  BEQ $AFFE
-LAFEB:  STA NPCXPos,X
-LAFED:  INX
-LAFEE:  INY
-LAFEF:  LDA ($3C),Y
-LAFF1:  STA NPCXPos,X
-LAFF3:  INX
-LAFF4:  INY
-LAFF5:  LDA #$00
-LAFF7:  STA NPCXPos,X
-LAFF9:  INX
-LAFFA:  INY
-LAFFB:  JMP $AFE5
+NPCClearLoop:
+LAFCE:  STA NPCXPos,X           ;Has all NPC data been cleared?
+LAFD0:  INX                     ;
+LAFD1:  CPX #$3C                ;
+LAFD3:  BNE NPCClearLoop        ;If not, branch to clear another byte.
 
-LAFFE:  INY
-LAFFF:  LDX #$1E
-LB001:  LDA ($3C),Y
-LB003:  CMP #$FF
-LB005:  BEQ $B01A
+LAFD5:  LDA MapNumber           ;Is player in the basement of the dragonlord's castle?
+LAFD7:  CMP #MAP_DLCSTL_BF      ;
+LAFD9:  BNE PrepMobNPCDatLoad   ;If not, branch.
 
-LB007:  STA NPCXPos,X
-LB009:  INX
-LB00A:  INY
-LB00B:  LDA ($3C),Y
-LB00D:  STA NPCXPos,X
-LB00F:  INX
-LB010:  INY
-LB011:  LDA #$00
-LB013:  STA NPCXPos,X
-LB015:  INX
-LB016:  INY
-LB017:  JMP $B001
+LAFDB:  LDA StoryFlags          ;Is dragonlord defeated?
+LAFDD:  AND #F_DGNLRD_DEAD      ;
+LAFDF:  BNE ChkGwaelinNPC       ;If so, branch. Skip loading dragonlord NPC.
 
-LB01A:  LDA MapNumber
-LB01C:  CMP #MAP_THRONEROOM
-LB01E:  BNE $B02E
+PrepMobNPCDatLoad:
+LAFE1:  LDY #$00                ;Zero out read and write indexes.
+LAFE3:  LDX #$00                ;
 
-LB020:  LDA PlayerFlags
-LB022:  AND #F_RTN_GWAELIN
-LB024:  BNE $B02E
+LoadMobNPCDataLoop:
+LAFE5:  LDA (NPCDatPtr),Y       ;Has all the mobile NPC data for this map been loaded?
+LAFE7:  CMP #$FF                ;
+LAFE9:  BEQ PrepStatNPCDatLoad  ;If so, branch to exit loop.
 
-LB026:  LDA #$00
-LB028:  STA $78
-LB02A:  STA $79
-LB02C:  STA $7A
+LAFEB:  STA NPCXPos,X           ;Get NPC X position and type byte.
 
+LAFED:  INX                     ;Increment to next NPC byte.
+LAFEE:  INY                     ;
+
+LAFEF:  LDA (NPCDatPtr),Y       ;Get NPC Y position and facing direction byte.
+LAFF1:  STA NPCXPos,X           ;
+
+LAFF3:  INX                     ;Increment to next NPC byte.
+LAFF4:  INY                     ;
+
+LAFF5:  LDA #$00                ;Set NPC mid-block position to 0 (Center NPC on block).
+LAFF7:  STA NPCXPos,X           ;
+
+LAFF9:  INX                     ;Increment to next NPC byte.
+LAFFA:  INY                     ;
+
+LAFFB:  JMP LoadMobNPCDataLoop  ;($AFE5)Loop to load mobile NPC data for this map.
+
+PrepStatNPCDatLoad:
+LAFFE:  INY                     ;Static NPC data table follows NPC modile data table.
+LAFFF:  LDX #$1E                ;Set pointer to beginning of static NPC data buffer.
+
+LoadStatNPCDataLoop:
+LB001:  LDA (NPCDatPtr),Y       ;Has all the static NPC data for this map been loaded?
+LB003:  CMP #$FF                ;
+LB005:  BEQ ChkGwaelinNPC       ;If so, branch to exit loop.
+
+LB007:  STA NPCXPos,X           ;Get NPC X position and type byte.
+
+LB009:  INX                     ;Increment to next NPC byte.
+LB00A:  INY                     ;
+
+LB00B:  LDA (NPCDatPtr),Y       ;Get NPC Y position and facing direction byte.
+LB00D:  STA NPCXPos,X           ;
+
+LB00F:  INX                     ;Increment to next NPC byte.
+LB010:  INY                     ;
+
+LB011:  LDA #$00                ;Set NPC mid-block position to 0 (Center NPC on block).
+LB013:  STA NPCXPos,X           ;
+
+LB015:  INX                     ;Increment to next NPC byte.
+LB016:  INY                     ;
+
+LB017:  JMP LoadStatNPCDataLoop ;($B001)Loop to load static NPC data for this map.
+
+ChkGwaelinNPC:
+LB01A:  LDA MapNumber           ;Is player in the throne room?
+LB01C:  CMP #MAP_THRONEROOM     ;
+LB01E:  BNE ChkCoveredData      ;If not, branch.
+
+LB020:  LDA PlayerFlags         ;Has player rescued Princess Gwaelin?
+LB022:  AND #F_RTN_GWAELIN      ;
+LB024:  BNE ChkCoveredData      ;If so, branch.
+
+LB026:  LDA #$00                ;
+LB028:  STA NPCXPos+$27         ;Gwaelin has not been saved. Remove her from the NPCs.
+LB02A:  STA NPCYPos+$27         ;
+LB02C:  STA NPCMidPos+$27       ;
+
+ChkCoveredData:
 LB02E:  LDA MapNumber           ;Is player in a dungeon?
 LB030:  CMP #MAP_DLCSTL_SL1     ;
 LB032:  BCC ChkWorldMap         ;If not, branch.
@@ -4904,98 +4944,109 @@ LB110:  LDA ResumeMusicTbl,X    ;Use current map number to resume music.
 LB113:  BRK                     ;
 LB114:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LB116:  LDA RegSPPalPtr
-LB119:  STA $3E
-LB11B:  LDA RegSPPalPtr+1
-LB11E:  STA $3F
+LB116:  LDA RegSPPalPtr         ;
+LB119:  STA SprtPalPtrLB        ;Set pointer for sprite palettes.
+LB11B:  LDA RegSPPalPtr+1       ;
+LB11E:  STA SprtPalPtrUB        ;
 
-LB120:  LDA #$FF
-LB122:  STA CoveredStsNext
+LB120:  LDA #$FF                ;Indicate player has not just moved in//out of cover.
+LB122:  STA CoveredStsNext      ;
 
-LB124:  LDA OverworldPalPtr
-LB127:  CLC
-LB128:  ADC MapType
-LB12A:  STA BGPalPtrLB
-
-LB12C:  LDA OverworldPalPtr+1
-LB12F:  ADC #$00
-LB131:  STA BGPalPtrUB
+LB124:  LDA OverworldPalPtr     ;
+LB127:  CLC                     ;
+LB128:  ADC MapType             ;
+LB12A:  STA BGPalPtrLB          ;Get proper background palette for current map type.
+LB12C:  LDA OverworldPalPtr+1   ;
+LB12F:  ADC #$00                ;
+LB131:  STA BGPalPtrUB          ;
 
 LB133:  JSR PalFadeIn           ;($C529)Fade in both background and sprite palettes.
 
-LB136:  LDA #$02
-LB138:  STA PPUAddrLB
-LB13A:  LDA #$24
-LB13C:  STA PPUAddrUB
+LB136:  LDA #$02                ;Prepare to erase the background blocks of nametable 1.
+LB138:  STA PPUAddrLB           ;
+LB13A:  LDA #$24                ;
+LB13C:  STA PPUAddrUB           ;The starting address is $2402 on nametable 1.
 
-LB13E:  LDA #TL_BLANK_TILE1
-LB140:  STA PPUDataByte
+LB13E:  LDA #TL_BLANK_TILE1     ;Load a blank block as the replacement tile.
+LB140:  STA PPUDataByte         ;
 
-LB142:  LDA #$0F
-LB144:  STA $4D
-
+LB142:  LDA #$0F                ;Prepare to clear 15 rows of blocks.
+LB144:  STA RowCounter          ;
+        
+NTClearLoop:
 LB146:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB149:  LDY PPUBufCount
-LB14B:  LDA #$80
-LB14D:  STA UpdateBGTiles
-LB150:  LDA PPUAddrUB
-LB152:  ORA #$80
-LB154:  STA BlockRAM,Y
-LB157:  LDA #$1C
-LB159:  TAX
-LB15A:  STA BlockRAM+1,Y
-LB15D:  LDA PPUAddrLB
-LB15F:  STA BlockRAM+2,Y
-LB162:  LDA PPUDataByte
-LB164:  STA BlockRAM+3,Y
 
-LB167:  INY
-LB168:  DEX
-LB169:  BNE $B164
-LB16B:  INC PPUEntCount
+LB149:  LDY PPUBufCount         ;Get current index into block RAM buffer.
 
-LB16D:  LDA PPUAddrLB
-LB16F:  CLC
-LB170:  ADC #$20
-LB172:  STA PPUAddrLB
-LB174:  BCC +
-LB176:  INC PPUAddrUB
+LB14B:  LDA #$80                ;Indicate background tiles need to be updated.
+LB14D:  STA UpdateBGTiles       ;
 
-LB178:* LDA PPUAddrUB
-LB17A:  ORA #$80
-LB17C:  STA BlockRAM+3,Y
+LB150:  LDA PPUAddrUB           ;Set PPU control byte. Tell PPU to do row writes. -->
+LB152:  ORA #$80                ;That means increment address by 1 after every --> 
+LB154:  STA BlockRAM,Y          ;tile write. This byte also stores PPU address upper byte.
 
-LB17F:  LDA #$1C
-LB181:  TAX
-LB182:  STA BlockRAM+4,Y
+LB157:  LDA #$1C                ;Prepare to clear 27 tiles in the current nametable row.
+LB159:  TAX                     ;
 
-LB185:  LDA PPUAddrLB
-LB187:  STA BlockRAM+5,Y
+LB15A:  STA BlockRAM+1,Y        ;Store counter byte in buffer.
 
-LB18A:  LDA PPUDataByte
-LB18C:  STA BlockRAM+6,Y
+LB15D:  LDA PPUAddrLB           ;Store PPU address lower byte.
+LB15F:  STA BlockRAM+2,Y        ;
 
-LB18F:  INY
-LB190:  DEX
-LB191:  BNE $B18C
+LB162:  LDA PPUDataByte         ;Get pattern table index byte(blank tile).
 
-LB193:  INC PPUEntCount
-LB195:  TYA
-LB196:  CLC
-LB197:  ADC #$06
-LB199:  STA PPUBufCount
-LB19B:  LDA PPUAddrLB
-LB19D:  CLC
-LB19E:  ADC #$20
-LB1A0:  STA PPUAddrLB
-LB1A2:  BCC +
-LB1A4:  INC PPUAddrUB
+LB164:* STA BlockRAM+3,Y        ;
+LB167:  INY                     ;Save blank tile to PPU buffer.
+LB168:  DEX                     ;
+LB169:  BNE -                   ;More blank tiles to store? if so, branch to store another one.
 
-LB1A6:* DEC $4D
-LB1A8:  BNE $B146
+LB16B:  INC PPUEntCount         ;Increment PPU buffer entry count.
 
-LB1AA:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB1AD:  RTS
+LB16D:  LDA PPUAddrLB           ;
+LB16F:  CLC                     ;
+LB170:  ADC #$20                ;Move to next row in nametable.
+LB172:  STA PPUAddrLB           ;
+LB174:  BCC +                   ;
+LB176:  INC PPUAddrUB           ;
+
+LB178:* LDA PPUAddrUB           ;Set PPU control byte. Tell PPU to do row writes. -->
+LB17A:  ORA #$80                ;That means increment address by 1 after every --> 
+LB17C:  STA BlockRAM+3,Y        ;tile write. This byte also stores PPU address upper byte.
+
+LB17F:  LDA #$1C                ;Prepare to clear 27 tiles in the current nametable row.
+LB181:  TAX                     ;
+
+LB182:  STA BlockRAM+4,Y        ;Store counter byte in buffer.
+
+LB185:  LDA PPUAddrLB           ;Store PPU address lower byte.
+LB187:  STA BlockRAM+5,Y        ;
+
+LB18A:  LDA PPUDataByte         ;Get pattern table index byte(blank tile).
+
+LB18C:* STA BlockRAM+6,Y        ;
+LB18F:  INY                     ;Save blank tile to PPU buffer.
+LB190:  DEX                     ;
+LB191:  BNE -                   ;More blank tiles to store? if so, branch to store another one.
+
+LB193:  INC PPUEntCount         ;Increment PPU buffer entry count.
+
+LB195:  TYA                     ;This should not be necessary as the buffer gets emptied -->
+LB196:  CLC                     ;out every vblank. It moves ahead 2 entries for all PPU -->
+LB197:  ADC #$06                ;data that does not have control bits set.
+LB199:  STA PPUBufCount         ;
+
+LB19B:  LDA PPUAddrLB           ;
+LB19D:  CLC                     ;
+LB19E:  ADC #$20                ;Move to next row in nametable.
+LB1A0:  STA PPUAddrLB           ;
+LB1A2:  BCC +                   ;
+LB1A4:  INC PPUAddrUB           ;
+
+LB1A6:* DEC RowCounter          ;Have all 15 rows of blocks been cleared?
+LB1A8:  BNE NTClearLoop         ;If not, branch to clear another row of blocks.
+
+LB1AA:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt. This loads last row of -->
+LB1AD:  RTS                     ;blocks onto the screen.
 
 ;----------------------------------------------------------------------------------------------------
 

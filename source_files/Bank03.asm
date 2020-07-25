@@ -10686,8 +10686,8 @@ LFE2C:  AND #$04                ;
 LFE2E:  ORA #$88                ;Isolate bit used to control address increment-->
 LFE30:  STA PPUControl0         ;and apply it to the current PPU settings.
 
-LFE33:  TYA                     ;
-LFE34:  INX                     ;Reload the data byte because it also contains address info.
+LFE33:  TYA                     ;Next data byte is a counter for repeating tile data loads. -->
+LFE34:  INX                     ;Store that byte in Y. only applicable if control bit flag is set.
 LFE35:  LDY BlockRAM,X          ;
 
 LoadBGDat:
