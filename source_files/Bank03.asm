@@ -298,7 +298,7 @@ LC11D:  LDA MapNumber           ;Is the current map the ground floor of Tantagel
 LC11F:  CMP #MAP_TANTCSTL_GF    ;
 LC121:  BNE ChkDrgnLordNPC      ;If not, branch to check for dragonlord NPC sprites.
 
-LC123:  LDA StoryFlags;         ;Is the dragonlord dead?
+LC123:  LDA StoryFlags          ;Is the dragonlord dead?
 LC125:  AND #F_DGNLRD_DEAD      ;
 LC127:  BEQ ChkDrgnLordNPC      ;If not, branch to check for dragonlord NPC sprites.
 
@@ -307,9 +307,9 @@ LC129:  LDA #$F0                ;Load index to wizard sprites.
 LC12B:  STA GenByte24           ;
 
 GetGuardType:
-LC12D:  LDA DisplayedLevel      ;
-LC12F:  CMP #$FF                ;Has the end of the game just been reached?
-LC131:  BNE EndNPCSpclType      ;If so, change guards to guards with trumpets.
+LC12D:  LDA DisplayedLevel      ;Has the end of the game just been reached?
+LC12F:  CMP #$FF                ;If so, change guards to guards with trumpets.
+LC131:  BNE EndNPCSpclType      ;
 
 LC133:  LDA GenByte24           ;
 LC135:  ORA #$08                ;Get offset to guards with trumpets.

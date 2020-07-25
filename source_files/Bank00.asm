@@ -6189,7 +6189,7 @@ LB7B0:  STA NPCYPos,X           ;
 LB7B2:  JSR GetNPCPosCopy       ;($BA15)Get a copy of the NPCs X and Y block position.
 
 LB7B5:  JSR ChkNPCWndwBlock     ;($BA22)Check if window blocking NPC movement.
-LB7B8:  LDA NPCWndwSts          ;Is the NPC on the screen?
+LB7B8:  LDA NPCOnScreen         ;Is the NPC on the screen?
 LB7BA:  BEQ +                   ;If not, branch to skip window block check.
 
 LB7BC:  LDA WindowBlock         ;Is a window blocking the NPC from moving?
@@ -6231,7 +6231,7 @@ LB7EF:  CMP ThisNPCXPos         ;
 LB7F1:  BCC HaltNPCMoveCalcs    ;If so, branch to stop movement.
 
 LB7F3:  JSR ChkNPCWndwBlock     ;($BA22)Check if window blocking NPC movement.
-LB7F6:  LDA NPCWndwSts          ;Is the NPC on the screen?
+LB7F6:  LDA NPCOnScreen         ;Is the NPC on the screen?
 LB7F8:  BEQ +                   ;If not, branch to skip window block check.
 
 LB7FA:  LDA WindowBlock         ;Is a window blocking the NPC from moving?
@@ -6403,8 +6403,8 @@ LB8F1:  JMP NPCMoveLoop         ;($B77C)Calculate movement for an NPC.
 UpdateNPCs2:
 LB8F4:  LDX #$00                ;Zero out index into NPC data.
 
-LB8F6:  LDA #$10
-LB8F8:  STA NPCLoopCounter
+LB8F6:  LDA #$10                ;Skip first 16 bytes of sprite RAM. This RAM is reserved -->
+LB8F8:  STA SpriteRAMIndex      ;for the player's sprites.
 
 NPCSpritesLoop:
 LB8FA:  LDA NPCXPos,X           ;Get the NPC X and Y position data. If both are not 0, -->
@@ -6455,116 +6455,132 @@ LB939:  JMP NextNPCSprites      ;($B9DF)Increment to next NPC.
 
 LB93C:* JSR GetNPCPosCopy       ;($BA15)Get a copy of the NPCs X and Y block position.
 
-LB93F:  JSR ChkNPCWndwBlock     ;($BA22)Check if window is covering the NPC.
-LB942:  LDA NPCWndwSts
-LB944:  BEQ +
+LB93F:  JSR ChkNPCWndwBlock     ;($BA22)Check if window is covering the NPC or NPC is off screen.
+LB942:  LDA NPCOnScreen         ;Is this NPC on screen?
+LB944:  BEQ +                   ;If not, branch.
 
-LB946:  LDA WindowBlock
-LB948:  CMP #$FF
-LB94A:  BEQ +
+LB946:  LDA WindowBlock         ;Is there a window covering the NPC?
+LB948:  CMP #$FF                ;
+LB94A:  BEQ +                   ;If not, branch.
 
 LB94C:  JMP NextNPCSprites      ;($B9DF)Increment to next NPC.
 
-LB94F:* LDA ThisNPCXPos
-LB951:  STA $3C
-LB953:  LDA ThisNPCYPos
-LB955:  STA $3E
+LB94F:* LDA ThisNPCXPos         ;Store a copy of the NPC's X and Y block location -->
+LB951:  STA GenByte3C           ;Has no apparent use as it is overwritten in the 
+LB953:  LDA ThisNPCYPos         ;CheckCoveredArea function below.
+LB955:  STA GenByte3E           ;
 
 LB957:  JSR CheckCoveredArea    ;($AABE)Check if player is in a covered map area.
-LB95A:  LDA CoveredStsNext
-LB95C:  CMP CoverStatus
-LB95E:  BEQ +
+LB95A:  LDA CoveredStsNext      ;
+LB95C:  CMP CoverStatus         ;Did player just transition in/out of cover?
+LB95E:  BEQ +                   ;If not, branch.
+
 LB960:  JMP NextNPCSprites      ;($B9DF)Increment to next NPC.
 
-LB963:* JSR GetNPCSpriteIndex   ;($C0F4)Get index into sprite pattern table for NPC.
-LB966:  STA $3C
+LB963:* JSR GetNPCSpriteIndex   ;($C0F4)Get index into sprite pattern table data for NPC.
+LB966:  STA GenByte3C           ;Save index to sprite pattern table data for NPC.
 
 LB968:  JSR NPCXScreenCord      ;($BA52)Get NPC pixel X coord on the screen.
 LB96B:  JSR NPCYScreenCord      ;($BA84)Get NPC pixel Y coord on the screen.
 
-LB96E:  LDY NPCLoopCounter
-LB970:  STX NPCLoopCounter
+LB96E:  LDY SpriteRAMIndex      ;Transfer Sprite RAM index into Y.
+LB970:  STX NPCROMIndex         ;Store index to current NPC being processed.
 
-LB972:  LDX $3C
-LB974:  LDA #$00
-LB976:  STA $3C
+LB972:  LDX GenByte3C           ;Load X with index into CharSpriteTbl for current NPC .
 
-LB978:  LDA #$00
-LB97A:  STA $3D
+LB974:  LDA #$00                ;Start a first sprite row in NPC.
+LB976:  STA CharYScrPos         ;
 
-LB97C:  LDA $3E
-LB97E:  CLC
-LB97F:  ADC $3D
-LB981:  STA ThisNPCXPos
-LB983:  LDA $3F
-LB985:  ADC #$00
-LB987:  BNE $B9C0
+NPCSpriteRowLoop:
+LB978:  LDA #$00                ;Start a first sprite column in NPC.
+LB97A:  STA NPCSpriteXOfst      ;
 
-LB989:  TYA
-LB98A:  STX $25
-LB98C:  TAX
-LB98D:  LDY NPCLoopCounter
+NPCSpriteColLoop:
+LB97C:  LDA NPCXPixelsLB        ;
+LB97E:  CLC                     ;Find X position of this NPC sprite by adding -->
+LB97F:  ADC NPCSpriteXOfst      ;together the NPC position with the current tile X offset.
+LB981:  STA ThisNPCXPos         ;
+
+LB983:  LDA NPCXPixelsUB        ;Did this NPC sprite go beyond the screen bounds?
+LB985:  ADC #$00                ;
+LB987:  BNE NextNPCSprite       ;If so, branch to check next NPC sprite.
+
+LB989:  TYA                     ;Before:
+LB98A:  STX NPCOffset           ;X-CharSpriteTbl, Y-Index into sprite(OAM) RAM.
+LB98C:  TAX                     ;After:
+LB98D:  LDY NPCROMIndex         ;X-Index into sprite(OAM) RAM, Y-Index into NPC data from ROM.
 
 LB98F:  LDA _NPCYPos,Y          ;Extract NPC facing direction data.
 LB992:  AND #$60                ;
+
 LB994:  ASL                     ;
 LB995:  ROL                     ;Move facing direction to LSBs.
 LB996:  ROL                     ;
 LB997:  ROL                     ;
+
 LB998:  JSR SprtFacingBaseAddr  ;($B6C2)Calculate entry into char data table based on direction.
 
 LB99B:  LDY NPCOffset           ;
-LB99D:  LDA ThisNPCXPos         ;Save updated X position of NPC.
+
+LB99D:  LDA ThisNPCXPos         ;Save updated X position of NPC sprite.
 LB99F:  STA SpriteRAM+3,X       ;
 
-LB9A2:  LDA $40
-LB9A4:  CLC
-LB9A5:  ADC $3C
-LB9A7:  STA SpriteRAM,X
+LB9A2:  LDA NPCYPixelsLB        ;Find Y position of this NPC sprite by adding -->
+LB9A4:  CLC                     ;together the NPC position with the current tile Y offset.
+LB9A5:  ADC NPCSpriteYOfst      ;
 
-LB9AA:  LDA (GenPtr22),Y
-LB9AC:  STA SpriteRAM+1,X
-LB9AF:  INY
+LB9A7:  STA SpriteRAM,X         ;Save updated Y position of NPC sprite.
 
-LB9B0:  LDA (GenPtr22),Y
-LB9B2:  DEY
-LB9B3:  STA SpriteRAM+2,X
+LB9AA:  LDA (GenPtr22),Y        ;Store pattern table byte for this sprite.
+LB9AC:  STA SpriteRAM+1,X       ;
 
-LB9B6:  TYA
-LB9B7:  STX $22
-LB9B9:  TAX
-LB9BA:  LDY $22
-LB9BC:  INY
-LB9BD:  INY
-LB9BE:  INY
-LB9BF:  INY
-LB9C0:  INX
-LB9C1:  INX
-LB9C2:  TYA
-LB9C3:  BEQ $B9E9
+LB9AF:  INY                     ;Increment to attribute byte index.
 
-LB9C5:  LDA $3D
-LB9C7:  CLC
-LB9C8:  ADC #$08
-LB9CA:  STA $3D
+LB9B0:  LDA (GenPtr22),Y        ;Get attribute table byte for this sprite.
 
-LB9CC:  CMP #$10
-LB9CE:  BNE $B97C
+LB9B2:  DEY                     ;Decrement index because it will be incremented by 2 later.
 
-LB9D0:  LDA $3C
-LB9D2:  CLC
-LB9D3:  ADC #$08
-LB9D5:  STA $3C
+LB9B3:  STA SpriteRAM+2,X       ;Store attribute table byte for this sprite.
 
-LB9D7:  CMP #$10
-LB9D9:  BNE $B978
+LB9B6:  TYA                     ;Before:
+LB9B7:  STX GenByte22           ;X-Index into sprite RAM, Y-Index into CharSpriteTbl.
+LB9B9:  TAX                     ;After:
+LB9BA:  LDY GenByte22           ;X-Index into CharSpriteTbl, Y-Index into sprite RAM.
 
-LB9DB:  LDX NPCLoopCounter
-LB9DD:  STY NPCLoopCounter
+LB9BC:  INY                     ;
+LB9BD:  INY                     ;Move to next sprite in sprite(OAM) RAM.
+LB9BE:  INY                     ;
+LB9BF:  INY                     ;
+
+NextNPCSprite:
+LB9C0:  INX                     ;Move to next entry in CharSpriteTbl.
+LB9C1:  INX                     ;2 bytes-tile pattern byte and attribute byte.
+
+LB9C2:  TYA                     ;Have all 64 possible sprites been processed?
+LB9C3:  BEQ NPCLoopDone         ;If so, branch to stop processing.
+
+LB9C5:  LDA NPCSpriteXOfst      ;
+LB9C7:  CLC                     ;Move to next tile in NPC sprite row.
+LB9C8:  ADC #$08                ;
+LB9CA:  STA NPCSpriteXOfst      ;
+
+LB9CC:  CMP #$10                ;Have both tiles in this sprite row been processed?
+LB9CE:  BNE NPCSpriteColLoop    ;If not, branch to do second tile.
+
+LB9D0:  LDA NPCSpriteYOfst      ;
+LB9D2:  CLC                     ;Move to next row in NPC sprite.
+LB9D3:  ADC #$08                ;
+LB9D5:  STA CharYScrPos         ;
+
+LB9D7:  CMP #$10                ;ave both rows in this sprite been processed?
+LB9D9:  BNE NPCSpriteRowLoop    ;If not, branch to do second row.
+
+LB9DB:  LDX NPCROMIndex         ;Load X with index to NPC data.
+LB9DD:  STY SpriteRAMIndex      ;Load Y with index into sprite RAM.
 
 NextNPCSprites:
 LB9DF:  INX                     ;
-LB9E0:  INX                     ;Move to next NPC. # bytes of data per NPC.
+LB9E0:  INX                     ;Move to next NPC. 3 bytes of data per NPC.
 LB9E1:  INX                     ;
 
 LB9E2:  CPX #$3C                ;Have all the NPCs been processed?
@@ -6573,19 +6589,21 @@ LB9E4:  BEQ NPCLoopDone         ;If so, branch to exit loop.
 LB9E6:  JMP NPCSpritesLoop      ;($B8FA)Jump to calculate sprites for next NPC.
 
 NPCLoopDone:
-LB9E9:  LDY NPCLoopCounter
-LB9EB:  LDA #$F0
+LB9E9:  LDY SpriteRAMIndex      ;Get index to current sprite in sprite RAM.
+LB9EB:  LDA #$F0                ;Set Y value out of screen range.
 
-LB9ED:  CPY #$00
-LB9EF:  BEQ UpdateNPCCounter
+HideSpriteLoop:
+LB9ED:  CPY #$00                ;Have all remaining sprites been hidden?
+LB9EF:  BEQ UpdateNPCCounter    ;If so, branch.
 
-LB9F1:  STA SpriteRAM,Y
+LB9F1:  STA SpriteRAM,Y         ;Store Y position of sprite outside of screen bounds.
 
-LB9F4:  INY
-LB9F5:  INY
-LB9F6:  INY
-LB9F7:  INY
-LB9F8:  JMP $B9ED
+LB9F4:  INY                     ;
+LB9F5:  INY                     ;Move to next sprite. 4 bytes per sprite.
+LB9F6:  INY                     ;
+LB9F7:  INY                     ;
+
+LB9F8:  JMP HideSpriteLoop      ;Jump to check the next sprite.
 
 UpdateNPCCounter:
 LB9FB:  LDA FrameCounter        ;Is the frame counter on frame 0?
@@ -6624,7 +6642,7 @@ LBA21:  RTS                     ;
 
 ChkNPCWndwBlock:
 LBA22:  LDA #$00                ;Assume the NPC is off screen.
-LBA24:  STA NPCWndwSts          ;
+LBA24:  STA NPCOnScreen         ;
 
 LBA26:  LDA ThisNPCXPos         ;
 LBA28:  SEC                     ;Get the difference between NPC and player X position.
@@ -6656,7 +6674,7 @@ LBA49:  LDA (PPUBufPtr),Y       ;Get the any window data over the given block.
 LBA4B:  STA WindowBlock         ;
 
 LBA4D:  LDA #$FF                ;
-LBA4F:  STA NPCWndwSts          ;Indicate the NPC is on the screen.
+LBA4F:  STA NPCOnScreen         ;Indicate the NPC is on the screen.
 LBA51:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------

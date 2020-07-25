@@ -201,6 +201,9 @@
 .alias EnSprtAttribDat  $3C     ;Attribute data for enemy sprites.
 .alias EnSprtXPos       $3D     ;X position data for enemy sprite.
 
+.alias NPCSpriteYOfst   $3C     ;4 sprites per NPC. Y offset of current NPC sprite tile.
+.alias NPCSpriteXOfst   $3D     ;4 sprites per NPC. X offset of current NPC sprite tile.
+
 .alias NPCDatPtr        $3C     ;Data pointer to NPC data.
 .alias NPCDatPtrLB      $3C     ;Data pointer to NPC data, lower byte.
 .alias NPCDatPtrUB      $3D     ;Data pointer to NPC data, upper byte.
@@ -284,7 +287,7 @@
 .alias WrldMapPtrUB     $41     ;Pointer to overworld map row data, upper byte.
 
 .alias WindowBlock      $40     ;#$FF-No window data at selected block.
-.alias NPCWndwSts       $41     ;#$FF-NPC on screen, #$00-NPC not on screen.
+.alias NPCOnScreen      $41     ;#$FF-NPC on screen, #$00-NPC not on screen.
 
 .alias _TargetX         $42     ;Target block, X position.
 .alias _TargetY         $43     ;Target block, Y position.
@@ -322,6 +325,8 @@
 .alias BlockClear       $4D     ;Is always 0. Maybe had some other function in Dragon's Quest.
 .alias WndForeBack      $4D     ;#$FF=Background window, #$00=Foreground window(over another window).
 .alias NPCLoopCounter   $4E     ;Counter for controlling NPC update loops.
+.alias SpriteRAMIndex   $4E     ;Index into sprite(OAM) RAM when updating NPC sprites.
+.alias NPCROMIndex      $4E     ;Index to NPC data in PRG currently being processed.
 .alias FrameCounter     $4F     ;Normally increments every frame. used for timing.
 
 .alias CharLeftRight    $50     ;Controls character animations. bit 3 atlernates animations.
