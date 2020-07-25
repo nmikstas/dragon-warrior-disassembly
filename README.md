@@ -1,5 +1,5 @@
 # dragon-warrior-disassembly
-NES Dragon Warrior software disassembly
+NES Dragon Warrior software disassembly. This project is now done! The entire game has been reverse engineered and commented. There are over 33,00 lines of code.
 
 # NOTE
 This project is part of my project portfolio: https://nmikstas.github.io/portfolio/
