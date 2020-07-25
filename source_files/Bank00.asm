@@ -6401,57 +6401,69 @@ LB8EF:  BEQ UpdateNPCs2         ;If not, branch to move on to other calculations
 LB8F1:  JMP NPCMoveLoop         ;($B77C)Calculate movement for an NPC.
 
 UpdateNPCs2:
-LB8F4:  LDX #$00
+LB8F4:  LDX #$00                ;Zero out index into NPC data.
+
 LB8F6:  LDA #$10
 LB8F8:  STA NPCLoopCounter
 
-LB8FA:  LDA NPCXPos,X
-LB8FC:  AND #$1F
-LB8FE:  BNE $B909
+NPCSpritesLoop:
+LB8FA:  LDA NPCXPos,X           ;Get the NPC X and Y position data. If both are not 0, -->
+LB8FC:  AND #$1F                ;the NPC is valid and and should be drawn on the screen. -->
+LB8FE:  BNE CalcNPCSprites      ;Branch to draw NPC sprites. An intersting effect is that -->
+LB900:  LDA NPCYPos,X           ;An NPC can be pushed to 0,0 on the map and they will -->
+LB902:  AND #$1F                ;disappear. This can only happen in Rimuldar as position -->
+LB904:  BNE CalcNPCSprites      ;0,0 can only be reached in this town.
 
-LB900:  LDA NPCYPos,X
-LB902:  AND #$1F
-LB904:  BNE $B909
+LB906:  JMP NextNPCSprites      ;($B9DF)Increment to next NPC.
 
-LB906:  JMP $B9DF
+CalcNPCSprites:
+LB909:  JSR NPCXScreenCord      ;($BA52)Get NPC pixel X coord on the screen.
 
-LB909:  JSR NPCXScrnCord        ;($BA52)Get NPC pixel X coord on the screen.
+LB90C:  LDA NPCXPixelsLB        ;
+LB90E:  CLC                     ;Add 7 to calculated difference value.
+LB90F:  ADC #$07                ;
+LB911:  STA NPCXPixelsLB        ;
 
-LB90C:  LDA $3E
-LB90E:  CLC
-LB90F:  ADC #$07
-LB911:  STA $3E
-LB913:  LDA $3F
-LB915:  ADC #$00
-LB917:  BEQ $B929
+LB913:  LDA NPCXPixelsUB        ;
+LB915:  ADC #$00                ;If upper byte is 0, NPC X position is in visible range.
+LB917:  BEQ ChkNPCYLoc          ;
 
-LB919:  CMP #$01
-LB91B:  BEQ $B920
-LB91D:  JMP $B9DF
+LB919:  CMP #$01                ;If upper byte is 1, NPC X position may be in visible range.
+LB91B:  BEQ +                   ;
 
-LB920:  LDA $3E
-LB922:  CMP #$07
-LB924:  BCC $B929
-LB926:  JMP $B9DF
+LB91D:  JMP NextNPCSprites      ;($B9DF)Increment to next NPC. This NPC not visible.
 
-LB929:  JSR NPCYScrnCord        ;($BA84)Get NPC pixel Y coord on the screen.
-LB92C:  LDA $40
-LB92E:  CLC
-LB92F:  ADC #$11
-LB931:  STA $40
-LB933:  LDA $41
-LB935:  ADC #$00
-LB937:  BEQ $B93C
-LB939:  JMP $B9DF
-LB93C:  JSR GetNPCPosCopy       ;($BA15)Get a copy of the NPCs X and Y block position.
+LB920:* LDA NPCXPixelsLB        ;Is upper byte 1 and lower byte 7 or below?
+LB922:  CMP #$07                ;
+LB924:  BCC ChkNPCYLoc          ;If so, branch. NPC X position is in visible range.
 
-LB93F:  JSR ChkNPCWndwBlock     ;($BA22)Check if window blocking NPC movement.
+LB926:  JMP NextNPCSprites      ;($B9DF)Increment to next NPC.
+
+ChkNPCYLoc:
+LB929:  JSR NPCYScreenCord      ;($BA84)Get NPC pixel Y coord on the screen.
+
+LB92C:  LDA NPCYPixelsLB        ;
+LB92E:  CLC                     ;Add 17 to calculated difference value.
+LB92F:  ADC #$11                ;
+LB931:  STA NPCYPixelsLB        ;
+
+LB933:  LDA NPCYPixelsUB        ;
+LB935:  ADC #$00                ;If upper byte is 0, NPC X position is in visible range.
+LB937:  BEQ +                   ;
+
+LB939:  JMP NextNPCSprites      ;($B9DF)Increment to next NPC.
+
+LB93C:* JSR GetNPCPosCopy       ;($BA15)Get a copy of the NPCs X and Y block position.
+
+LB93F:  JSR ChkNPCWndwBlock     ;($BA22)Check if window is covering the NPC.
 LB942:  LDA NPCWndwSts
 LB944:  BEQ +
+
 LB946:  LDA WindowBlock
 LB948:  CMP #$FF
-LB94A:  BEQ $B94F
-LB94C:  JMP $B9DF
+LB94A:  BEQ +
+
+LB94C:  JMP NextNPCSprites      ;($B9DF)Increment to next NPC.
 
 LB94F:* LDA ThisNPCXPos
 LB951:  STA $3C
@@ -6462,20 +6474,24 @@ LB957:  JSR CheckCoveredArea    ;($AABE)Check if player is in a covered map area
 LB95A:  LDA CoveredStsNext
 LB95C:  CMP CoverStatus
 LB95E:  BEQ +
-LB960:  JMP $B9DF
+LB960:  JMP NextNPCSprites      ;($B9DF)Increment to next NPC.
 
 LB963:* JSR GetNPCSpriteIndex   ;($C0F4)Get index into sprite pattern table for NPC.
 LB966:  STA $3C
-LB968:  JSR NPCXScrnCord        ;($BA52)Get NPC pixel X coord on the screen.
-LB96B:  JSR NPCYScrnCord        ;($BA84)Get NPC pixel Y coord on the screen.
+
+LB968:  JSR NPCXScreenCord      ;($BA52)Get NPC pixel X coord on the screen.
+LB96B:  JSR NPCYScreenCord      ;($BA84)Get NPC pixel Y coord on the screen.
 
 LB96E:  LDY NPCLoopCounter
 LB970:  STX NPCLoopCounter
+
 LB972:  LDX $3C
 LB974:  LDA #$00
 LB976:  STA $3C
+
 LB978:  LDA #$00
 LB97A:  STA $3D
+
 LB97C:  LDA $3E
 LB97E:  CLC
 LB97F:  ADC $3D
@@ -6506,11 +6522,11 @@ LB9A4:  CLC
 LB9A5:  ADC $3C
 LB9A7:  STA SpriteRAM,X
 
-LB9AA:  LDA ($22),Y
+LB9AA:  LDA (GenPtr22),Y
 LB9AC:  STA SpriteRAM+1,X
-
 LB9AF:  INY
-LB9B0:  LDA ($22),Y
+
+LB9B0:  LDA (GenPtr22),Y
 LB9B2:  DEY
 LB9B3:  STA SpriteRAM+2,X
 
@@ -6526,34 +6542,43 @@ LB9C0:  INX
 LB9C1:  INX
 LB9C2:  TYA
 LB9C3:  BEQ $B9E9
+
 LB9C5:  LDA $3D
 LB9C7:  CLC
 LB9C8:  ADC #$08
 LB9CA:  STA $3D
+
 LB9CC:  CMP #$10
 LB9CE:  BNE $B97C
+
 LB9D0:  LDA $3C
 LB9D2:  CLC
 LB9D3:  ADC #$08
 LB9D5:  STA $3C
+
 LB9D7:  CMP #$10
 LB9D9:  BNE $B978
+
 LB9DB:  LDX NPCLoopCounter
 LB9DD:  STY NPCLoopCounter
 
-LB9DF:  INX
-LB9E0:  INX
-LB9E1:  INX
-LB9E2:  CPX #$3C
-LB9E4:  BEQ $B9E9
+NextNPCSprites:
+LB9DF:  INX                     ;
+LB9E0:  INX                     ;Move to next NPC. # bytes of data per NPC.
+LB9E1:  INX                     ;
 
-LB9E6:  JMP $B8FA
+LB9E2:  CPX #$3C                ;Have all the NPCs been processed?
+LB9E4:  BEQ NPCLoopDone         ;If so, branch to exit loop.
 
+LB9E6:  JMP NPCSpritesLoop      ;($B8FA)Jump to calculate sprites for next NPC.
+
+NPCLoopDone:
 LB9E9:  LDY NPCLoopCounter
 LB9EB:  LDA #$F0
 
 LB9ED:  CPY #$00
 LB9EF:  BEQ UpdateNPCCounter
+
 LB9F1:  STA SpriteRAM,Y
 
 LB9F4:  INY
@@ -6601,40 +6626,44 @@ ChkNPCWndwBlock:
 LBA22:  LDA #$00                ;Assume the NPC is off screen.
 LBA24:  STA NPCWndwSts          ;
 
-LBA26:  LDA ThisNPCXPos
-LBA28:  SEC
-LBA29:  SBC CharXPos
-LBA2B:  CLC
-LBA2C:  ADC #$08
-LBA2E:  STA $3C
-LBA30:  CMP #$10
-LBA32:  BCC +
-LBA34:  RTS
+LBA26:  LDA ThisNPCXPos         ;
+LBA28:  SEC                     ;Get the difference between NPC and player X position.
+LBA29:  SBC CharXPos            ;
 
-LBA35:* LDA ThisNPCYPos
-LBA37:  SEC
-LBA38:  SBC CharYPos
-LBA3A:  CLC
-LBA3B:  ADC #$07
-LBA3D:  STA $3E
-LBA3F:  CMP #$0F
-LBA41:  BCC +
-LBA43:  RTS
+LBA2B:  CLC                     ;
+LBA2C:  ADC #$08                ;Add 8 to make the value positive.
+LBA2E:  STA XPosFromLeft        ;
+
+LBA30:  CMP #$10                ;Is NPC out of visible range in the X direction?
+LBA32:  BCC +                   ;
+LBA34:  RTS                     ;If so, exit. NPC is off screen.
+
+LBA35:* LDA ThisNPCYPos         ;
+LBA37:  SEC                     ;Get the difference between NPC and player Y position.
+LBA38:  SBC CharYPos            ;
+
+LBA3A:  CLC                     ;
+LBA3B:  ADC #$07                ;Add 7 to make the value positive.
+LBA3D:  STA YPosFromTop         ;
+
+LBA3F:  CMP #$0F                ;Is NPC out of visible range in the Y direction?
+LBA41:  BCC +                   ;
+LBA43:  RTS                     ;If so, exit. NPC is off screen.
 
 LBA44:* JSR CalcPPUBufAddr      ;($C596)Calculate PPU address.
 LBA47:  LDY #$00                ;
 LBA49:  LDA (PPUBufPtr),Y       ;Get the any window data over the given block.
 LBA4B:  STA WindowBlock         ;
 
-LBA4D:  LDA #$FF
-LBA4F:  STA NPCWndwSts
-LBA51:  RTS
+LBA4D:  LDA #$FF                ;
+LBA4F:  STA NPCWndwSts          ;Indicate the NPC is on the screen.
+LBA51:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-NPCXScrnCord:
-LBA52:  LDA NPCXPos,X           ;Extract NPC X position data.
-LBA54:  AND #$1F                ;
+NPCXScreenCord:
+LBA52:  LDA NPCXPos,X           ;
+LBA54:  AND #$1F                ;Extract NPC X position data.
 LBA56:  STA NPCXPixelsUB        ;
 
 LBA58:  LDA NPCMidPos,X         ;Save NPC mid-movement X pixel position.
@@ -6643,68 +6672,68 @@ LBA5A:  STA NPCXPixelsLB        ;
 LBA5C:  LSR NPCXPixelsUB        ;
 LBA5E:  ROR NPCXPixelsLB        ;
 LBA60:  LSR NPCXPixelsUB        ;
-LBA62:  ROR NPCXPixelsLB        ;Calculate NPC X pixel location on the screen.
+LBA62:  ROR NPCXPixelsLB        ;Calculate NPC X pixel location on the map.
 LBA64:  LSR NPCXPixelsUB        ;
 LBA66:  ROR NPCXPixelsLB        ;
 LBA68:  LSR NPCXPixelsUB        ;
 LBA6A:  ROR NPCXPixelsLB        ;
 
-LBA6C:  LDA NPCXPixelsLB
-LBA6E:  SEC
-LBA6F:  SBC CharXPixelsLB
-LBA71:  STA NPCXPixelsLB
+LBA6C:  LDA NPCXPixelsLB        ;
+LBA6E:  SEC                     ;
+LBA6F:  SBC CharXPixelsLB       ;Subtract player's X pixel location from the NPC's X pixel -->
+LBA71:  STA NPCXPixelsLB        ;location. Save the result in the NPC's X pixel location. -->
+LBA73:  LDA NPCXPixelsUB        ;The NPC's X location is a signed value of the difference -->
+LBA75:  SBC CharXPixelsUB       ;between the player and NPC X coordinates.
+LBA77:  STA NPCXPixelsUB        ;
 
-LBA73:  LDA NPCXPixelsUB
-LBA75:  SBC CharXPixelsUB
-LBA77:  STA NPCXPixelsUB
+LBA79:  LDA NPCXPixelsLB        ;
+LBA7B:  EOR #$80                ;A wierd way of adding 128. Saves 1 instruction(CLC).
+LBA7D:  STA NPCXPixelsLB        ;Add 128 to the result. If the number is between 0 and 256 -->
+LBA7F:  BMI +                   ;then the NPC may be visible.
+LBA81:  INC NPCXPixelsUB        ;
 
-LBA79:  LDA NPCXPixelsLB
-LBA7B:  EOR #$80
-LBA7D:  STA NPCXPixelsLB
-LBA7F:  BMI +
-
-LBA81:  INC NPCXPixelsUB
-LBA83:* RTS
+LBA83:* RTS                     ;Exit NPC X difference calculation.
 
 ;----------------------------------------------------------------------------------------------------
 
-NPCYScrnCord:
-LBA84:  LDA NPCYPos,X           ;Extract NPC Y position data.
-LBA86:  AND #$1F                ;
-LBA88:  STA $41
+NPCYScreenCord:
+LBA84:  LDA NPCYPos,X           ;
+LBA86:  AND #$1F                ;Extract NPC Y position data.
+LBA88:  STA NPCYPixelsUB        ;
 
-LBA8A:  LDA #$00
-LBA8C:  STA $40
+LBA8A:  LDA #$00                ;Zero out lower byte.
+LBA8C:  STA NPCYPixelsLB        ;
 
-LBA8E:  LSR $41
-LBA90:  ROR $40
-LBA92:  LSR $41
-LBA94:  ROR $40
-LBA96:  LSR $41
-LBA98:  ROR $40
-LBA9A:  LSR $41
-LBA9C:  ROR $40
+LBA8E:  LSR NPCYPixelsUB        ;
+LBA90:  ROR NPCYPixelsLB        ;
+LBA92:  LSR NPCYPixelsUB        ;
+LBA94:  ROR NPCYPixelsLB        ;Calculate NPC Y pixel location on the map.
+LBA96:  LSR NPCYPixelsUB        ;
+LBA98:  ROR NPCYPixelsLB        ;
+LBA9A:  LSR NPCYPixelsUB        ;
+LBA9C:  ROR NPCYPixelsLB        ;
 
-LBA9E:  LDA NPCMidPos,X
-LBAA0:  AND #$0F
-LBAA2:  ORA $40
-LBAA4:  STA $40
+LBA9E:  LDA NPCMidPos,X         ;Save NPC mid-movement Y pixel position.
+LBAA0:  AND #$0F                ;
 
-LBAA6:  SEC
-LBAA7:  SBC CharYPixelsLB
-LBAA9:  STA $40
+LBAA2:  ORA NPCYPixelsLB        ;Add in the NPC mid-movement Y pixel position.
+LBAA4:  STA NPCYPixelsLB        ;
 
-LBAAB:  LDA $41
-LBAAD:  SBC CharYPixelsUB
-LBAAF:  STA $41
+LBAA6:  SEC                     ;
+LBAA7:  SBC CharYPixelsLB       ;Subtract player's Y pixel location from the NPC's Y pixel -->
+LBAA9:  STA NPCYPixelsLB        ;location. Save the result in the NPC's Y pixel location. -->
+LBAAB:  LDA NPCYPixelsUB        ;The NPC's Y location is a signed value of the difference -->
+LBAAD:  SBC CharYPixelsUB       ;between the player and NPC X coordinates.
+LBAAF:  STA NPCYPixelsUB        ;
 
-LBAB1:  LDA $40
-LBAB3:  CLC
-LBAB4:  ADC #$6F
-LBAB6:  STA $40
-LBAB8:  BCC $BABC
-LBABA:  INC $41
-LBABC:  RTS
+LBAB1:  LDA NPCYPixelsLB        ;
+LBAB3:  CLC                     ;
+LBAB4:  ADC #$6F                ;Add 111 to the result. If the number is between 0 and 240 -->
+LBAB6:  STA NPCYPixelsLB        ;then the NPC may be visible.
+LBAB8:  BCC +                   ;
+LBABA:  INC NPCYPixelsUB        ;
+
+LBABC:* RTS                     ;Exit NPC Y difference calculation.
 
 ;----------------------------------------------------------------------------------------------------
 

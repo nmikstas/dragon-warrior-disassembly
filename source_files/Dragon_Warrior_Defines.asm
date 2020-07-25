@@ -328,7 +328,7 @@
 
 .alias _NPCXPos         $0051   ;NPC X block position on current map.
 .alias _NPCYPos         $0052   ;NPC Y block position on current map.
-.alias _NPCMidPos       $0053   ;NPC offset from current tile.
+.alias _NPCMidPos       $0053   ;NPC offset from current tile. Upper nibble=X, lower nibble=y.
 
 .alias NPCXPos          $51     ;Through $8A. NPC X block position on current map. Also NPC type.
 .alias NPCYPos          $52     ;Through $8B. NPC Y block position on current map. Also NPC direction.
