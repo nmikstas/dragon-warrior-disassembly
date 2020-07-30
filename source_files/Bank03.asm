@@ -423,12 +423,14 @@ LC1B8:  RTS                     ;
 ClearNameTable:
 LC1B9:  LDA PPUDataByte         ;
 LC1BB:  LDX #$1E                ;
+
+ClearNTOuterLoop:
 LC1BD:* LDY #$20                ;
 LC1BF:* STA PPUIOReg            ;
 LC1C2:  DEY                     ;Load a blank tile into every address of selected nametable.
 LC1C3:  BNE -                   ;
 LC1C5:  DEX                     ;
-LC1C6:  BNE --                  ;
+LC1C6:  BNE ClearNTOuterLoop    ;
 LC1C8:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
@@ -441,7 +443,7 @@ LC1CD:  STA MultRsltUB          ;
 MultiplyLoop:
 LC1CF:  LDA MultNum1LB          ;
 LC1D1:  ORA MultNum1UB          ;
-LC1D3:  BEQ ++                  ;
+LC1D3:  BEQ MultEnd             ;
 LC1D5:  LSR MultNum1UB          ;
 LC1D7:  ROR MultNum1LB          ;This function multiplies the two-->
 LC1D9:  BCC +                   ;16-bit numbers stored in $3C,$3D-->
@@ -455,7 +457,9 @@ LC1E6:  STA MultRsltUB          ;
 LC1E8:* ASL MultNum2LB          ;
 LC1EA:  ROL MultNum2UB          ;
 LC1EC:  JMP MultiplyLoop        ;
-LC1EF:* RTS
+
+MultEnd:
+LC1EF:  RTS                     ;Done multiplying.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -466,7 +470,9 @@ LC1F2:  STA DivNmu1UB           ;When only doing 8-bit division.
 WordDivide:
 LC1F4:  LDY #$10                ;
 LC1F6:  LDA #$00                ;
-LC1F8:* ASL DivNum1LB           ;
+
+DivLoop:
+LC1F8:  ASL DivNum1LB           ;
 LC1FA:  ROL DivNmu1UB           ;
 LC1FC:  STA DivRemainder        ;
 LC1FE:  ADC DivRemainder        ;
@@ -478,7 +484,7 @@ LC207:  CLC                     ;The 8-bit quotient is stored in $3C and-->
 LC208:  ADC DivNum2             ;the 8-bit remainder is stored in $40.
 LC20A:  DEC DivQuotient         ;
 LC20C:* DEY                     ;
-LC20D:  BNE --                  ;
+LC20D:  BNE DivLoop             ;
 LC20F:  STA DivRemainder        ;
 LC211:  RTS                     ;
 
@@ -524,14 +530,14 @@ ClearAttribByte:
 LC244:  LDA NTBlockX            ;Get the offset for the current block in the nametable row.
 LC246:  ASL                     ;*2. 2 tiles per block.
 LC247:  CLC                     ;
-LC248:  ADC XPosFromCenter      ;Pow position of tile(0-63).
+LC248:  ADC XPosFromCenter      ;Column position of tile(0-63).
 LC24A:  AND #$3F                ;Max. 64 tiles in a row spanning the 2 nametables.
 LC24C:  PHA                     ;Save row position on the stack.
 
 LC24D:  LDA NTBlockY            ;Get the offset for the current block in the nametable column.
 LC24F:  ASL                     ;*2. 2 tiles per block.
 LC250:  CLC                     ;
-LC251:  ADC YPosFromCenter      ;Column position(0-30).
+LC251:  ADC YPosFromCenter      ;Row position(0-30).
 LC253:  CLC                     ;
 LC254:  ADC #$1E                ;Ensure dividend is positive since YPosFromCenter is signed.
 
@@ -541,10 +547,10 @@ LC25A:  STA DivNum2             ;
 LC25C:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
 
 LC25F:  LDA DivRemainder        ;
-LC261:  STA NTYPos              ;Store column position.
+LC261:  STA NTYPos              ;Store row position.
 LC263:  PLA                     ;Restore A from stack.
 
-LC264:  STA NTXPos              ;Store row position.
+LC264:  STA NTXPos              ;Store column position.
 LC266:  JSR PrepClearAttrib     ;($C270)Calculate attribute table byte for blanking tiles.
 LC269:  RTS
 
@@ -766,9 +772,9 @@ LC5E0:  ASL NTXPos              ;Not used.
 LC5E2:  ASL NTYPos              ;
 
 CalcAttribAddr:
-LC5E4:  LDA NTYPos              ;Drop lower 2 bytes and multiply by 2. -->
-LC5E6:  AND #$FC                ;Attribute table byte controls 4x4 tile square.
-LC5E8:  ASL                     ;
+LC5E4:  LDA NTYPos              ;
+LC5E6:  AND #$FC                ;Drop lower 2 bytes and multiply by 2. -->
+LC5E8:  ASL                     ;Attribute table byte controls 4x4 tile square.
 LC5E9:  STA PPUAddrLB           ;
 
 LC5EB:  LDA NTXPos              ;
@@ -944,9 +950,8 @@ LC6C8:  RTS                     ;
 
 ;----------------------------------------------------------------------------------------------------
 
-;The following functions do not appear to be used. Functions from Dragon Quest.
+;The following appear to be unused functions from Dragon Quest.
 
-DQFunc04:
 LC6C9:  .byte $A2, $00, $A9, $5F, $95, $AF, $E8, $E0, $05, $D0, $F9, $A9, $FA, $95, $AF, $CA
 LC6D9:  .byte $A9, $0A, $85, $3E, $A9, $00, $85, $3F, $20, $F4, $C1, $A5, $40, $95, $AF, $CA
 LC6E9:  .byte $A5, $3C, $05, $3D, $D0, $EA, $60
@@ -992,9 +997,9 @@ LC717:  JMP BattleBlock         ;Branch always.
 ;This portion of code should never run under normal circumstances.
 
 BlankBlock:
-LC71A:  LDA #$00                ;
-LC71C:  STA BlkRemoveFlgs       ;Remove no tiles from the current block.
-LC71E:  STA PPUHorzVert         ;PPU column write.
+LC71A:  LDA #$00                ;Remove no tiles from the current block.
+LC71C:  STA BlkRemoveFlgs       ;PPU column write.
+LC71E:  STA PPUHorzVert         ;
 
 LC720:  JSR ModMapBlock         ;($AD66)Change block on map.
 
@@ -1240,7 +1245,7 @@ LCA03:  LDA #MSC_VILLAGE        ;Village music.
 LCA05:  BRK                     ;
 LCA06:  .byte $04, $17          ;($81A0)InitMusicSFX, bank 1.
 
-LCA08:  JSR LoadSaveMenus       ;($F678)Intro passed.  Show load/save windows.
+LCA08:  JSR LoadSaveMenus       ;($F678)Intro passed. Show load/save windows.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -1640,7 +1645,7 @@ LCC4F:  ADC #$10                ;
 LCC51:  STA GwaelinOffset       ;Has Gwaelin moved 16 pixels?
 LCC53:  BCC +                   ;If so, time to increment her X position.
 
-LCC55:  INC GwaelinXPos         ;increment Gwaelin's xposition.
+LCC55:  INC GwaelinXPos         ;increment Gwaelin's X position.
 
 LCC57:* JSR DoSprites           ;($B6DA)Update player and NPC sprites.
 
@@ -1747,7 +1752,7 @@ LCCEE:  .byte $0E, $17          ;($939A)DoEndCredits, bank 1.
 LCCF0:  JSR MMCShutdown         ;($FC88)Switch to PRG bank 3 and disable PRG RAM.
 
 Spinlock1:
-LCCF3:  JMP Spinlock1           ;($CCF3)Spinlock the game.  Reset required to do anything else.
+LCCF3:  JMP Spinlock1           ;($CCF3)Spinlock the game. Reset required to do anything else.
 
 ;----------------------------------------------------------------------------------------------------
 
@@ -2161,7 +2166,7 @@ GetEnemyInRow:
 LCF0D:  JSR UpdateRandNum       ;($C55B)Get random number.
 LCF10:  LDA RandNumUB           ;
 LCF12:  AND #$07                ;Keep only 3 LSBs. Is number between 0 and 4? If not, branch -->
-LCF14:  CMP #$05                ;to get another random number as there are only 2 enemy slots -->
+LCF14:  CMP #$05                ;to get another random number as there are only 5 enemy slots -->
 LCF16:  BCS GetEnemyInRow       ;per enemy zone.
 
 LCF18:  ADC EnemyOffset         ;Add offset to the enemy row to get the specific enemy.
@@ -2437,7 +2442,7 @@ LD08C:  LDA #$00                ;Remove all 4 princess blocks from screen.
 LD08E:  STA BlkRemoveFlgs       ;
 LD090:  JSR ModMapBlock         ;($AD66)Change block on map.
 
-LD093:  JSR DoDialogLoBlock     ;($C7CB)Princess Gwaelin embraces thee.
+LD093:  JSR DoDialogLoBlock     ;($C7CB)Princess Gwaelin embraces thee...
 LD096:  .byte $B7               ;TextBlock12, entry 7.
 
 LD097:  LDA #MSC_PRNCS_LOVE     ;Gwaelin's love music.
@@ -2824,7 +2829,7 @@ LD268:  BNE DoFinalDialog       ;($D242)Though hast no business here. Go away...
 ;----------------------------------------------------------------------------------------------------
 
 ChkCursedDialog:
-LD26A:  CMP #$67                ;Is the player taling to the curse remover?
+LD26A:  CMP #$67                ;Is the player talking to the curse remover?
 LD26C:  BNE ChkWeaponDialog     ;If not, branch.
 
 LD26E:  LDA ModsnSpells         ;Is the player cursed?
@@ -3045,7 +3050,7 @@ LD38F:  STA PPUControl1         ;Set display to greyscale colors.
 
 LD392:  LDX #$1E                ;make screen greyscale for 30 frames.
 LD394:* JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LD397:  DEX                     ;Done with black and screen?
+LD397:  DEX                     ;Done with black and white screen?
 LD398:  BNE -                   ;If not, branch to do another frame.
 
 LD39A:  LDA #%00011000          ;Set display to RGB colors.
@@ -3182,7 +3187,7 @@ LD449:  .byte $25               ;TextBlock19, entry 5.
 LD44A:  JSR Dowindow            ;($C6F0)display on-screen window.
 LD44D:  .byte WND_YES_NO1       ;Yes/no selection window.
 
-LD44E:  CMP #$00                ;Does pplayer want to continue playing?
+LD44E:  CMP #$00                ;Does player want to continue playing?
 LD450:  BEQ KingEndTalk         ;If so, branch.
 
 LD452:  JSR DoDialogHiBlock     ;($C7C5)Rest then for a while...
