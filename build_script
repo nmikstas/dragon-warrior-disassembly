@@ -1,32 +1,75 @@
 #!/bin/bash
 
-printf "Assembling individual memory banks...\n\n"
+red=`tput setaf 1`
+green=`tput setaf 2`
+yellow=`tput setaf 3`
+blue=`tput setaf 4`
+magenta=`tput setaf 5`
+cyan=`tput setaf 6`
+reset=`tput sgr0`
 
+printf "\n${magenta}Deleting previous build files...${reset}\n"
+rm ./output_files/*
+
+printf "\n${magenta}Assembling individual PRG banks...${reset}\n\n"
 cd source_files
 
-../Ophis/Ophis Bank00.asm ../output_files/Bank00.bin
-../Ophis/Ophis Bank01.asm ../output_files/Bank01.bin
-../Ophis/Ophis Bank02.asm ../output_files/Bank02.bin
-../Ophis/Ophis Bank03.asm ../output_files/Bank03.bin
-
-printf "\nCalculating checksums of individual memory banks...\n\n"
-
+../Ophis/ophis Bank00.asm ../output_files/Bank00.bin
+../Ophis/ophis Bank01.asm ../output_files/Bank01.bin
+../Ophis/ophis Bank02.asm ../output_files/Bank02.bin
+../Ophis/ophis Bank03.asm ../output_files/Bank03.bin
 cd ..
 
-md5sum output_files/Bank00.bin
-md5sum original_files/Bank00.bin
-md5sum output_files/Bank01.bin
-md5sum original_files/Bank01.bin
-md5sum output_files/Bank02.bin
-md5sum original_files/Bank02.bin
-md5sum output_files/Bank03.bin
-md5sum original_files/Bank03.bin
+printf "\n${magenta}Calculating checksums of individual PRG banks...${reset}\n\n"
+printf -- "${yellow}--------------------PRG Bank 00--------------------${reset}\n"
+out00=($(md5sum output_files/Bank00.bin))
+org00=($(md5sum original_files/Bank00.bin))
+printf "Assembled md5sum = $out00\n"
+printf "Original  md5sum = $org00\n"
+if [ "$out00" = "$org00" ]; then
+    printf "${green}Pass${reset}\n\n"
+else
+    printf "${red}Fail${reset}\n\n"
+fi
 
-#printf "\nAssembling working ROM...\n"
+printf -- "${yellow}--------------------PRG Bank 01--------------------${reset}\n"
+out01=($(md5sum output_files/Bank01.bin))
+org01=($(md5sum original_files/Bank01.bin))
+printf "Assembled md5sum = $out01\n"
+printf "Original  md5sum = $org01\n"
+if [ "$out01" = "$org01" ]; then
+    printf "${green}Pass${reset}\n\n"
+else
+    printf "${red}Fail${reset}\n\n"
+fi
 
-#cat original_files/Header.bin output_files/Bank00.bin output_files/Bank01.bin output_files/Bank02.bin output_files/Bank03.bin original_files/CHR_ROM.bin > assembled_dragon_warrior.nes
+printf -- "${yellow}--------------------PRG Bank 02--------------------${reset}\n"
+out02=($(md5sum output_files/Bank02.bin))
+org02=($(md5sum original_files/Bank02.bin))
+printf "Assembled md5sum = $out02\n"
+printf "Original  md5sum = $org02\n"
+if [ "$out02" = "$org02" ]; then
+    printf "${green}Pass${reset}\n\n"
+else
+    printf "${red}Fail${reset}\n\n"
+fi
 
-#printf "\nCalculating checksums of working ROMS...\n\n"
+printf -- "${yellow}--------------------PRG Bank 03--------------------${reset}\n"
+out03=($(md5sum output_files/Bank03.bin))
+org03=($(md5sum original_files/Bank03.bin))
+printf "Assembled md5sum = $out03\n"
+printf "Original  md5sum = $org03\n"
+if [ "$out03" = "$org03" ]; then
+    printf "${green}Pass${reset}\n\n"
+else
+    printf "${red}Fail${reset}\n\n"
+fi
 
-#md5sum assembled_dragon_warrior.nes
-#md5sum original_dragon_warrior.nes
+#printf "${magenta}Combining Assembled banks into a ROM...${reset}\n"
+#cat original_files/Header.bin \
+#	output_files/Bank00.bin \
+#	output_files/Bank01.bin \
+#	output_files/Bank02.bin \
+#	output_files/Bank03.bin \
+#	original_files/CHR_ROM.bin \
+#	> assembled_dragon_warrior.nes

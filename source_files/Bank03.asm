@@ -2,7 +2,7 @@
 
 .include "Dragon_Warrior_Defines.asm"
 
-;--------------------------------------[ Forward declarations ]--------------------------------------
+;--------------------------------------[ Forward Declarations ]--------------------------------------
 
 .alias BankPointers             $8000
 .alias UpdateSound              $8028
@@ -425,7 +425,7 @@ LC1B9:  LDA PPUDataByte         ;
 LC1BB:  LDX #$1E                ;
 
 ClearNTOuterLoop:
-LC1BD:* LDY #$20                ;
+LC1BD:  LDY #$20                ;
 LC1BF:* STA PPUIOReg            ;
 LC1C2:  DEY                     ;Load a blank tile into every address of selected nametable.
 LC1C3:  BNE -                   ;
@@ -2573,8 +2573,8 @@ LD134:  LDA StoryFlags          ;Is the dragonlord dead?
 LD136:  AND #F_DGNLRD_DEAD      ;
 LD138:  BEQ RegularDialog       ;If not, branch for normal dialog.
 
-LD13A:  LDA MapNumber           ;
-LD13C:  CMP #MAP_TANTCSTL_GF    ;Is player in Tantgel castle after defeating the dragonlord?
+LD13A:  LDA MapNumber           ;Is player in Tantgel castle after defeating the dragonlord?
+LD13C:  CMP #MAP_TANTCSTL_GF    ;
 LD13E:  BNE TantEndDialog       ;If not, branch to do other post dragonlord dialog.
 
 LD140:  JSR DoDialogHiBlock     ;($C7C5)King Lorik awaits...
@@ -4463,8 +4463,8 @@ LDA9F:  CMP #SPL_OUTSIDE        ;Was outside cast?
 LDAA1:  BNE ChkHealmore         ;If not, branch to move on.
 
 ChkErdricksCave:
-LDAA3:  LDA MapNumber           ;
-LDAA5:  CMP #MAP_ERDRCK_B1      ;Is player in Erdrick's cave?
+LDAA3:  LDA MapNumber           ;Is player in Erdrick's cave?
+LDAA5:  CMP #MAP_ERDRCK_B1      ;
 LDAA7:  BCC ChkGarinhamCave     ;If not, branch.
 
 LDAA9:  LDX #$27                ;Overworld at Erdrick's cave entrance.
@@ -5164,7 +5164,7 @@ LDE23:  AND #$07                ;Choose a random number that is 0, 1, 2, 3, 4 or
 LDE25:  CMP #$05                ;
 LDE27:  BEQ HarpRNGLoop         ;The harp will summon either a slime, red slime, drakee -->
 LDE29:  CMP #$07                ;ghost, magician or scorpion.
-LDE2B:  BEQ HarpRNGLoop         ;Work even after the dragon lord is dead.
+LDE2B:  BEQ HarpRNGLoop         ;Works even after the dragon lord is dead.
 
 LDE2D:  PHA                     ;Store the random enemy number on the stack.
 
