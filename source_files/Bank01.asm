@@ -59,7 +59,7 @@ L8031:  LDA SFXActive           ;Is an SFX active?
 L8033:  BEQ +                   ;If not, branch to skip SFX processing.
 
 L8035:  LDA NoteOffset          ;
-L8037:  PHA                     ;Save a copy of note offset and then clear-->
+L8037:  PHA                     ;Save a copy of note offset and then clear
 L8038:  LDA #$00                ;it as it is not used in SFX processing.
 L803A:  STA NoteOffset          ;
 
@@ -86,10 +86,10 @@ L8057:  STA SQ2Cntrl1           ;
 L805A:  LDA #%00110000          ;Turn off volume for noise channel.
 L805C:  STA NoiseCntrl0         ;
 
-L805F:* LDA TempoCntr           ;Tempo counter has the effect of slowing down the length-->
-L8061:  CLC                     ;The music plays.  If the tempo is less than 150, the-->
-L8062:  ADC Tempo               ;amount it slows down is linear.  For example, if tempo is-->
-L8064:  STA TempoCntr           ;125, the music will slow down by 150/125 = 1.2 times.-->
+L805F:* LDA TempoCntr           ;Tempo counter has the effect of slowing down the length
+L8061:  CLC                     ;The music plays.  If the tempo is less than 150, the
+L8062:  ADC Tempo               ;amount it slows down is linear.  For example, if tempo is
+L8064:  STA TempoCntr           ;125, the music will slow down by 150/125 = 1.2 times.
 L8066:  BCC SoundUpdateEnd      ;The values varies if tempo is greater than 150.
 
 L8068:  SBC #$96                ;Subtract 150 from tempo counter.
@@ -127,7 +127,7 @@ L8093:  RTS                     ;
 
 MusicReturn:
 L8094:  LDA SQ1ReturnLB,X       ;
-L8096:  STA SQ1IndexLB,X        ;Load return address into sound channel-->
+L8096:  STA SQ1IndexLB,X        ;Load return address into sound channel
 L8098:  LDA SQ1ReturnUB,X       ;data address.  Process byte if not $00.
 L809A:  STA SQ1IndexUB,X        ;
 L809C:  BNE ProcessAudioByte    ;
@@ -143,7 +143,7 @@ L80A2:  STX MusicTemp           ;Save X.
 L80A4:  TAX                     ;Use calculated value as index into note table.
 
 L80A5:  LDA MusicalNotesTbl,X   ;
-L80A8:  STA SQ1Cntrl2,Y         ;Store note data bytes into its-->
+L80A8:  STA SQ1Cntrl2,Y         ;Store note data bytes into its
 L80AB:  LDA MusicalNotesTbl+1,X ;corresponding hardware registers.
 L80AE:  STA SQ1Cntrl3,Y         ;
 
@@ -367,7 +367,7 @@ L81B3:  LDA MscStrtIndxTbl+1,Y  ;Get upper byte of pointer from table.
 L81B6:  BNE +                   ;Is there a valid pointer? If so branch to save pointer.
 
 L81B8:  LDA MscStrtIndxTbl+1,X  ;
-L81BB:  STA SQ1IndexUB,X        ;No music data for this chnnel in the table.  Load-->
+L81BB:  STA SQ1IndexUB,X        ;No music data for this chnnel in the table.  Load
 L81BD:  LDA MscStrtIndxTbl,X    ;the "no sound" data instead.
 L81C0:  JMP ++                  ;
 
@@ -409,7 +409,7 @@ L81F0:  STA NoisIndexUB         ;
 L81F2:  LDA #$08                ;Disable SQ2 sweep unit.
 L81F4:  STA SQ2Cntrl1           ;
 
-L81F7:  LDA #$30                ;Disable length counter and set constant-->
+L81F7:  LDA #$30                ;Disable length counter and set constant
 L81F9:  STA SQ2Cntrl0           ;volume for SQ2 and noise channels.
 L81FC:  STA NoiseCntrl0         ;
 
@@ -3170,8 +3170,8 @@ L93F7:  JSR EndGameClearPPU     ;($9354)Clear the display contents of the PPU.
 
 RollCredits:
 L93FA:  LDY #$00                ;
-L93FC:  LDA (DatPntr1),Y        ;First 2 bytes of data block are the PPU address.-->
-L93FE:  STA PPUAddrLB           ;Load those bytes into the PPU data buffer as the-->
+L93FC:  LDA (DatPntr1),Y        ;First 2 bytes of data block are the PPU address.
+L93FE:  STA PPUAddrLB           ;Load those bytes into the PPU data buffer as the
 L9400:  INY                     ;target address for the data write.
 L9401:  LDA (DatPntr1),Y        ;
 L9403:  STA PPUAddrUB           ;
@@ -3211,7 +3211,7 @@ L942E:  INY                     ;Increment data index.
 L942F:  BNE GetNextEndByte      ;Get next data byte.
 
 FinishEndDataBlock:
-L9431:  INY                     ;Increment data index and prepare to add-->
+L9431:  INY                     ;Increment data index and prepare to add
 L9432:  TYA                     ;it to the data pointer.
 
 L9433:  CLC                     ;
@@ -4690,8 +4690,8 @@ LA1BA:  BIT WndBuildPhase       ;Finishing up the first phase?
 LA1BD:  BMI WndConstructDone    ;If so, branch to 
 
 LA1BF:  LDA WindowType          ;
-LA1C2:  CMP #WND_SPELL1         ;Special case. Don't destroy these windows when done.-->
-LA1C4:  BCC WndConstructDone    ;The spell 1 window is never used and the alphabet-->
+LA1C2:  CMP #WND_SPELL1         ;Special case. Don't destroy these windows when done.
+LA1C4:  BCC WndConstructDone    ;The spell 1 window is never used and the alphabet
 LA1C6:  CMP #WND_ALPHBT         ;window does not disappear when an item is selected.
 LA1C8:  BCS WndConstructDone    ;
 
@@ -4752,14 +4752,14 @@ LA20B:  LSR                     ;
 LA20C:  LSR                     ;
 LA20D:  STA WndRowPos           ;
 
-LA20F:  INY                     ;MSB set in window options byte indicates its-->
+LA20F:  INY                     ;MSB set in window options byte indicates its
 LA210:  LDA WndOptions          ;a selection window. Is this a selection window?
 LA213:  BPL +                   ;If not, branch to skip selection window bytes.
 
-LA215:  LDA (WndDatPtr),Y       ;A selection window.  Get byte containing-->
+LA215:  LDA (WndDatPtr),Y       ;A selection window.  Get byte containing
 LA217:  STA WndColumns          ;column width in tiles.
 
-LA21A:  INY                     ;A selection window. Get byte with cursor-->
+LA21A:  INY                     ;A selection window. Get byte with cursor
 LA21B:  LDA (WndDatPtr),Y       ;home position. X in upper nibble, Y in lower.
 LA21D:  STA WndCursorHome       ;
 
@@ -4933,7 +4933,7 @@ LA309:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 JumpToWndFunc:
-LA30A:  LDA WndCcontrol         ;Use window control byte as pointer-->
+LA30A:  LDA WndCcontrol         ;Use window control byte as pointer
 LA30D:  ASL                     ;into window control function table.
 
 LA30E:  TAX                     ;
@@ -5092,7 +5092,7 @@ LA3E0:  LDA #$04                ;Set buffer length to 4.
 LA3E2:  STA SubBufLength        ;
 
 LA3E5:  LDA WndParam            ;
-LA3E8:  SEC                     ;Select the desired save game by subtracting 5-->
+LA3E8:  SEC                     ;Select the desired save game by subtracting 5
 LA3E9:  SBC #$05                ;from the WndParam variable.
 LA3EB:  STA SaveSelected        ;
 
@@ -5116,7 +5116,7 @@ LA407:  CMP #$03                ;
 LA409:  BCS WndDoInvItem        ;If so, branch.
 
 LA40B:  LDA WndParam            ;
-LA40E:  ADC #$08                ;Add 8 to the description buffer-->
+LA40E:  ADC #$08                ;Add 8 to the description buffer
 LA410:  TAX                     ;index and get description byte.
 LA411:  LDA DescBuf,X           ;
 
@@ -5283,7 +5283,7 @@ LA4E6:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 WndBuildVariable:
-LA4E7:  LDA WndParam            ;A parameter value of 2 will end the window-->
+LA4E7:  LDA WndParam            ;A parameter value of 2 will end the window
 LA4EA:  CMP #$02                ;without handling the last line.
 LA4EC:  BEQ WndBuildVarDone     ;
 
@@ -5309,10 +5309,10 @@ LA503:  LDA #$00                ;Start at beginning of window row.
 LA505:  STA WndXPos             ;
 LA508:  STA WndParam            ;Prepare to place blank tiles to end of row.
 
-LA50B:  LDA WndYPos             ;If Y position of window line is even, add 2 to the position-->
+LA50B:  LDA WndYPos             ;If Y position of window line is even, add 2 to the position
 LA50E:  AND #$01                ;and make it the window height.
 LA510:  EOR #$01                ;
-LA512:  CLC                     ;If Y position of window line is odd, add 1 to the position--> 
+LA512:  CLC                     ;If Y position of window line is odd, add 1 to the position 
 LA513:  ADC #$01                ;and make it the window height.
 LA515:  ADC WndYPos             ;
 LA518:  STA WndHeight           ;Required to properly form inventory windows.
@@ -5565,7 +5565,7 @@ LA65D:  BEQ PlyrInvConv         ;If so, branch.
 LA65F:  CMP #$04                ;Is item shop inventory the target?
 LA661:  BEQ ShopInvConv         ;If so, branch.
 
-LA663:  PLA                     ;No other matches. Return description-->
+LA663:  PLA                     ;No other matches. Return description
 LA664:  RTS                     ;buffer byte as description byte.
 
 PlyrInvConv:
@@ -5700,7 +5700,7 @@ LA6FB:  LDA GenPtr00LB,X        ;The accumulator contains the multiplication byt
 LA6FD:  CLC                     ;
 LA6FE:  ADC IndMultNum1         ;
 LA701:  STA IndMultNum1         ;
-LA704:  LDA GenPtr00UB,X        ;This function takes 2 bytes and multiplies them together.-->
+LA704:  LDA GenPtr00UB,X        ;This function takes 2 bytes and multiplies them together.
 LA706:  ADC IndMultNum2         ;The 16-bit result is stored in the registers indexed by X.
 LA709:  STA IndMultNum2         ;
 LA70C:* ASL GenPtr00LB,X        ;
@@ -5773,7 +5773,7 @@ ClearBCDLeadZeros:
 LA764:  LDX SubBufLength        ;Point to end of BCD buffer.
 LA767:  DEX                     ;
 
-LA768:* LDA TempBuffer,X        ;Decrement through buffer replacing all-->
+LA768:* LDA TempBuffer,X        ;Decrement through buffer replacing all
 LA76B:  BNE +                   ;leading zeros with blank tiles.
 LA76D:  LDA #TL_BLANK_TILE1     ;
 LA76F:  STA TempBuffer,X        ;
@@ -5835,7 +5835,7 @@ ClearAndSetBufLen:
 LA7AE:  JSR ClearTempBuffer     ;($A776)Write blank tiles to buffer.
 LA7B1:  LDA WndDescHalf         ;
 
-LA7B4:  LSR                     ;On first half of description? If so, buffer length-->
+LA7B4:  LSR                     ;On first half of description? If so, buffer length
 LA7B5:  BCC +                   ;is fine.  Branch to return.
 
 LA7B7:  LDA #$08                ;
@@ -5918,9 +5918,9 @@ LA80B:  INY                     ;We want second half of the enemy name. Incremen
 
 LA80C:* LDA DescEntry           ;
 LA80E:  PHA                     ;
-LA80F:  CMP #$33                ;This part of the code should never be executed because-->
-LA811:  BCC +                   ;it is incrementing to another table entry for enemy-->
-LA813:  PLA                     ;numbers greater than 51 but there are only 40 different-->
+LA80F:  CMP #$33                ;This part of the code should never be executed because
+LA811:  BCC +                   ;it is incrementing to another table entry for enemy
+LA813:  PLA                     ;numbers greater than 51 but there are only 40 different
 LA814:  SBC #$32                ;enemies in the entire game.
 LA816:  PHA                     ;
 LA817:  INY                     ;
@@ -6010,7 +6010,7 @@ LA878:* RTS                     ;
 WndCalcBufAddr:
 LA879:  JSR PrepPPUAdrCalc      ;($A8AD)Prepare and calculate PPU address.
 
-LA87C:  LDA WndHeight           ;Get window height in tiles.  Need to replace any end of text-->
+LA87C:  LDA WndHeight           ;Get window height in tiles.  Need to replace any end of text
 LA87F:  STA RowsRemaining       ;control characters with no-ops so window can be processed properly.
 
 CntrlCharSwapRow:
@@ -6138,10 +6138,10 @@ LA923:  STA WndCursorYPos       ;
 LA926:  STA WndBtnRetrig        ;
 
 LA929:  LDA WndColumns          ;
-LA92C:  LSR                     ;Use WndColumns to determine how many columns there-->
-LA92D:  LSR                     ;should be in multi column windows.  The only windows-->
-LA92E:  LSR                     ;with multiple columns are the command windows and-->
-LA92F:  LSR                     ;the alphabet window.  The command windows have 2-->
+LA92C:  LSR                     ;Use WndColumns to determine how many columns there
+LA92D:  LSR                     ;should be in multi column windows.  The only windows
+LA92E:  LSR                     ;with multiple columns are the command windows and
+LA92F:  LSR                     ;the alphabet window.  The command windows have 2
 LA930:  TAX                     ;columns while the alphabet window has 11.
 LA931:  LDA NumColTbl,X         ;
 LA934:  STA WndSelNumCols       ;
@@ -6605,7 +6605,7 @@ LAB93:  STA WndColLB            ;Save only lower 4 bits of window row.
 LAB95:  LDA #$00                ;
 LAB97:  STA WndColUB            ;
 
-LAB99:  LDX #WndColLB           ;Multiply the current selected row-->       
+LAB99:  LDX #WndColLB           ;Multiply the current selected row       
 LAB9B:  LDA WndSelNumCols       ;with the total window columns.
 LAB9E:  JSR IndexedMult         ;($A6EB)Get multiplied value.
 
@@ -6675,7 +6675,7 @@ LABE3:  STA WndAtrbBufIndex     ;
 
 LABE6:  LDA WndWidthTemp        ;
 LABE9:  PHA                     ;
-LABEA:  AND #$F0                ;Will always set WndBlkTileRow to 2.-->
+LABEA:  AND #$F0                ;Will always set WndBlkTileRow to 2.
 LABEC:  LSR                     ;Two rows of tiles in a window row.
 LABED:  LSR                     ;
 LABEE:  LSR                     ;
@@ -6695,16 +6695,16 @@ LAC01:  STA WndPPUAddrUB        ;Get a copy of the address to start of window ro
 LAC04:  LDA PPUAddrLB           ;
 LAC06:  STA WndPPUAddrLB        ;
 
-LAC09:  AND #$1F                ;Get row offset on nametable for start of window-->
+LAC09:  AND #$1F                ;Get row offset on nametable for start of window
 LAC0B:  STA WndNTRowOffset      ;(row is 32 tiles long, 0-31).
 
 LAC0E:  LDA #$20                ;Each row is 32 tiles.
 LAC10:  SEC                     ;
-LAC11:  SBC WndNTRowOffset      ;Calculate the difference between start of window-->
+LAC11:  SBC WndNTRowOffset      ;Calculate the difference between start of window
 LAC14:  STA WndThisNTRow        ;row and end of nametable row.
 
-LAC17:  LDA _WndWidth           ;Subtract window width from difference above-->
-LAC1A:  SEC                     ;If the value is negative, the window spans-->
+LAC17:  LDA _WndWidth           ;Subtract window width from difference above
+LAC1A:  SEC                     ;If the value is negative, the window spans
 LAC1B:  SBC WndThisNTRow        ;both nametables.
 LAC1E:  STA WndNextNTRow        ;
 LAC21:  BEQ WndNoCrossNT        ;Does window run to end of this NT? if so, branch.
@@ -6750,7 +6750,7 @@ LAC60:  BCC WndIncPPURow        ;
 LAC62:  AND #$1F                ;Save row offset for next row.
 LAC64:  STA PPUAddrLB           ;
 
-LAC66:  LDA PPUAddrUB           ;Address is off bottom of nametable. discard lower bits-->
+LAC66:  LDA PPUAddrUB           ;Address is off bottom of nametable. discard lower bits
 LAC68:  AND #$FC                ;to wrap window around to the top of the nametable.
 LAC6A:  JMP UpdateNTAddr        ;Update nametable address.
 
@@ -6812,7 +6812,7 @@ LACB9:  AND #$01                ;If so, load attribute table data.
 LACBB:  BEQ WndLoadRowBufEnd    ;Else branch to skip attribute table data for now.
 
 LACBD:  LDY WndAtrbBufIndex     ;
-LACC0:  LDA WndPPUAddrUB        ;Prepare to calculate attribute table addresses-->
+LACC0:  LDA WndPPUAddrUB        ;Prepare to calculate attribute table addresses
 LACC3:  STA _WndPPUAddrUB       ;by first starting with the nametable addresses.
 LACC6:  LDA WndPPUAddrLB        ;
 LACC9:  STA _WndPPUAddrLB       ;
@@ -6884,13 +6884,13 @@ LAD1E:  RTS                     ;
 
 WndGetRowStartPos:
 LAD1F:  LDA _WndPosition        ;
-LAD22:  ASL                     ;Get start X position in tiles-->
+LAD22:  ASL                     ;Get start X position in tiles
 LAD23:  AND #$1E                ;relative to screen for window row.
 LAD25:  STA ScrnTxtXCoord       ;
 
 LAD28:  LDA _WndPosition        ;
 LAD2B:  LSR                     ;
-LAD2C:  LSR                     ;Get start Y position in tiles-->
+LAD2C:  LSR                     ;Get start Y position in tiles
 LAD2D:  LSR                     ;relative to screen for window row.
 LAD2E:  AND #$1E                ;
 LAD30:  STA ScrnTxtYCoord       ;
@@ -6901,28 +6901,28 @@ LAD33:  JMP WndCalcPPUAddr      ;($ADC0)Calculate PPU address for window/text by
 WndCalcAttribAddr:
 LAD36:  STA WndAttribVal        ;Save a copy of the attibute table value.
 
-LAD39:  LDA #$1F                ;Get tile offset in row and divide by 4. This gives-->
-LAD3B:  AND _WndPPUAddrLB       ;a value of 0-7. There are 8 bytes of attribute-->
-LAD3E:  LSR                     ;table data per nametable row. WndPPUAddrUB now has-->
-LAD3F:  LSR                     ;the byte number in the attribute table for this-->
+LAD39:  LDA #$1F                ;Get tile offset in row and divide by 4. This gives
+LAD3B:  AND _WndPPUAddrLB       ;a value of 0-7. There are 8 bytes of attribute
+LAD3E:  LSR                     ;table data per nametable row. WndPPUAddrUB now has
+LAD3F:  LSR                     ;the byte number in the attribute table for this
 LAD40:  STA WndPPUAddrUB        ;row offset.
 
 LAD43:  LDA #$80                ;
 LAD45:  AND _WndPPUAddrLB       ;
-LAD48:  LSR                     ;Get MSB of lower address byte and shift it to the-->
-LAD49:  LSR                     ;lower nibble.  This cuts the rows of the attribute-->
-LAD4A:  LSR                     ;table in half.  There are now 4 possible addreses-->
-LAD4B:  LSR                     ;in the attribute table that correspond to the target-->
+LAD48:  LSR                     ;Get MSB of lower address byte and shift it to the
+LAD49:  LSR                     ;lower nibble.  This cuts the rows of the attribute
+LAD4A:  LSR                     ;table in half.  There are now 4 possible addreses
+LAD4B:  LSR                     ;in the attribute table that correspond to the target
 LAD4C:  ORA WndPPUAddrUB        ;in the nametable.
 LAD4F:  STA WndPPUAddrUB        ;
 
 LAD52:  LDA #$03                ;
-LAD54:  AND _WndPPUAddrUB       ;Getting the 2 LSB of the upper address selects the-->
-LAD57:  ASL                     ;proper byte from the 4 remaining from above. Move-->
-LAD58:  ASL                     ;The 2 bits to the upper nibble and or them with the-->
-LAD59:  ASL                     ;lower byte of the base address of the attribute-->
-LAD5A:  ASL                     ;table.  Finally, or the result with the other-->
-LAD5B:  ORA #$C0                ;result to get the final result of the lower address-->
+LAD54:  AND _WndPPUAddrUB       ;Getting the 2 LSB of the upper address selects the
+LAD57:  ASL                     ;proper byte from the 4 remaining from above. Move
+LAD58:  ASL                     ;The 2 bits to the upper nibble and or them with the
+LAD59:  ASL                     ;lower byte of the base address of the attribute
+LAD5A:  ASL                     ;table.  Finally, or the result with the other
+LAD5B:  ORA #$C0                ;result to get the final result of the lower address
 LAD5D:  ORA WndPPUAddrUB        ;byte of the attribute table byte.
 LAD60:  STA WndAtribAdrLB       ;
 
@@ -6952,8 +6952,8 @@ LAD85:  STA AtribBitsOfst       ;
 LAD88:  LDA WndAtribAdrLB       ;Set attrib table pointer to lower byte of attrib table address.
 LAD8B:  STA AttribPtrLB         ;
 
-LAD8D:  LDA WndAtribAdrUB       ;Set upper byte for attribute table buffer. The atrib-->
-LAD90:  AND #$07                ; table buffer starts at either $0300 or $0700, depending-->
+LAD8D:  LDA WndAtribAdrUB       ;Set upper byte for attribute table buffer. The atrib
+LAD90:  AND #$07                ; table buffer starts at either $0300 or $0700, depending
 LAD92:  STA AttribPtrUB         ;on the active nametable.
 
 LAD94:  LDA EnNumber            ;Is player fighting the end boss?
@@ -6993,7 +6993,7 @@ LADBF:  RTS                     ;
 WndCalcPPUAddr:
 LADC0:  LDA ActiveNmTbl         ;
 LADC2:  ASL                     ;
-LADC3:  ASL                     ;Calculate base upper address byte of current-->
+LADC3:  ASL                     ;Calculate base upper address byte of current
 LADC4:  AND #$04                ;name table. It will be either #$20 or #$24.
 LADC6:  ORA #$20                ;
 LADC8:  STA PPUAddrUB           ;
@@ -7010,7 +7010,7 @@ LADD3:  STA PPUAddrLB           ;The X coordinate in pixels is now calculated.
 LADD5:  BCC WndAddY             ;Did X position go past nametable boundary? If not, branch.
 
 WndXOverRun:
-LADD7:  LDA PPUAddrUB           ;Window tile ran beyond end of nametable.-->
+LADD7:  LDA PPUAddrUB           ;Window tile ran beyond end of nametable.
 LADD9:  EOR #$04                ;Move to next nametable to continue window line.
 LADDB:  STA PPUAddrUB           ;
 
@@ -7020,7 +7020,7 @@ LADDF:  LSR                     ;/8. Convert Y scroll pixel coord to tile coord.
 LADE0:  LSR                     ;
 LADE1:  LSR                     ;
 
-LADE2:  CLC                     ;Add Tile Y coord of window. A now-->
+LADE2:  CLC                     ;Add Tile Y coord of window. A now
 LADE3:  ADC ScrnTxtYCoord       ;contains Y coordinate in tiles.
 
 LADE6:  CMP #$1E                ;Did Y position go below nametable boundary?
@@ -7032,12 +7032,12 @@ LADEA:  SBC #$1E                ;Window tile went below end of nametable. Loop b
 WndAddrCombine:
 LADEC:  LSR                     ;A is upper byte of result and PPUAddrLB is lower byte.
 LADED:  ROR PPUAddrLB           ;
-LADEF:  LSR                     ;Need to divide by 8 because X coord is still in pixel-->
+LADEF:  LSR                     ;Need to divide by 8 because X coord is still in pixel
 LADF0:  ROR PPUAddrLB           ;coords.
 LADF2:  LSR                     ;
 LADF3:  ROR PPUAddrLB           ;Result is now calculated with respect to screen.
 
-LADF5:  ORA PPUAddrUB           ;Combine A with PPUAddrUB to convert from-->
+LADF5:  ORA PPUAddrUB           ;Combine A with PPUAddrUB to convert from
 LADF7:  STA PPUAddrUB           ;screen coord to nametable coords.
 LADF9:  RTS                     ;
 
@@ -7234,8 +7234,8 @@ LAEE4:  STX WndBuildPhase       ;
 LAEE7:  LDX #$03                ;Prepare to look through table below for window type.
 LAEE9:* CMP WindowType1Tbl,X    ;
 LAEEC:  BEQ +                   ;
-LAEEE:  DEX                     ;If working on one of the 4 windows from the table below,-->
-LAEEF:  BPL -                   ;Set the WndBuildPhase variable to 0.  This seems to have-->
+LAEEE:  DEX                     ;If working on one of the 4 windows from the table below,
+LAEEF:  BPL -                   ;Set the WndBuildPhase variable to 0.  This seems to have
 LAEF1:  BMI ++                  ;no effect as the MSB is set after this function is run.
 LAEF3:* LDA #$00                ;
 LAEF5:  STA WndBuildPhase       ;
@@ -8165,7 +8165,7 @@ LB540:  ASL                     ;
 LB541:  ADC TextBlock           ;Add to text block byte. Text block calculation complete.
 
 LB543:  CLC                     ;
-LB544:  ADC #$01                ;Use TextBlock as pointer into bank table. Incremented-->
+LB544:  ADC #$01                ;Use TextBlock as pointer into bank table. Incremented
 LB546:  STA BankPtrIndex        ;by 1 as first pointer is for intro routine.
 
 LB548:  LDA #PRG_BANK_2         ;Prepare to switch to PRG bank 2.
@@ -8244,7 +8244,7 @@ LB5AF:  JSR GetTxtWord          ;($B635)Get the next word of text.
 LB5B2:  BIT Dialog00            ;Should never branch.
 LB5B5:  BMI CalcCoordEnd        ;
 
-LB5B7:  LDA WndTxtXCoord        ;Make sure x coordinate after word is-->
+LB5B7:  LDA WndTxtXCoord        ;Make sure x coordinate after word is
 LB5B9:  STA WndXPosAW           ;the same as current x coordinate.
 
 LB5BC:  LDA #$00                ;Zero out word buffer index.
@@ -8488,7 +8488,7 @@ LB6EE:  JSR ClearBCDLeadZeros   ;($A764)Remove leading zeros from BCD value.
 LB6F1:  LDY #$00                ;
 LB6F3:* LDA TempBuffer,X        ;Transfer contents of BCD buffer to work buffer.
 LB6F6:  STA WorkBuffer,Y        ;
-LB6F9:  INY                     ;BCD buffer is backwards so it needs to be-->
+LB6F9:  INY                     ;BCD buffer is backwards so it needs to be
 LB6FA:  DEX                     ;written in reverse into the work buffer.
 LB6FB:  BPL -                   ;
 LB6FD:  RTS                     ;
@@ -8768,7 +8768,7 @@ LB871:  DEC ColsRemaining       ;Are there stil characters left in current row?
 LB873:  BNE CopyDialogByte      ;If so, branch to get next character.
 
 LB875:  TXA                     ;
-LB876:  CLC                     ;Move to next row in WinBufRAM by adding-->
+LB876:  CLC                     ;Move to next row in WinBufRAM by adding
 LB877:  ADC #$0A                ;10 to the WinBufRAM index.
 LB879:  TAX                     ;
 
@@ -8905,7 +8905,7 @@ LB91A:  BCS MoveToNextLine      ;($B924)Move to the next line in the text window
 LB91C:  RTS                     ;
 
 DoNewline:
-LB91D:  LDA WndTxtXCoord        ;Update position after text word with current-->
+LB91D:  LDA WndTxtXCoord        ;Update position after text word with current
 LB91F:  STA WndXPosAW           ;cursor position.
 LB922:  BEQ NewlineEnd          ;At beginning of text line? If so, branch to exit.
 
@@ -8918,9 +8918,9 @@ LB929:  BCS ScrollDialog        ;If so, branch to scroll the dialog window.
 
 LB92B:  LDA TxtLineSpace        ;
 LB92E:  LSR                     ;
-LB92F:  LSR                     ;It looks like there used to be some code for controlling-->
-LB930:  EOR #$03                ;how many lines to skip when going to a new line. The value-->
-LB932:  CLC                     ;in TxtLineSpace is always #$08 so the line always increments-->
+LB92F:  LSR                     ;It looks like there used to be some code for controlling
+LB930:  EOR #$03                ;how many lines to skip when going to a new line. The value
+LB932:  CLC                     ;in TxtLineSpace is always #$08 so the line always increments
 LB933:  ADC WndTxtYCoord        ;by 1.
 LB935:  STA WndTxtYCoord        ;
 
@@ -9059,7 +9059,7 @@ LB9F3:  BEQ EndTextToPPU        ;If so, branch to end.
 
 CheckNextBufByte:
 LB9F5:  PHA                     ;Save the word buffer character.
-LB9F6:  LDA DialogOutBuf,X      ;Get next word in Dialog buffer-->
+LB9F6:  LDA DialogOutBuf,X      ;Get next word in Dialog buffer
 LB9F9:  STA PPUDataByte         ;and prepare to save it in the PPU.
 LB9FB:  TAY                     ;
 LB9FC:  PLA                     ;Restore original text byte. Is it a blank tile?
@@ -9176,7 +9176,7 @@ LBA84:  LDA #$10                ;Place wait animation tile in the middle X posit
 LBA86:  STA ScrnTxtXCoord       ;
 
 LBA89:  LDA WndTxtYCoord        ;
-LBA8B:  CLC                     ;Dialog window starts 19 tiles from top of screen.-->
+LBA8B:  CLC                     ;Dialog window starts 19 tiles from top of screen.
 LBA8C:  ADC #$13                ;This converts window Y coords to screen Y coords.
 LBA8E:  STA ScrnTxtYCoord       ;
 

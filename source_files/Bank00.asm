@@ -3118,14 +3118,14 @@ LA7A4:  BRK                     ;Get parameters for removing windows from the sc
 LA7A5:  .byte $00, $17          ;($AF24)WndEraseParams, bank 1.
 
 LA7A7:  LDA WndEraseWdth        ;
-LA7AA:  LSR                     ;Convert wiindow erase position from tiles to blocks. -->
+LA7AA:  LSR                     ;Convert wiindow erase position from tiles to blocks. 
 LA7AB:  ORA #$10                ;Does not appear to be used anywhere.
 LA7AD:  STA WndWidthTemp        ;
 
 LA7B0:  LDA WndEraseHght        ;
 LA7B3:  SEC                     ;
 LA7B4:  SBC #$01                ;
-LA7B6:  ASL                     ;Perform a calculation on the window erase height and -->
+LA7B6:  ASL                     ;Perform a calculation on the window erase height and 
 LA7B7:  ASL                     ;store it. It is referenced below but does no useful work.
 LA7B8:  ASL                     ;
 LA7B9:  ASL                     ;
@@ -3136,7 +3136,7 @@ LA7C0:  LDA WndErasePos         ;Get the X position of the window in blocks.
 LA7C3:  AND #$0F                ;
 
 LA7C5:  STA XPosFromLeft        ;
-LA7C7:  SEC                     ;Convert the X positon into a signed value. then, multiply -->
+LA7C7:  SEC                     ;Convert the X positon into a signed value. then, multiply 
 LA7C8:  SBC #$08                ;by 2 to convert to tiles.
 LA7CA:  ASL                     ;
 LA7CB:  STA StartSignedXPos     ;
@@ -3157,12 +3157,12 @@ LA7DD:  STA WndLineBufIdx       ;
 
 LA7DF:  PLA                     ;Get the height calculation again.
 
-LA7E0:  CLC                     ;Add the height of the window to the offset of -->
+LA7E0:  CLC                     ;Add the height of the window to the offset of 
 LA7E1:  ADC WndLineBufIdx       ;the window on the screen. Result is in blocks.
 LA7E3:  STA WndLineBufIdx       ;
 
 LA7E5:  SEC                     ;
-LA7E6:  SBC #$07                ;Convert the Y positon into a signed value. then, multiply -->
+LA7E6:  SBC #$07                ;Convert the Y positon into a signed value. then, multiply 
 LA7E8:  ASL                     ;by 2 to convert to tiles.
 LA7E9:  STA YPosFromCenter      ;
 
@@ -3247,7 +3247,7 @@ LA84E:  STA BlockAddrLB         ;This moves to the next block up.
 LA850:  BCS +                   ;
 LA852:  DEC BlockAddrUB         ;
 
-LA854:* LDA WndBlockWidth       ;Start at beginnig of row by converting block width -->
+LA854:* LDA WndBlockWidth       ;Start at beginnig of row by converting block width 
 LA856:  ASL                     ;into tiles.
 LA857:  STA XPosFromLeft        ;
 
@@ -3259,7 +3259,7 @@ LA860:  BCS +                   ;
 LA862:  DEC BlockAddrUB         ;
 
 LA864:* LDA _WndPosition        ;
-LA867:  SEC                     ;Decrement the Y position of the window by 1 block. -->
+LA867:  SEC                     ;Decrement the Y position of the window by 1 block. 
 LA868:  SBC #$10                ;Does not appear to be used for anything.
 LA86A:  STA _WndPosition        ;
 
@@ -3320,20 +3320,20 @@ LA8B2:  CLC                     ;Add signed location of block to unsigned nameta
 LA8B3:  ADC #$1E                ;Add Screen height in tiles to ensure result is always positive.
 LA8B5:  STA DivNum1LB           ;
 
-LA8B7:  LDA #$1E                ;Divide out tile height and get remainder. Result will be -->
+LA8B7:  LDA #$1E                ;Divide out tile height and get remainder. Result will be 
 LA8B9:  STA DivNum2             ;between #$00-#$1E(height of screen in tiles).
 LA8BB:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
 
-LA8BE:  LDA DivRemainder        ;The final result is the unsigned Y position of the block -->
+LA8BE:  LDA DivRemainder        ;The final result is the unsigned Y position of the block 
 LA8C0:  STA YPosFromTop         ;to replace, measured in tiles. #$00-#$1E.
 LA8C2:  STA YFromTopTemp        ;
 
 LA8C4:  LDA NTBlockX            ;*2. Convert the block position to tile position.
 LA8C6:  ASL                     ;Calculate the nametable X block that needs to be replaced.
 LA8C7:  CLC                     ;Add signed location of block to unsigned nametable location.
-LA8C8:  ADC XPosFromCenter      ;Keep only lower 6 bits. The row is 64 tiles wide as it spans -->
-LA8CA:  AND #$3F                ;both nametables. The final result is the unsigned X position -->
-LA8CC:  STA XPosFromLeft        ;of the block to replace, measured in tiles. #$00-#$3F. No -->
+LA8C8:  ADC XPosFromCenter      ;Keep only lower 6 bits. The row is 64 tiles wide as it spans 
+LA8CA:  AND #$3F                ;both nametables. The final result is the unsigned X position 
+LA8CC:  STA XPosFromLeft        ;of the block to replace, measured in tiles. #$00-#$3F. No 
 LA8CE:  STA XFromLeftTemp       ;division necessary. value rolls over naturally.
 
 LA8D0:  JSR DoAddrCalc          ;($C5AA)Calculate destination address for GFX data.
@@ -3366,7 +3366,7 @@ LA8FB:  STA YPosFromTop         ;
 
 LA8FD:  LDY #$00                ;Zero out index.
 
-LA8FF:  LDA (BlockAddr),Y       ;Sets attribute table value for each block based on its -->
+LA8FF:  LDA (BlockAddr),Y       ;Sets attribute table value for each block based on its 
 LA901:  CMP #$C1                ;position in the pattern table.
 LA903:  BCS +                   ;Is this a sky tile in the battle scene? If not, branch.
 
@@ -3376,7 +3376,7 @@ LA907:  BEQ StoreAttribByte     ;
 LA909:* CMP #$CA                ;Is this a green covered mountain tile in the battle scene?
 LA90B:  BCS +                   ;If not, branch.
 
-LA90D:  LDA #$01                ;Set attribute table value for battle scene green covered -->
+LA90D:  LDA #$01                ;Set attribute table value for battle scene green covered 
 LA90F:  BNE StoreAttribByte     ;mountain tiles. Branch always.
 
 LA911:* CMP #$DE                ;Is this a foreground tile in the battle scene?
@@ -3403,20 +3403,20 @@ LA927:  CLC                     ;
 LA928:  ADC #$1E                ;Add Screen height in tiles to ensure result is always positive.
 LA92A:  STA DivNum1LB           ;
 
-LA92C:  LDA #$1E                ;Divide out tile height and get remainder. Result will be -->
+LA92C:  LDA #$1E                ;Divide out tile height and get remainder. Result will be 
 LA92E:  STA DivNum2             ;between #$00-#$1E(height of screen in tiles).
 LA930:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
 
-LA933:  LDA DivRemainder        ;The final result is the unsigned Y position of the block -->
+LA933:  LDA DivRemainder        ;The final result is the unsigned Y position of the block 
 LA935:  STA YPosFromTop         ;to replace, measured in tiles. #$00-#$1E.
 LA937:  STA YFromTopTemp        ;
 
 LA939:  LDA NTBlockX            ;*2. Convert the block position to tile position.
 LA93B:  ASL                     ;Calculate the nametable X block that needs to be replaced.
 LA93C:  CLC                     ;Add signed location of block to unsigned nametable location.
-LA93D:  ADC XPosFromCenter      ;Keep only lower 6 bits. The row is 64 tiles wide as it spans -->
-LA93F:  AND #$3F                ;both nametables. The final result is the unsigned X position -->
-LA941:  STA XPosFromLeft        ;of the block to replace, measured in tiles. #$00-#$3F. No -->
+LA93D:  ADC XPosFromCenter      ;Keep only lower 6 bits. The row is 64 tiles wide as it spans 
+LA93F:  AND #$3F                ;both nametables. The final result is the unsigned X position 
+LA941:  STA XPosFromLeft        ;of the block to replace, measured in tiles. #$00-#$3F. No 
 LA943:  STA XFromLeftTemp       ;division necessary. value rolls over naturally.
 
 LA945:  JSR DoAddrCalc          ;($C5AA)Calculate destination address for GFX data.
@@ -3462,7 +3462,7 @@ LA979:  LDA LightDiameter       ;Is target block outside the visible area in a d
 LA97B:  CMP GenByte3E           ;
 LA97D:  BCS ChkLightXEdge       ;If not, branch.
 
-LA97F:  LDA #BLK_BLANK          ;Target block is outside visible area. -->
+LA97F:  LDA #BLK_BLANK          ;Target block is outside visible area. 
 LA981:  STA TargetResults       ;Load a blank block.
 
 LA983:  LDA #$00                ;Remove no tiles from the current block.
@@ -3503,7 +3503,7 @@ LA9AB:  LDA LightDiameter       ;Is target block outside the visible area in a d
 LA9AD:  CMP GenByte3E           ;
 LA9AF:  BCS ChkLightYEdge       ;If not, branch.
 
-LA9B1:  LDA #BLK_BLANK          ;Target block is outside visible area. -->
+LA9B1:  LDA #BLK_BLANK          ;Target block is outside visible area. 
 LA9B3:  STA TargetResults       ;Load a blank block.
 
 LA9B5:  LDA #$00                ;Remove no tiles from the current block.
@@ -3681,9 +3681,9 @@ LAABB:  JMP PrepSPPalLoad       ;($C632)Wait for PPU buffer to be open.
 ;----------------------------------------------------------------------------------------------------
 
 CheckCoveredArea:
-LAABE:  LDA MapWidth            ;Convert the map width into the number of bytes used to -->
-LAAC0:  CLC                     ;represent a map row. 1 nibble represents a block. The -->
-LAAC1:  ADC #$01                ;increment starts the counting at 1 instead of 0. 2 blocks -->
+LAABE:  LDA MapWidth            ;Convert the map width into the number of bytes used to 
+LAAC0:  CLC                     ;represent a map row. 1 nibble represents a block. The 
+LAAC1:  ADC #$01                ;increment starts the counting at 1 instead of 0. 2 blocks 
 LAAC3:  LSR                     ;are represented in a single byte, hence the divide by 2.
 LAAC4:  STA MultNum1LB          ;
 
@@ -3691,18 +3691,18 @@ LAAC6:  LDA #$00                ;
 LAAC8:  STA MultNum1UB          ;Upper byte of first word is always 0.
 LAACA:  STA MultNum2UB          ;Upper byte of second word is always 0.
 
-LAACC:  LDA _TargetY            ;Target Y is player's Y position. Calculate number of map -->
+LAACC:  LDA _TargetY            ;Target Y is player's Y position. Calculate number of map 
 LAACE:  STA MultNum2LB          ;bytes to player's current row.
 LAAD0:  JSR WordMultiply        ;($C1C9)Multiply 2 words.
 
-LAAD3:  LDA _TargetX            ;Target X is player's X position. Add offset in current row-->
-LAAD5:  LSR                     ;to byte count value for exact byte offset in covered area -->
+LAAD3:  LDA _TargetX            ;Target X is player's X position. Add offset in current row
+LAAD5:  LSR                     ;to byte count value for exact byte offset in covered area 
 LAAD6:  CLC                     ;map data.
 LAAD7:  ADC MultRsltLB          ;
 
 LAAD9:  STA GenWord3ELB         ;
-LAADB:  LDA MultRsltUB          ;The player's index into the covered map data is now -->
-LAADD:  ADC #$00                ;stored in GenWord3E. This is byte level. Nibble level -->
+LAADB:  LDA MultRsltUB          ;The player's index into the covered map data is now 
+LAADD:  ADC #$00                ;stored in GenWord3E. This is byte level. Nibble level 
 LAADF:  STA GenWord3EUB         ;is required and calculated below.
 
 HasCoverData:
@@ -3725,8 +3725,8 @@ LAAF6:  BCC NoCover             ;
 
 LAAF8:  LDA GenWord3ELB         ;
 LAAFA:  CLC                     ;
-LAAFB:  ADC CoverDatLB          ;Add the player's index into the covered map data -->
-LAAFD:  STA GenWord3ELB         ;to the base address of the covered map data for -->
+LAAFB:  ADC CoverDatLB          ;Add the player's index into the covered map data 
+LAAFD:  STA GenWord3ELB         ;to the base address of the covered map data for 
 LAAFF:  LDA GenWord3EUB         ;the current map.
 LAB01:  ADC CoverDatUB          ;
 LAB03:  STA GenWord3EUB         ;
@@ -3741,7 +3741,7 @@ LAB0B:  STA CoveredStsNext      ;
 LAB0D:  PLA                     ;Restore the previous value of Y from the stack.
 LAB0E:  TAY                     ;
 
-LAB0F:  LDA _TargetX            ;Odd X position stores data in lower nibble while even position -->
+LAB0F:  LDA _TargetX            ;Odd X position stores data in lower nibble while even position 
 LAB11:  AND #$01                ;stores data in upper nibble.
 LAB13:  BNE FinishCoverCheck    ;Does upper nibble need to be accessed? If not, branch.
 
@@ -3752,7 +3752,7 @@ LAB1B:  LSR CoveredStsNext      ;
 
 FinishCoverCheck:
 LAB1D:  LDA CoveredStsNext      ;
-LAB1F:  AND #$08                ;Keep only bit 3. This bit determines if the player -->
+LAB1F:  AND #$08                ;Keep only bit 3. This bit determines if the player 
 LAB21:  STA CoveredStsNext      ;is under cover or not.
 LAB23:  RTS                     ;
 
@@ -3778,7 +3778,7 @@ ChkWtrBlkRght:
 LAB36:  BEQ PrepBlockLeft       ;Is block to right of target block water? If so, branch.
 
 LAB38:  TXA                     ;Block to right of target is not a water block.
-LAB39:  CLC                     ;Set bit 2 in index byte. Shore will be on the right-->
+LAB39:  CLC                     ;Set bit 2 in index byte. Shore will be on the right
 LAB3A:  ADC #$04                ;of the current water block.
 LAB3C:  TAX                     ;
 
@@ -4085,7 +4085,7 @@ LAC9C:  STA MultNum2UB          ;The lower byte of MultNum2 is TargetY.
 LAC9E:  LDA MapWidth            ;Divide by 2 as 1 byte represents 2 blocks.
 LACA0:  LSR                     ;
 
-LACA1:  ADC #$00                ;Prep multiplication.  The result is the start of the-->
+LACA1:  ADC #$00                ;Prep multiplication.  The result is the start of the
 LACA3:  STA MultNum1LB          ;row that the target block is on.
 LACA5:  JSR WordMultiply        ;($C1C9)Multiply 2 words.
 
@@ -4097,14 +4097,14 @@ LACAC:  ADC MultRsltLB          ;
 
 LACAE:  STA MapBytePtrLB        ;
 LACB0:  STA GenPtr3ELB          ;
-LACB2:  LDA MultRsltUB          ;Store address value results in map byte pointer-->
+LACB2:  LDA MultRsltUB          ;Store address value results in map byte pointer
 LACB4:  ADC #$00                ;and save a copy in a general use pointer.
 LACB6:  STA MapBytePtrUB        ;
 LACB8:  STA GenPtr3EUB          ;
 
 LACBA:  LDA MapBytePtrLB        ;
 LACBC:  CLC                     ;
-LACBD:  ADC MapDatPtrLB         ;Add value just calculated to the-->
+LACBD:  ADC MapDatPtrLB         ;Add value just calculated to the
 LACBF:  STA MapBytePtrLB        ;current map data base address.
 LACC1:  LDA MapBytePtrUB        ;
 LACC3:  ADC MapDatPtrUB         ;
@@ -4115,7 +4115,7 @@ LACC9:  LDA (MapBytePtr),Y      ;Use new index to retreive desired data byte fro
 LACCB:  STA TargetResults       ;
 
 LACCD:  LDA _TargetX            ;Is target block have an even numbered X position?
-LACCF:  LSR                     ;If so, the upper nibble needs to-->
+LACCF:  LSR                     ;If so, the upper nibble needs to
 LACD0:  BCS ChkRemovedBlks      ;be shifted to the lower nibble.
 
 LACD2:  LSR TargetResults       ;
@@ -4137,9 +4137,9 @@ LACE4:  LDA #$0F                ;16 possible tiles in towns.
 
 GetBaseBlockID:
 LACE6:  AND XTarget             ;
-LACE8:  CLC                     ;Add in the proper offset for the block to find. -->
-LACE9:  ADC MapType             ;The offset can either point to town blocks or dungeon -->
-LACEB:  TAY                     ;blocks. A now contains the block ID but special blocks -->
+LACE8:  CLC                     ;Add in the proper offset for the block to find. 
+LACE9:  ADC MapType             ;The offset can either point to town blocks or dungeon 
+LACEB:  TAY                     ;blocks. A now contains the block ID but special blocks 
 LACEC:  LDA GenBlkConvTbl,Y     ;have not yet been considered. That happens next.
 LACEF:  STA TargetResults       ;
 
@@ -4162,7 +4162,7 @@ LAD05:  LDA MapNumber           ;Is the player in the ground floor of the dragon
 LAD07:  CMP #MAP_DLCSTL_GF      ;
 LAD09:  BNE ReturnBlockID       ;If not, branch to return stair down block ID.
 
-LAD0B:  LDA _TargetX            ;Is the target X,Y position that of the secret passage -->
+LAD0B:  LDA _TargetX            ;Is the target X,Y position that of the secret passage 
 LAD0D:  CMP #$0A                ;behind the dragonlord's throne?
 LAD0F:  BNE ReturnBlockID       ;
 LAD11:  LDA _TargetY            ;
@@ -4173,7 +4173,7 @@ LAD17:  LDA ModsnSpells         ;Has the secret paggase already been found?
 LAD19:  AND #F_PSG_FOUND        ;
 LAD1B:  BNE ReturnBlockID       ;If so, branch to return stairs down block ID.
 
-LAD1D:  LDA #BLK_FFIELD         ;Hidden stairs have not been found yet. -->
+LAD1D:  LDA #BLK_FFIELD         ;Hidden stairs have not been found yet. 
 LAD1F:  STA TargetResults       ;Return force field block ID.
 LAD21:  BNE ReturnBlockID       ;Branch always.
 
@@ -4253,20 +4253,20 @@ LAD6C:  CLC                     ;
 LAD6D:  ADC #$1E                ;Add Screen height in tiles to ensure result is always positive.
 LAD6F:  STA DivNum1LB           ;
 
-LAD71:  LDA #$1E                ;Divide out tile height and get remainder. Result will be -->
+LAD71:  LDA #$1E                ;Divide out tile height and get remainder. Result will be 
 LAD73:  STA DivNum2             ;between #$00-#$1E(height of screen in tiles).
 LAD75:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
 
-LAD78:  LDA DivRemainder        ;The final result is the unsigned Y position of the block -->
+LAD78:  LDA DivRemainder        ;The final result is the unsigned Y position of the block 
 LAD7A:  STA YPosFromTop         ;to replace, measured in tiles. #$00-#$1E.
 LAD7C:  STA YFromTopTemp        ;
 
 LAD7E:  LDA NTBlockX            ;*2. Convert the block position to tile position.
 LAD80:  ASL                     ;Calculate the nametable X block that needs to be replaced.
 LAD81:  CLC                     ;Add signed location of block to unsigned nametable location.
-LAD82:  ADC XPosFromCenter      ;Keep only lower 6 bits. The row is 64 tiles wide as it spans -->
-LAD84:  AND #$3F                ;both nametables. The final result is the unsigned X position -->
-LAD86:  STA XPosFromLeft        ;of the block to replace, measured in tiles. #$00-#$3F. No -->
+LAD82:  ADC XPosFromCenter      ;Keep only lower 6 bits. The row is 64 tiles wide as it spans 
+LAD84:  AND #$3F                ;both nametables. The final result is the unsigned X position 
+LAD86:  STA XPosFromLeft        ;of the block to replace, measured in tiles. #$00-#$3F. No 
 LAD88:  STA XFromLeftTemp       ;division necessary. value rolls over naturally.
 
 LAD8A:  JSR DoAddrCalc          ;($C5AA)Calculate destination address for GFX data.
@@ -4312,7 +4312,7 @@ LADBE:  LDA LightDiameter       ;Is target block outside the visible area in a d
 LADC0:  CMP GenByte3E           ;
 LADC2:  BCS ChkLightXEdge2      ;If not, branch.
 
-LADC4:  LDA #BLK_BLANK          ;Target block is outside visible area. -->
+LADC4:  LDA #BLK_BLANK          ;Target block is outside visible area. 
 LADC6:  STA TargetResults       ;Load a blank block.
 
 LADC8:  LDA #$00                ;Remove no tiles from the current block.
@@ -4352,7 +4352,7 @@ LADF0:  LDA LightDiameter       ;Is target block outside the visible area in a d
 LADF2:  CMP GenByte3E           ;
 LADF4:  BCS ChkLightYEdge2      ;If not, branch.
 
-LADF6:  LDA #BLK_BLANK          ;Target block is outside visible area. -->
+LADF6:  LDA #BLK_BLANK          ;Target block is outside visible area. 
 LADF8:  STA TargetResults       ;Load a blank block.
 
 LADFA:  LDA #$00                ;Remove no tiles from the current block.
@@ -4568,7 +4568,7 @@ LAF14:  CMP #MAP_DLCSTL_SL1     ;
 LAF16:  BCS ChkThRoomMap        ;If not, branch.
 
 LAF18:  LDA #$01                ;
-LAF1A:  STA LightDiameter       ;Player entered a dungeon. Minimize light diameter -->
+LAF1A:  STA LightDiameter       ;Player entered a dungeon. Minimize light diameter 
 LAF1C:  LSR                     ;and clear the radiant timer.
 LAF1D:  STA RadiantTimer        ;
 
@@ -4665,7 +4665,7 @@ LAFA8:  LDA MapNumber           ;Is player on the ground floor of Tantagel castl
 LAFAA:  CMP #MAP_TANTCSTL_GF    ;
 LAFAC:  BNE ChkMapDungeon       ;If not, branch.
 
-LAFAE:  LDA #$0B                ;Special NPC data pointer index for Tantagel castle -->
+LAFAE:  LDA #$0B                ;Special NPC data pointer index for Tantagel castle 
 LAFB0:  BNE GetNPCDataPointer   ;ground floor after end boss defeated. Branch always.
 
 ChkMapDungeon:
@@ -4981,8 +4981,8 @@ LB149:  LDY PPUBufCount         ;Get current index into block RAM buffer.
 LB14B:  LDA #$80                ;Indicate background tiles need to be updated.
 LB14D:  STA UpdateBGTiles       ;
 
-LB150:  LDA PPUAddrUB           ;Set PPU control byte. Tell PPU to do row writes. -->
-LB152:  ORA #$80                ;That means increment address by 1 after every --> 
+LB150:  LDA PPUAddrUB           ;Set PPU control byte. Tell PPU to do row writes. 
+LB152:  ORA #$80                ;That means increment address by 1 after every  
 LB154:  STA BlockRAM,Y          ;tile write. This byte also stores PPU address upper byte.
 
 LB157:  LDA #$1C                ;Prepare to clear 27 tiles in the current nametable row.
@@ -5009,8 +5009,8 @@ LB172:  STA PPUAddrLB           ;
 LB174:  BCC +                   ;
 LB176:  INC PPUAddrUB           ;
 
-LB178:* LDA PPUAddrUB           ;Set PPU control byte. Tell PPU to do row writes. -->
-LB17A:  ORA #$80                ;That means increment address by 1 after every --> 
+LB178:* LDA PPUAddrUB           ;Set PPU control byte. Tell PPU to do row writes. 
+LB17A:  ORA #$80                ;That means increment address by 1 after every  
 LB17C:  STA BlockRAM+3,Y        ;tile write. This byte also stores PPU address upper byte.
 
 LB17F:  LDA #$1C                ;Prepare to clear 27 tiles in the current nametable row.
@@ -5030,8 +5030,8 @@ LB191:  BNE -                   ;More blank tiles to store? if so, branch to sto
 
 LB193:  INC PPUEntCount         ;Increment PPU buffer entry count.
 
-LB195:  TYA                     ;This should not be necessary as the buffer gets emptied -->
-LB196:  CLC                     ;out every vblank. It moves ahead 2 entries for all PPU -->
+LB195:  TYA                     ;This should not be necessary as the buffer gets emptied 
+LB196:  CLC                     ;out every vblank. It moves ahead 2 entries for all PPU 
 LB197:  ADC #$06                ;data that does not have control bits set.
 LB199:  STA PPUBufCount         ;
 
@@ -5045,7 +5045,7 @@ LB1A4:  INC PPUAddrUB           ;
 LB1A6:* DEC RowCounter          ;Have all 15 rows of blocks been cleared?
 LB1A8:  BNE NTClearLoop         ;If not, branch to clear another row of blocks.
 
-LB1AA:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt. This loads last row of -->
+LB1AA:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt. This loads last row of 
 LB1AD:  RTS                     ;blocks onto the screen.
 
 ;----------------------------------------------------------------------------------------------------
@@ -5088,7 +5088,7 @@ LB1CB:  .byte MSC_DUNGEON2      ;Erdrick's cave B2.                   Resume dun
 ;----------------------------------------------------------------------------------------------------
 
 CheckCollision:
-LB1CC:  LDA _CharXPos           ;Get potential new position of character and transfer -->
+LB1CC:  LDA _CharXPos           ;Get potential new position of character and transfer 
 LB1CE:  STA XTarget             ;it to thx and y target registers.
 LB1D0:  LDA _CharYPos           ;
 LB1D2:  STA YTarget             ;Check to see what kind of block is at the destination.
@@ -5208,7 +5208,7 @@ LB255:  LDA FrameCounter        ;
 LB257:  AND #$0F                ;
 LB259:  BEQ RightSynced         ;Only move if on the first frame of the frame counter.
 
-LB25B:  PLA                     ;Not on first frame. Remove return address from stack and -->
+LB25B:  PLA                     ;Not on first frame. Remove return address from stack and 
 LB25C:  PLA                     ;update the idle status instead.
 LB25D:  JMP IdleUpdate          ;($CB30)Update NPC movement and pop-up window.
 
@@ -5242,8 +5242,8 @@ LB287:  INC CharXPixelsUB       ;
 LB289:* JMP DoSprites           ;($B6DA)Update player and NPC sprites.
 
 UpdtRNonDungeon:
-LB28C:  LDA #$12                ;Prepare to write a nametable column starting 18 -->
-LB28E:  STA XPosFromCenter      ;tiles right(#$12) and -14 tiles up(#$F2) from -->
+LB28C:  LDA #$12                ;Prepare to write a nametable column starting 18 
+LB28E:  STA XPosFromCenter      ;tiles right(#$12) and -14 tiles up(#$F2) from 
 LB290:  LDA #$F2                ;player's current location.
 LB292:  STA YPosFromCenter      ;
 
@@ -5269,7 +5269,7 @@ LB2AD:  CMP #$10                ;
 LB2AF:  BNE RightColumnLoop     ;If not, branch to write another block to the map.
 
 LB2B1:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
-LB2B4:  INC ScrollX             ;Increment scroll register and switch to -->
+LB2B4:  INC ScrollX             ;Increment scroll register and switch to 
 LB2B6:  BNE UpdtRNTBlock        ;other nametable, if necessary.
 
 LB2B8:  LDA ActiveNmTbl         ;
@@ -5277,7 +5277,7 @@ LB2BA:  EOR #$01                ;Swap to other nametable.
 LB2BC:  STA ActiveNmTbl         ;
 
 UpdtRNTBlock:
-LB2BE:  INC NTBlockX            ;Move pointer for the nametable blocks 1 block -->
+LB2BE:  INC NTBlockX            ;Move pointer for the nametable blocks 1 block 
 LB2C0:  LDA #$1F                ;position to the right.
 LB2C2:  AND NTBlockX            ;Ensure position wraps around, if necessary.
 LB2C4:  STA NTBlockX            ;
@@ -5391,7 +5391,7 @@ LB34F:  LDA FrameCounter        ;
 LB351:  AND #$0F                ;
 LB353:  BEQ LeftSynced          ;Only move if on the first frame of the frame counter.
 
-LB355:  PLA                     ;Not on first frame. Remove return address from stack and -->
+LB355:  PLA                     ;Not on first frame. Remove return address from stack and 
 LB356:  PLA                     ;update the idle status instead.
 LB357:  JMP IdleUpdate          ;($CB30)Update NPC movement and pop-up window.
 
@@ -5425,8 +5425,8 @@ LB381:  DEC CharXPixelsUB       ;
 LB383:* JMP DoSprites           ;($B6DA)Update player and NPC sprites.
 
 UpdtLNonDungeon:
-LB386:  LDA #$EC                ;Prepare to write a nametable column starting -20 -->
-LB388:  STA XPosFromCenter      ;tiles left(#$EC) and -14 tiles up(#$F2) from -->
+LB386:  LDA #$EC                ;Prepare to write a nametable column starting -20 
+LB388:  STA XPosFromCenter      ;tiles left(#$EC) and -14 tiles up(#$F2) from 
 LB38A:  LDA #$F2                ;player's current location.
 LB38C:  STA YPosFromCenter      ;
 
@@ -5443,7 +5443,7 @@ LB39A:  INC YPosFromCenter      ;Move to next block position in the column.
 LB39C:  INC YPosFromCenter      ;
 
 LB39E:  LDA ScrollX             ;
-LB3A0:  SEC                     ;Decrement scroll register and switch to -->
+LB3A0:  SEC                     ;Decrement scroll register and switch to 
 LB3A1:  SBC #$01                ;other nametable, if necessary.
 LB3A3:  STA ScrollX             ;
 LB3A5:  BCS UpdtLNTBlock
@@ -5455,7 +5455,7 @@ LB3AB:  STA ActiveNmTbl         ;
 UpdtLNTBlock:
 LB3AD:  LDA CharXPixelsLB       ;
 LB3AF:  SEC                     ;
-LB3B0:  SBC #$01                ;Move pointer for the nametable blocks 1 block -->
+LB3B0:  SBC #$01                ;Move pointer for the nametable blocks 1 block 
 LB3B2:  STA CharXPixelsLB       ;position to the left.
 LB3B4:  BCS +                   ;
 LB3B6:  DEC CharXPixelsUB       ;
@@ -5469,7 +5469,7 @@ LB3BF:  BNE UpdateLeftLoop      ;If not, branch to update another row.
 LB3C1:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LB3C4:  DEC ScrollX             ;Decrement scroll register.
 
-LB3C6:  DEC NTBlockX            ;Move pointer for the nametable blocks 1 block -->
+LB3C6:  DEC NTBlockX            ;Move pointer for the nametable blocks 1 block 
 LB3C8:  LDA #$1F                ;position to the left.
 LB3CA:  AND NTBlockX            ;Ensure position wraps around, if necessary.
 LB3CC:  STA NTBlockX            ;
@@ -5488,7 +5488,7 @@ LB3DB:  LDA FrameCounter        ;
 LB3DD:  AND #$0F                ;
 LB3DF:  BEQ DownSynced          ;Only move if on the first frame of the frame counter.
 
-LB3E1:  PLA                     ;Not on first frame. Remove return address from stack and -->
+LB3E1:  PLA                     ;Not on first frame. Remove return address from stack and 
 LB3E2:  PLA                     ;update the idle status instead.
 LB3E3:  JMP IdleUpdate          ;($CB30)Update NPC movement and pop-up window.
 
@@ -5621,7 +5621,7 @@ LB49E:  BNE VertRowLoop1        ;If not, branch to do more.
 LB4A0:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LB4A3:  INC ScrollY             ;
-LB4A5:  LDA ScrollY             ;Increment vertical scroll register and make sure -->
+LB4A5:  LDA ScrollY             ;Increment vertical scroll register and make sure 
 LB4A7:  CMP #$F0                ;It doesn't go too far.
 LB4A9:  BNE +                   ;
 
@@ -5629,7 +5629,7 @@ LB4AB:  LDA #$00                ;Loop scrool register back to top.
 LB4AD:  STA ScrollY             ;
 
 LB4AF:* INC NTBlockY            ;
-LB4B1:  LDA NTBlockY            ;Increment nametable Y block position and make sure -->
+LB4B1:  LDA NTBlockY            ;Increment nametable Y block position and make sure 
 LB4B3:  CMP #$0F                ;It doesn't go too far.
 LB4B5:  BNE +                   ;
 
@@ -5698,7 +5698,7 @@ LB507:  LDA FrameCounter        ;
 LB509:  AND #$0F                ;
 LB50B:  BEQ UpSynced            ;Only move if on the first frame of the frame counter.
 
-LB50D:  PLA                     ;Not on first frame. Remove return address from stack and -->
+LB50D:  PLA                     ;Not on first frame. Remove return address from stack and 
 LB50E:  PLA                     ;update the idle status instead.
 LB50F:  JMP IdleUpdate          ;($CB30)Update NPC movement and pop-up window.
 
@@ -5736,7 +5736,7 @@ LB53E:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LB541:  DEC ScrollY             ;Decrement vertical scroll.
 LB543:  LDA ScrollY             ;
-LB545:  CMP #$FF                ;If the scroll value rolls over, set it -->
+LB545:  CMP #$FF                ;If the scroll value rolls over, set it 
 LB547:  BNE +                   ;to the proper maximum value.
 LB549:  LDA #$EF                ;
 LB54B:  STA ScrollY             ;
@@ -5846,7 +5846,7 @@ LB5E2:  DEC ScrollY             ;Decrement vertical scroll register.
 
 LB5E4:  DEC NTBlockY            ;
 LB5E6:  LDA NTBlockY            ;
-LB5E8:  CMP #$FF                ;Decrement Y block position on nametable. -->
+LB5E8:  CMP #$FF                ;Decrement Y block position on nametable. 
 LB5EA:  BNE +                   ;If it rolls over, make sure its set to the proper value.
 LB5EC:  LDA #$0E                ;
 LB5EE:  STA NTBlockY            ;
@@ -5860,8 +5860,8 @@ LB5F7:  JMP DoCoveredArea       ;($B5FA)Handle covered areas of the map, if nece
 ;----------------------------------------------------------------------------------------------------
 
 DoCoveredArea:
-LB5FA:  LDA CharXPos            ;Make a copy of the player's X and Y position. -->
-LB5FC:  STA _TargetX            ;It will be used to calculate an index into the -->
+LB5FA:  LDA CharXPos            ;Make a copy of the player's X and Y position. 
+LB5FC:  STA _TargetX            ;It will be used to calculate an index into the 
 LB5FE:  LDA CharYPos            ;covered map data.
 LB600:  STA _TargetY            ;
 LB602:  JSR CheckCoveredArea    ;($AABE)Check if player is in a covered map area.
@@ -5878,13 +5878,13 @@ LB610:  BEQ PrepToggleCover     ;If not, branch to skip hiding player.
 LB612:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LB615:  LDA #$F0                ;
-LB617:  STA SpriteRAM           ;Hide the player as they enter a covered area. -->
+LB617:  STA SpriteRAM           ;Hide the player as they enter a covered area. 
 LB61A:  STA SpriteRAM+4         ;This simulates the player going under the covered area.
 LB61D:  STA SpriteRAM+8         ;
 LB620:  STA SpriteRAM+12        ;
 
 PrepToggleCover:
-LB623:  LDA NTBlockX            ;Prepare to add/remove blocks from opposite one screen -->
+LB623:  LDA NTBlockX            ;Prepare to add/remove blocks from opposite one screen 
 LB625:  CLC                     ;over from the active area of the nametab;es.
 LB626:  ADC #$10                ;
 LB628:  AND #$1F                ;Ensure result does not go past 31 blocks.
@@ -5990,8 +5990,8 @@ LB6B0:  LDA YPosFromCenter      ;Has the lower half of the column been changed?
 LB6B2:  CMP #$10                ;
 LB6B4:  BNE CoverLoColumnLoop   ;If not, branch to change another block.
 
-LB6B6:  LDA XPosFromCenter      ;This has to loop 3 times.  Not sure why.  Maybe the -->
-LB6B8:  CLC                     ;time it takes to change all the blocks is too long so -->
+LB6B6:  LDA XPosFromCenter      ;This has to loop 3 times.  Not sure why.  Maybe the 
+LB6B8:  CLC                     ;time it takes to change all the blocks is too long so 
 LB6B9:  ADC #$22                ;it has to be broken up into multiple passes.
 LB6BB:  STA XPosFromCenter      ;
 
@@ -6009,9 +6009,9 @@ LB6C7:  STA GenPtr22LB          ;Get base address of character sprite table.
 LB6C9:  LDA CharSpriteTblPtr+1  ;
 LB6CC:  STA GenPtr22UB          ;
 
-LB6CE:* LDA NPCCounter          ;Increment upper byte of pointer while decrementing the-->
-LB6D0:  BEQ SprtFacingEnd       ;NPC counter to find the base address of the character-->
-LB6D2:  INC GenPtr22UB          ;sprites for the proper facing direction.  The table-->
+LB6CE:* LDA NPCCounter          ;Increment upper byte of pointer while decrementing the
+LB6D0:  BEQ SprtFacingEnd       ;NPC counter to find the base address of the character
+LB6D2:  INC GenPtr22UB          ;sprites for the proper facing direction.  The table
 LB6D4:  DEC NPCCounter          ;is organized by the direction the character is facing.
 LB6D6:  JMP -                   ;Has proper direction been found? If not, branch to decrement.
 
@@ -6022,7 +6022,7 @@ LB6D9:  RTS                     ;End sprite direction calculations.
 
 DoSprites:
 LB6DA:  LDA EnNumber            ;Is this the final fight?
-LB6DC:  CMP #EN_DRAGONLORD2     ;If so, exit, else branch-->
+LB6DC:  CMP #EN_DRAGONLORD2     ;If so, exit, else branch
 LB6DE:  BNE SprtChkFrameCntr    ;to continue processing.
 LB6E0:  RTS                     ;
 
@@ -6031,8 +6031,8 @@ LB6E1:  LDA FrameCounter        ;Is this the 16th frame?
 LB6E3:  AND #$0F                ;
 LB6E5:  BNE ChkGotGwaelin       ;If not, branch.
 
-LB6E7:  LDA CharLeftRight       ;Every 16th frame, alternate character animations. This-->
-LB6E9:  CLC                     ;creates the walking effect for characters. bit 3 is-->
+LB6E7:  LDA CharLeftRight       ;Every 16th frame, alternate character animations. This
+LB6E9:  CLC                     ;creates the walking effect for characters. bit 3 is
 LB6EA:  ADC #$08                ;the only bit considered.
 LB6EC:  STA CharLeftRight       ;
 
@@ -6403,15 +6403,15 @@ LB8F1:  JMP NPCMoveLoop         ;($B77C)Calculate movement for an NPC.
 UpdateNPCs2:
 LB8F4:  LDX #$00                ;Zero out index into NPC data.
 
-LB8F6:  LDA #$10                ;Skip first 16 bytes of sprite RAM. This RAM is reserved -->
+LB8F6:  LDA #$10                ;Skip first 16 bytes of sprite RAM. This RAM is reserved 
 LB8F8:  STA SpriteRAMIndex      ;for the player's sprites.
 
 NPCSpritesLoop:
-LB8FA:  LDA NPCXPos,X           ;Get the NPC X and Y position data. If both are not 0, -->
-LB8FC:  AND #$1F                ;the NPC is valid and and should be drawn on the screen. -->
-LB8FE:  BNE CalcNPCSprites      ;Branch to draw NPC sprites. An intersting effect is that -->
-LB900:  LDA NPCYPos,X           ;An NPC can be pushed to 0,0 on the map and they will -->
-LB902:  AND #$1F                ;disappear. This can only happen in Rimuldar as position -->
+LB8FA:  LDA NPCXPos,X           ;Get the NPC X and Y position data. If both are not 0, 
+LB8FC:  AND #$1F                ;the NPC is valid and and should be drawn on the screen. 
+LB8FE:  BNE CalcNPCSprites      ;Branch to draw NPC sprites. An intersting effect is that 
+LB900:  LDA NPCYPos,X           ;An NPC can be pushed to 0,0 on the map and they will 
+LB902:  AND #$1F                ;disappear. This can only happen in Rimuldar as position 
 LB904:  BNE CalcNPCSprites      ;0,0 can only be reached in this town.
 
 LB906:  JMP NextNPCSprites      ;($B9DF)Increment to next NPC.
@@ -6465,7 +6465,7 @@ LB94A:  BEQ +                   ;If not, branch.
 
 LB94C:  JMP NextNPCSprites      ;($B9DF)Increment to next NPC.
 
-LB94F:* LDA ThisNPCXPos         ;Store a copy of the NPC's X and Y block location -->
+LB94F:* LDA ThisNPCXPos         ;Store a copy of the NPC's X and Y block location 
 LB951:  STA GenByte3C           ;Has no apparent use as it is overwritten in the 
 LB953:  LDA ThisNPCYPos         ;CheckCoveredArea function below.
 LB955:  STA GenByte3E           ;
@@ -6497,7 +6497,7 @@ LB97A:  STA NPCSpriteXOfst      ;
 
 NPCSpriteColLoop:
 LB97C:  LDA NPCXPixelsLB        ;
-LB97E:  CLC                     ;Find X position of this NPC sprite by adding -->
+LB97E:  CLC                     ;Find X position of this NPC sprite by adding 
 LB97F:  ADC NPCSpriteXOfst      ;together the NPC position with the current tile X offset.
 LB981:  STA ThisNPCXPos         ;
 
@@ -6525,7 +6525,7 @@ LB99B:  LDY NPCOffset           ;
 LB99D:  LDA ThisNPCXPos         ;Save updated X position of NPC sprite.
 LB99F:  STA SpriteRAM+3,X       ;
 
-LB9A2:  LDA NPCYPixelsLB        ;Find Y position of this NPC sprite by adding -->
+LB9A2:  LDA NPCYPixelsLB        ;Find Y position of this NPC sprite by adding 
 LB9A4:  CLC                     ;together the NPC position with the current tile Y offset.
 LB9A5:  ADC NPCSpriteYOfst      ;
 
@@ -6698,15 +6698,15 @@ LBA6A:  ROR NPCXPixelsLB        ;
 
 LBA6C:  LDA NPCXPixelsLB        ;
 LBA6E:  SEC                     ;
-LBA6F:  SBC CharXPixelsLB       ;Subtract player's X pixel location from the NPC's X pixel -->
-LBA71:  STA NPCXPixelsLB        ;location. Save the result in the NPC's X pixel location. -->
-LBA73:  LDA NPCXPixelsUB        ;The NPC's X location is a signed value of the difference -->
+LBA6F:  SBC CharXPixelsLB       ;Subtract player's X pixel location from the NPC's X pixel 
+LBA71:  STA NPCXPixelsLB        ;location. Save the result in the NPC's X pixel location. 
+LBA73:  LDA NPCXPixelsUB        ;The NPC's X location is a signed value of the difference 
 LBA75:  SBC CharXPixelsUB       ;between the player and NPC X coordinates.
 LBA77:  STA NPCXPixelsUB        ;
 
 LBA79:  LDA NPCXPixelsLB        ;
 LBA7B:  EOR #$80                ;A wierd way of adding 128. Saves 1 instruction(CLC).
-LBA7D:  STA NPCXPixelsLB        ;Add 128 to the result. If the number is between 0 and 256 -->
+LBA7D:  STA NPCXPixelsLB        ;Add 128 to the result. If the number is between 0 and 256 
 LBA7F:  BMI +                   ;then the NPC may be visible.
 LBA81:  INC NPCXPixelsUB        ;
 
@@ -6738,15 +6738,15 @@ LBAA2:  ORA NPCYPixelsLB        ;Add in the NPC mid-movement Y pixel position.
 LBAA4:  STA NPCYPixelsLB        ;
 
 LBAA6:  SEC                     ;
-LBAA7:  SBC CharYPixelsLB       ;Subtract player's Y pixel location from the NPC's Y pixel -->
-LBAA9:  STA NPCYPixelsLB        ;location. Save the result in the NPC's Y pixel location. -->
-LBAAB:  LDA NPCYPixelsUB        ;The NPC's Y location is a signed value of the difference -->
+LBAA7:  SBC CharYPixelsLB       ;Subtract player's Y pixel location from the NPC's Y pixel 
+LBAA9:  STA NPCYPixelsLB        ;location. Save the result in the NPC's Y pixel location. 
+LBAAB:  LDA NPCYPixelsUB        ;The NPC's Y location is a signed value of the difference 
 LBAAD:  SBC CharYPixelsUB       ;between the player and NPC X coordinates.
 LBAAF:  STA NPCYPixelsUB        ;
 
 LBAB1:  LDA NPCYPixelsLB        ;
 LBAB3:  CLC                     ;
-LBAB4:  ADC #$6F                ;Add 111 to the result. If the number is between 0 and 240 -->
+LBAB4:  ADC #$6F                ;Add 111 to the result. If the number is between 0 and 240 
 LBAB6:  STA NPCYPixelsLB        ;then the NPC may be visible.
 LBAB8:  BCC +                   ;
 LBABA:  INC NPCYPixelsUB        ;
@@ -6949,7 +6949,7 @@ LBBE0:  PHA                     ;
 
 LBBE1:  LDA PPUAddrLB           ;
 LBBE3:  STA GenPtr22LB          ;
-LBBE5:  LDA PPUAddrUB           ;Get PPU address and minus #$1C to find the corresponding-->
+LBBE5:  LDA PPUAddrUB           ;Get PPU address and minus #$1C to find the corresponding
 LBBE7:  SEC                     ;point in the nametable buffer.
 LBBE8:  SBC #$1C                ;
 LBBEA:  STA GenPtr22UB          ;

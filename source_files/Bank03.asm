@@ -60,7 +60,7 @@ LC00A:  PHA                     ;
 
 LC00B:  LDA NTYPos              ;
 LC00D:  AND #$02                ;
-LC00F:  ASL                     ;Load bit shift counter with proper index to bit pair to -->
+LC00F:  ASL                     ;Load bit shift counter with proper index to bit pair to 
 LC010:  STA GenByte3D           ;change in the attribute table(0, 2, 4 or 6).
 LC012:  LDA NTXPos              ;
 LC014:  AND #$02                ;
@@ -74,14 +74,14 @@ LC01E:  BEQ SetAttribBits       ;If so, branch. No need to do any shifting.
 
 AttribLoop:
 LC020:  SEC                     ;
-LC021:  ROL                     ;This loop shifts the attribute tabe bit pair into position -->
+LC021:  ROL                     ;This loop shifts the attribute tabe bit pair into position 
 LC022:  ASL PPUDataByte         ;while decrementing the counter.
 LC024:  DEY                     ;Do attribute table bits still need to be shifted?
 LC025:  BNE AttribLoop          ;If so, branch to shift them 1 more bit.
 
 SetAttribBits:
 LC027:  AND (PPUBufPtr),Y       ;
-LC029:  ORA PPUDataByte         ;Update the attribute table byte in both the PPU buffer and -->
+LC029:  ORA PPUDataByte         ;Update the attribute table byte in both the PPU buffer and 
 LC02B:  STA (PPUBufPtr),Y       ;the PPU data byte.
 LC02D:  STA PPUDataByte         ;
 
@@ -138,7 +138,7 @@ LC062:  AND #$9F                ;Remove existing NPC direction bits.
 LC064:  ORA GenByte24           ;OR in the new direction bits.
 LC066:  STA NPCYPos,X           ;
 
-LC068:  LDA #$00                ;Need to loop twice. Once for NPCs right next to player -->
+LC068:  LDA #$00                ;Need to loop twice. Once for NPCs right next to player 
 LC06A:  STA NPCSpriteCntr       ;and once for NPCs behind counters.
 
 LC06C:  LDY SpriteRAM           ;Get player's Y sprite position.
@@ -149,7 +149,7 @@ LC072:  LDA CharDirection       ;Is player facing up?
 LC075:  BNE ChkPlyrRight        ;If not, branch to check other player directions.
 
 LC077:  TYA                     ;
-LC078:  SEC                     ;Player is facing up. Prepare to search for NPC data -->
+LC078:  SEC                     ;Player is facing up. Prepare to search for NPC data 
 LC079:  SBC #$10                ;that is above player.
 LC07B:  TAY                     ;
 LC07C:  JMP CheckNPCPosition    ;
@@ -159,7 +159,7 @@ LC07F:  CMP #DIR_RIGHT          ;Is player facing right?
 LC081:  BNE ChkPlyrDown         ;If not, branch to check other player directions.
 
 LC083:  TXA                     ;
-LC084:  CLC                     ;Player is facing right. Prepare to search for NPC data -->
+LC084:  CLC                     ;Player is facing right. Prepare to search for NPC data 
 LC085:  ADC #$10                ;that is right of player.
 LC087:  TAX                     ;
 LC088:  JMP CheckNPCPosition    ;
@@ -169,14 +169,14 @@ LC08B:  CMP #DIR_DOWN           ;Is player facing down?
 LC08D:  BNE PlyrLeft            ;If not, branch. Player must be facing left.
 
 LC08F:  TYA                     ;
-LC090:  CLC                     ;Player is facing down. Prepare to search for NPC data -->
+LC090:  CLC                     ;Player is facing down. Prepare to search for NPC data 
 LC091:  ADC #$10                ;that is below player.
 LC093:  TAY                     ;
 LC094:  JMP CheckNPCPosition    ;
 
 PlyrLeft:
 LC097:  TXA                     ;
-LC098:  SEC                     ;Player is facing left. Prepare to search for NPC data -->
+LC098:  SEC                     ;Player is facing left. Prepare to search for NPC data 
 LC099:  SBC #$10                ;that is left of player.
 LC09B:  TAX                     ;
 
@@ -195,8 +195,8 @@ LC0A9:  LDA SpriteRAM+3,Y       ;Has the sprite X data for the desired NPC been 
 LC0AC:  CMP NPCXCheck           ;
 LC0AE:  BEQ NPCFound            ;If not, branch to move the the next NPC sprite data.
 
-LC0B0:* TYA                     ;This is not the sprite data for the desired NPC. -->
-LC0B1:  CLC                     ;Move to the next set of NPC sprite data. -->
+LC0B0:* TYA                     ;This is not the sprite data for the desired NPC. 
+LC0B1:  CLC                     ;Move to the next set of NPC sprite data. 
 LC0B2:  ADC #$10                ;4 bytes of data and 4 sprites per NPC = 16 bytes.
 
 LC0B4:  TAY                     ;Has all the sprite data been searched?
@@ -445,9 +445,9 @@ LC1CF:  LDA MultNum1LB          ;
 LC1D1:  ORA MultNum1UB          ;
 LC1D3:  BEQ MultEnd             ;
 LC1D5:  LSR MultNum1UB          ;
-LC1D7:  ROR MultNum1LB          ;This function multiplies the two-->
-LC1D9:  BCC +                   ;16-bit numbers stored in $3C,$3D-->
-LC1DB:  LDA MultNum2LB          ;and $3E, $3F and stores the results-->
+LC1D7:  ROR MultNum1LB          ;This function multiplies the two
+LC1D9:  BCC +                   ;16-bit numbers stored in $3C,$3D
+LC1DB:  LDA MultNum2LB          ;and $3E, $3F and stores the results
 LC1DD:  CLC                     ;in $40,$41.
 LC1DE:  ADC MultRsltLB          ;
 LC1E0:  STA MultRsltLB          ;
@@ -464,7 +464,7 @@ LC1EF:  RTS                     ;Done multiplying.
 ;----------------------------------------------------------------------------------------------------
 
 ByteDivide:
-LC1F0:  LDA #$00                ;Set upper byte of dividend to 0-->
+LC1F0:  LDA #$00                ;Set upper byte of dividend to 0
 LC1F2:  STA DivNmu1UB           ;When only doing 8-bit division.
 
 WordDivide:
@@ -476,11 +476,11 @@ LC1F8:  ASL DivNum1LB           ;
 LC1FA:  ROL DivNmu1UB           ;
 LC1FC:  STA DivRemainder        ;
 LC1FE:  ADC DivRemainder        ;
-LC200:  INC DivQuotient         ;This function takes a 16-bit dividend-->
-LC202:  SEC                     ;stored in $3C,$3D and divides it by-->
+LC200:  INC DivQuotient         ;This function takes a 16-bit dividend
+LC202:  SEC                     ;stored in $3C,$3D and divides it by
 LC203:  SBC DivNum2             ;an 8-bit number stored in $3E.
 LC205:  BCS +                   ;
-LC207:  CLC                     ;The 8-bit quotient is stored in $3C and-->
+LC207:  CLC                     ;The 8-bit quotient is stored in $3C and
 LC208:  ADC DivNum2             ;the 8-bit remainder is stored in $40.
 LC20A:  DEC DivQuotient         ;
 LC20C:* DEY                     ;
@@ -725,9 +725,9 @@ LC5A6:  ASL XPosFromLeft        ;*2. Blocks are 2 tiles wide.
 LC5A8:  ASL YPosFromTop         ;*2. Blocks are 2 tiles tall.
 
 DoAddrCalc:
-LC5AA:  LDA YPosFromTop         ;Put Y position in upper address byte.  This is 8 times the-->
-LC5AC:  STA PPUBufPtrUB         ;address of the proper row needed so divide it down next.-->
-LC5AE:  LDA #$00                ;This saves from having to do the multiplication routine-->
+LC5AA:  LDA YPosFromTop         ;Put Y position in upper address byte.  This is 8 times the
+LC5AC:  STA PPUBufPtrUB         ;address of the proper row needed so divide it down next.
+LC5AE:  LDA #$00                ;This saves from having to do the multiplication routine
 LC5B0:  STA PPUBufPtrLB         ;and is faster than shifting up into position.
 
 LC5B2:  LSR PPUBufPtrUB         ;
@@ -738,7 +738,7 @@ LC5BA:  LSR PPUBufPtrUB         ;
 LC5BC:  ROR PPUBufPtrLB         ;
 
 LC5BE:  LDA XPosFromLeft        ;
-LC5C0:  AND #$1F                ;Keep only lower 5 bits and add it to the addres-->
+LC5C0:  AND #$1F                ;Keep only lower 5 bits and add it to the addres
 LC5C2:  CLC                     ;to get the proper offset in the current row.
 LC5C3:  ADC PPUBufPtrLB         ;
 LC5C5:  STA PPUBufPtrLB         ;
@@ -773,7 +773,7 @@ LC5E2:  ASL NTYPos              ;
 
 CalcAttribAddr:
 LC5E4:  LDA NTYPos              ;
-LC5E6:  AND #$FC                ;Drop lower 2 bytes and multiply by 2. -->
+LC5E6:  AND #$FC                ;Drop lower 2 bytes and multiply by 2. 
 LC5E8:  ASL                     ;Attribute table byte controls 4x4 tile square.
 LC5E9:  STA PPUAddrLB           ;
 
@@ -784,7 +784,7 @@ LC5F0:  LSR                     ;/4. 1 byte of attrib. table controls 4x4 tile s
 LC5F1:  CLC                     ;
 LC5F2:  ADC PPUAddrLB           ;Add X offset to calculation.
 LC5F4:  CLC                     ;
-LC5F5:  ADC #$C0                ;Offset to attribute table at $23C0 or $27C0. Lower byte now -->
+LC5F5:  ADC #$C0                ;Offset to attribute table at $23C0 or $27C0. Lower byte now 
 LC5F7:  STA PPUAddrLB           ;contains proper address to corresponding attribute table address.
 
 LC5F9:  LDA NTXPos              ;Are we currently on nametable 0?
@@ -804,7 +804,7 @@ LC607:  RTS                     ;
 
 GetJoypadStatus:
 LC608:  LDA GenByte3C           ;
-LC60A:  PHA                     ;Prepare to update the random number by first saving registers -->
+LC60A:  PHA                     ;Prepare to update the random number by first saving registers 
 LC60B:  LDA GenByte3D           ;that are affected by the random number calculationa.
 LC60D:  PHA                     ;
 
@@ -896,7 +896,7 @@ LC67E:  BNE +                   ;
 ChkPalFade:
 LC680:  LDA (PalPtrLB),Y        ;Get current palette color.
 
-LC682:* SEC                     ;If fade in/fade out is currently active, subtract the-->
+LC682:* SEC                     ;If fade in/fade out is currently active, subtract the
 LC683:  SBC PalModByte          ;current fade offset value from color to make it darker.
 LC685:  BCS +                   ;
 
@@ -1020,7 +1020,7 @@ LC733:  RTS                     ;
 BattleBlock:
 LC734:  LDA NTBlockY            ;
 LC736:  ASL                     ;
-LC737:  ADC YPosFromCenter      ;Get the target tile Y position and convert from a -->
+LC737:  ADC YPosFromCenter      ;Get the target tile Y position and convert from a 
 LC739:  CLC                     ;signed value to an unsigned value and store the results.
 LC73A:  ADC #$1E                ;
 LC73C:  STA DivNum1LB           ;
@@ -1033,7 +1033,7 @@ LC749:  STA YFromTopTemp        ;
 
 LC74B:  LDA NTBlockX            ;
 LC74D:  ASL                     ;
-LC74E:  CLC                     ;Get the target tile X position and convert from a -->
+LC74E:  CLC                     ;Get the target tile X position and convert from a 
 LC74F:  ADC XPosFromCenter      ;signed value to an unsigned value and store the results.
 LC751:  AND #$3F                ;
 LC753:  STA XPosFromLeft        ;
@@ -1078,7 +1078,7 @@ LC78D:  STA YPosFromTop         ;
 
 LC78F:  LDY #$00                ;Zero out index.
 
-LC791:  LDA (BlockAddr),Y       ;Sets attribute table value for each block based on its -->
+LC791:  LDA (BlockAddr),Y       ;Sets attribute table value for each block based on its 
 LC793:  CMP #$C1                ;position in the pattern table.
 LC795:  BCS +                   ;Is this a sky tile in the battle scene? If not, branch.
 
@@ -1088,7 +1088,7 @@ LC799:  BEQ SetAttribVals       ;
 LC79B:* CMP #$CA                ;Is this a green covered mountain tile in the battle scene?
 LC79D:  BCS +                   ;If not, branch.
 
-LC79F:  LDA #$01                ;Set attribute table value for battle scene green covered -->
+LC79F:  LDA #$01                ;Set attribute table value for battle scene green covered 
 LC7A1:  BNE SetAttribVals       ;mountain tiles. Branch always.
 
 LC7A3:* CMP #$DE                ;Is this a foreground tile in the battle scene?
@@ -1129,14 +1129,14 @@ DoDialogLoBlock:
 LC7CB:  LDA #$00                ;Prepare to get dialog from TextBlock1 to TextBlock16.
 LC7CD:  STA GenByte3D           ;
 
-LC7CF:* PLA                     ;Pull return address off the stack and increment-->
-LC7D0:  CLC                     ;it.  Then place it back on the stack to skip-->
+LC7CF:* PLA                     ;Pull return address off the stack and increment
+LC7D0:  CLC                     ;it.  Then place it back on the stack to skip
 LC7D1:  ADC #$01                ;the data byte in the calling function.
 LC7D3:  STA GenPtr3ELB          ;
 LC7D5:  PLA                     ;
 LC7D6:  ADC #$00                ;
 LC7D8:  STA GenPtr3EUB          ;
-LC7DA:  PHA                     ;Set a pointer to the data byte-->
+LC7DA:  PHA                     ;Set a pointer to the data byte
 LC7DB:  LDA GenPtr3ELB          ;in the calling function.
 LC7DD:  PHA                     ;
 
@@ -1198,7 +1198,7 @@ LC9BD:  STA DrgnLrdPal          ;
 LC9C0:  STA CharDirection       ;
 
 LC9C3:* STA TrsrXPos,X          ;
-LC9C6:  INX                     ;Clear RAM used for treasure-->
+LC9C6:  INX                     ;Clear RAM used for treasure
 LC9C7:  CPX #$10                ;chest pickup history.
 LC9C9:  BCC -                   ;
 
@@ -1349,7 +1349,7 @@ LCA81:  STA StopNPCMove         ;Stop NPC movement.
 LCA83:  JSR Dowindow            ;($C6F0)display on-screen window.
 LCA86:  .byte WND_DIALOG        ;Dialog window.
 
-LCA87:  LDA RepelTimer          ;If repel timer is odd, it is the repel spell. If it is -->
+LCA87:  LDA RepelTimer          ;If repel timer is odd, it is the repel spell. If it is 
 LCA89:  BNE RepelEndMsg         ;even, it is from fairy water. Branch accordingly.
 
 LCA8B:  LDA #$37                ;TextBlock4, entry 7. The fairy water has lost its effect...
@@ -1376,7 +1376,7 @@ LCAA6:  BEQ CheckJoyA           ;If not, branch to check user inputs.
 PausePrepLoop:
 LCAA8:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LCAAB:  LDA FrameCounter        ;
-LCAAD:  AND #$0F                ;Sync the pause every 16th frame of the frame counter. -->
+LCAAD:  AND #$0F                ;Sync the pause every 16th frame of the frame counter. 
 LCAAF:  CMP #$01                ;This lines up the NPCs and player on the background tiles.
 LCAB1:  BEQ GamePaused          ;
 LCAB3:  JSR DoSprites           ;($B6DA)Update player and NPC sprites.
@@ -1508,7 +1508,7 @@ LCB85:  LDA DisplayedMaxMP      ;
 LCB87:  STA MagicPoints         ;
 
 LCB89:  LDX SaveNumber          ;
-LCB8C:  LDA #STRT_NO_HP         ;Indicate in the save game that the HP and MP -->
+LCB8C:  LDA #STRT_NO_HP         ;Indicate in the save game that the HP and MP 
 LCB8E:  STA StartStatus1,X      ;should not be maxed out on the next start.
 LCB91:  STA ThisStrtStat        ;
 
@@ -1530,7 +1530,7 @@ LCBA6:  LDA #$40                ;
 LCBA8:  STA CharYPixelsLB       ;
 
 LCBAA:  LDA #$00                ;
-LCBAC:  STA RepeatCounter       ;Clear any active timers and the upper byte --> 
+LCBAC:  STA RepeatCounter       ;Clear any active timers and the upper byte  
 LCBAE:  STA RepelTimer          ;of the map pixel positions.
 LCBB0:  STA CharXPixelsUB       ;
 LCBB2:  STA CharYPixelsUB       ;
@@ -1563,7 +1563,7 @@ FrameSyncLoop:
 LCBDD:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
 LCBE0:  LDA FrameCounter        ;
-LCBE2:  AND #$0F                ;Make sure the frame counter is synchronized. Actions will -->
+LCBE2:  AND #$0F                ;Make sure the frame counter is synchronized. Actions will 
 LCBE4:  CMP #$01                ;not occur until frame counter is on frame 1.
 LCBE6:  BEQ +                   ;
 
@@ -1595,11 +1595,11 @@ LCC06:  LDA CharYPos            ;Is player in the right Y coordinate to trigger 
 LCC08:  CMP #$08                ;
 LCC0A:  BNE +                   ;If not, branch to check other things.
 
-LCC0C:  LDA CharXPos            ;Is player at the first of 2 possible X coordinates to -->
+LCC0C:  LDA CharXPos            ;Is player at the first of 2 possible X coordinates to 
 LCC0E:  CMP #$0A                ;trigger the end game?
 LCC10:  BEQ EndGameTriggered    ;If not, check second trigger.
 
-LCC12:  CMP #$0B                ;Is player at the second of 2 possible X coordinates to -->
+LCC12:  CMP #$0B                ;Is player at the second of 2 possible X coordinates to 
 LCC14:  BEQ EndGameTriggered    ;trigger the end game? If so, branch to end game sequence.
 
 LCC16:* JMP CheckBlockDmg       ;Check to see if current map tile will damage player.
@@ -1703,7 +1703,7 @@ LCCA0:  JSR DoDialogLoBlock     ;($C7CB)I'm so happy...
 LCCA3:  .byte $B8               ;TextBlock12, entry 8.
 
 LCCA4:  LDA #$00                ;
-LCCA6:  STA GwaelinXPos         ;Remove the princess Gwaelin NPC from the screen. -->
+LCCA6:  STA GwaelinXPos         ;Remove the princess Gwaelin NPC from the screen. 
 LCCA8:  STA GwaelinYPos         ;She will be drawn in the player's arms.
 LCCAA:  STA GwaelinOffset       ;
 
@@ -2053,8 +2053,8 @@ LCE80:  BNE ChkDungeonFights    ;If not, branch to check other maps.
 
 ;This section of code calculates the proper enemies for the player's world map position.
 
-LCE82:  LDA CharYPos            ;Divide player's Y location on overworkd map by 15. -->
-LCE84:  STA DivNum1LB           ;This gives a number ranging from 0 to 7. -->
+LCE82:  LDA CharYPos            ;Divide player's Y location on overworkd map by 15. 
+LCE84:  STA DivNum1LB           ;This gives a number ranging from 0 to 7. 
 LCE86:  LDA #$0F                ;The enemy zones on the overworld map are an 8X8 grid.
 LCE88:  STA DivNum2             ;
 LCE8A:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
@@ -2062,15 +2062,15 @@ LCE8A:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit numbe
 LCE8D:  LDA DivNum1LB           ;Save Y data for enemy zone calculation.
 LCE8F:  STA GenByte42           ;
 
-LCE91:  LDA CharXPos            ;Divide player's X location on overworkd map by 15. -->
-LCE93:  STA DivNum1LB           ;This gives a number ranging from 0 to 7. -->
+LCE91:  LDA CharXPos            ;Divide player's X location on overworkd map by 15. 
+LCE93:  STA DivNum1LB           ;This gives a number ranging from 0 to 7. 
 LCE95:  LDA #$0F                ;The enemy zones on the overworld map are an 8X8 grid.
 LCE97:  STA DivNum2             ;
 LCE99:  JSR ByteDivide          ;($C1F0)Divide a 16-bit number by an 8-bit number.
 
 LCE9C:  LDA GenByte42           ;*4. 4 bytes per row in overworld enemy grid.
 LCE9E:  ASL                     ;
-LCE9F:  ASL                     ;The proper row in OvrWrldEnGrid is now known. -->
+LCE9F:  ASL                     ;The proper row in OvrWrldEnGrid is now known. 
 LCEA0:  STA EnemyOffset         ;Next, calculate the desired byte from the row.
 
 LCEA2:  LDA DivNum1LB           ;Get the X position again for the overworld enemy grid.
@@ -2082,8 +2082,8 @@ LCEA8:  TAX                     ;We now have the proper byte index into OvrWrldE
 LCEA9:  LDA OvrWrldEnGrid,X     ;Get the enemy zone data from OvrWrldEnGrid.
 LCEAC:  STA EnemyOffset         ;
 
-LCEAE:  LDA DivNum1LB           ;Since the enemy zone data is stored in nibbles, we need -->
-LCEB0:  LSR                     ;to get the right nibble in the byte. Is this the right -->
+LCEAE:  LDA DivNum1LB           ;Since the enemy zone data is stored in nibbles, we need 
+LCEB0:  LSR                     ;to get the right nibble in the byte. Is this the right 
 LCEB1:  BCS +                   ;byte? If so, branch.
 
 LCEB3:  LSR EnemyOffset         ;
@@ -2091,25 +2091,25 @@ LCEB5:  LSR EnemyOffset         ;Transfer upper nibble into the lower nibble.
 LCEB7:  LSR EnemyOffset         ;
 LCEB9:  LSR EnemyOffset         ;
 
-LCEBB:* LDA EnemyOffset         ;Keep only the lower nibble. We now have the proper -->
+LCEBB:* LDA EnemyOffset         ;Keep only the lower nibble. We now have the proper 
 LCEBD:  AND #$0F                ;data from OvrWrldEnGrid.
 LCEBF:  BNE GetEnemyRow         ;
 
 LCEC1:  JSR UpdateRandNum       ;($C55B)Get random number.
 
 LCEC4:  LDA ThisTile            ;Is player in hilly terrain?
-LCEC6:  CMP #BLK_HILL           ;If not, branch. Another check will be done to avoid a -->
+LCEC6:  CMP #BLK_HILL           ;If not, branch. Another check will be done to avoid a 
 LCEC8:  BNE NormFightModifier   ;fight. 50% chance the fight may not happen.
 
 HighFightModifier:
 LCECA:  LDA RandNumUB           ;Player is in hilly terrain. Increased chance of fight!
-LCECC:  AND #$03                ;Do another check to avoid the fight. 25% chance the fight -->
+LCECC:  AND #$03                ;Do another check to avoid the fight. 25% chance the fight 
 LCECE:  BEQ GetEnemyRow         ;may not happen. Is fight going to happen?
 LCED0:  RTS                     ;If so, branch to calculate which enemy.
 
 NormFightModifier:
 LCED1:  LDA RandNumUB           ;Player is not on hilly terrain.
-LCED3:  AND #$01                ;Do another check to avoid the fight. 50% chance the fight -->
+LCED3:  AND #$01                ;Do another check to avoid the fight. 50% chance the fight 
 LCED5:  BEQ GetEnemyRow         ;may not happen. Is fight going to happen?
 LCED7:  RTS                     ;If so, branch to calculate which enemy.
 
@@ -2146,13 +2146,13 @@ LCEFA:  RTS                     ;No enemies on this map. Return without a fight.
 
 DoDungeonEnemy:
 LCEFB:  LDA MapNumber           ;
-LCEFD:  SEC                     ;Convert map number into a value that can be used to find -->
+LCEFD:  SEC                     ;Convert map number into a value that can be used to find 
 LCEFE:  SBC #$0F                ;the index to the enemy data.
 LCF00:  TAX                     ;
 LCF01:  LDA CaveEnIndexTbl,X    ;Get enemy index data byte. points to a row in EnemyGroupsTbl.
 
 GetEnemyRow:
-LCF04:  STA EnemyOffset         ;This calculates the proper row of enemies to -->
+LCF04:  STA EnemyOffset         ;This calculates the proper row of enemies to 
 LCF06:  ASL                     ;choose a fight from in EnemyGroupsTbl.
 LCF07:  ASL                     ;
 LCF08:  CLC                     ;
@@ -2165,8 +2165,8 @@ LCF0B:  STA EnemyOffset         ;
 GetEnemyInRow:
 LCF0D:  JSR UpdateRandNum       ;($C55B)Get random number.
 LCF10:  LDA RandNumUB           ;
-LCF12:  AND #$07                ;Keep only 3 LSBs. Is number between 0 and 4? If not, branch -->
-LCF14:  CMP #$05                ;to get another random number as there are only 5 enemy slots -->
+LCF12:  AND #$07                ;Keep only 3 LSBs. Is number between 0 and 4? If not, branch 
+LCF14:  CMP #$05                ;to get another random number as there are only 5 enemy slots 
 LCF16:  BCS GetEnemyInRow       ;per enemy zone.
 
 LCF18:  ADC EnemyOffset         ;Add offset to the enemy row to get the specific enemy.
@@ -2475,8 +2475,8 @@ LD0B7:  AND #$1F                ;Tallest map is only 32 blocks.
 LD0B9:  CMP _TargetY            ;Is the Y position valid?
 LD0BB:  BNE CheckNextNPC        ;If not, branch to check the next NPC slot.
 
-LD0BD:  LDA _NPCXPos,Y          ;Make sure the NPC slot contains a valid NPC and-->
-LD0C0:  BNE JmpValidateNPC      ;is not empty.  If all 3 bytes are 0, the slot is-->
+LD0BD:  LDA _NPCXPos,Y          ;Make sure the NPC slot contains a valid NPC and
+LD0C0:  BNE JmpValidateNPC      ;is not empty.  If all 3 bytes are 0, the slot is
 LD0C2:  LDA _NPCYPos,Y          ;empty.
 LD0C5:  BNE JmpValidateNPC      ;
 LD0C7:  LDA _NPCMidPos,Y        ;
@@ -2504,13 +2504,13 @@ LD0DE:  CPY #$1E                ;Lower NPC slots are for moving NPCs.
 LD0E0:  BCC CheckMobNPC         ;If lower slot, branch to check for valid mobile NPC.
 
 LD0E2:  TYA                     ;
-LD0E3:  SEC                     ;This is a static NPC.  Move offset down in preparation-->
+LD0E3:  SEC                     ;This is a static NPC.  Move offset down in preparation
 LD0E4:  SBC #$1C                ;to calculate the index into the NPCStatPtrTbl.
 LD0E6:  TAY                     ;
 
-LD0E7:  LDA MapNumber           ;Subtract 4 from the map number and make sure it is-->
+LD0E7:  LDA MapNumber           ;Subtract 4 from the map number and make sure it is
 LD0E9:  SEC                     ;less than or equal to 11.
-LD0EA:  SBC #$04                ;This is because valid NPCs are only on map numbers-->
+LD0EA:  SBC #$04                ;This is because valid NPCs are only on map numbers
 LD0EC:  CMP #$0B                ;4 through 14.
 LD0EE:  BCC GetStatNPCPtr       ;Check for valid static NPC.
 
@@ -2530,9 +2530,9 @@ CheckMobNPC:
 LD102:  INY                     ;+2. Need to check 3rd byte in table entry.
 LD103:  INY                     ;
 
-LD104:  LDA MapNumber           ;Subtract 4 from the map number and make sure it is-->
+LD104:  LDA MapNumber           ;Subtract 4 from the map number and make sure it is
 LD106:  SEC                     ;less than or equal to 11.
-LD107:  SBC #$04                ;This is because valid NPCs are only on map numbers-->
+LD107:  SBC #$04                ;This is because valid NPCs are only on map numbers
 LD109:  CMP #$0B                ;4 through 14.
 LD10B:  BCC GetMobNPCPtr        ;Check for valid mobile NPC.
 
@@ -2583,7 +2583,7 @@ LD143:  .byte $21               ;TextBlock19, entry 1
 LD144:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
 TantEndDialog:
-LD147:  LDA (GenPtr3C),Y        ;There is a NPC who was looking for Gwaelin and is almost-->
+LD147:  LDA (GenPtr3C),Y        ;There is a NPC who was looking for Gwaelin and is almost
 LD149:  CMP #$64                ;dead.  I guess he finally dies when the dragonlord is defeated.
 LD14B:  BNE RandEndDialog       ;Branch if not talking to that one specific NPC.
 
@@ -2595,7 +2595,7 @@ LD151:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 RandEndDialog:
 LD154:  JSR UpdateRandNum       ;($C55B)Get a random number.
 LD157:  LDA RandNumUB           ;
-LD159:  LSR                     ;Randomly choose text based on the LSB of-->
+LD159:  LSR                     ;Randomly choose text based on the LSB of
 LD15A:  BCC AlternateDialog     ;the number if the dragonlord is dead.
 
 LD15C:  JSR DoDialogHiBlock     ;($C7C5)Hurray! Hurray!...
@@ -2675,7 +2675,7 @@ LD1B3:  CLC                     ;
 LD1B4:  ADC #$2F                ;Add offset to the byte to find proper text block entry.
 LD1B6:  JSR DoMidDialog         ;($C7BD)Do any number of Dialogs.
 
-LD1B9:  PLA                     ;Is this TextBlock5, entry 9 which talks about the legend-->
+LD1B9:  PLA                     ;Is this TextBlock5, entry 9 which talks about the legend
 LD1BA:  CMP #$1A                ;of the rainbow bridge?
 LD1BC:  BNE EndVariousDialog    ;If not, branch to exit dialog routine.
 
@@ -3213,7 +3213,7 @@ LD466:  BNE DgrnLrdDialog       ;If not, branch.
 
 LD468:  JSR UpdateRandNum       ;($C55B)Get random number.
 LD46B:  LDA RandNumUB           ;
-LD46D:  AND #$60                ;Choose a random number to vary what princess Gwaelin says-->
+LD46D:  AND #$60                ;Choose a random number to vary what princess Gwaelin says
 LD46F:  BNE PrncsRndDialog1     ;to the player when she is talked to.
 
 LD471:  LDA #$BB                ;TextBlock12, entry 11.
@@ -3322,7 +3322,7 @@ LD4F3:  STA ExpUB               ;
 LD4F5:  STA GoldLB              ;
 LD4F7:  STA GoldUB              ;
 LD4F9:  STA InventorySlot12     ;
-LD4FB:  STA InventorySlot34     ;Zero out stats. The player chose to join-->
+LD4FB:  STA InventorySlot34     ;Zero out stats. The player chose to join
 LD4FD:  STA InventorySlot56     ;the dragonlord.  The game is over.
 LD4FF:  STA InventorySlot78     ;
 LD501:  STA InventoryKeys       ;
@@ -3384,10 +3384,10 @@ LD549:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
 InvListTbl:
 LD54C:  .byte ITM_TORCH         ;
-LD54D:  .byte ITM_DRG_SCALE     ;If Gwaelin is returned and the player's inventory-->
-LD54E:  .byte ITM_FTR_RING      ;is full, one of the following items will be taken-->
-LD54F:  .byte ITM_FRY_WATER     ;from the inventory and replaced with Gwaelin's love.-->
-LD550:  .byte ITM_WINGS         ;If the inventory is full and none of these things-->
+LD54D:  .byte ITM_DRG_SCALE     ;If Gwaelin is returned and the player's inventory
+LD54E:  .byte ITM_FTR_RING      ;is full, one of the following items will be taken
+LD54F:  .byte ITM_FRY_WATER     ;from the inventory and replaced with Gwaelin's love.
+LD550:  .byte ITM_WINGS         ;If the inventory is full and none of these things
 LD551:  .byte ITM_CRSD_BELT     ;are present, Gwaelin's love will not be added to inventory.
 LD552:  .byte ITM_STFF_RAIN     ;
 
@@ -3438,7 +3438,7 @@ LD587:  ASL                     ;*2. each entry in the table is 2 bytes.
 
 LD588:  TAX                     ;
 LD589:  LDA GoldLB              ;
-LD58B:  SEC                     ;Subtract item price from player's gold to-->
+LD58B:  SEC                     ;Subtract item price from player's gold to
 LD58C:  SBC ItemCostTbl,X       ;see if player has enough money.
 LD58F:  LDA GoldUB              ;
 LD591:  SBC ItemCostTbl+1,X     ;
@@ -3586,7 +3586,7 @@ LD63C:  CMP #$0E                ;Is the purchased item armor?
 LD63E:  BCS ApplyShield         ;If not branch to apply the new shield(the only one left).
 
 LD640:  SEC                     ;
-LD641:  SBC #$06                ;Subtract 6 and *4 to move armor to proper bit-->
+LD641:  SBC #$06                ;Subtract 6 and *4 to move armor to proper bit
 LD643:  ASL                     ;location for EqippedItems.
 LD644:  ASL                     ;
 
@@ -3601,7 +3601,7 @@ LD64D:  STA EqippedItems        ;
 LD64F:  BNE CompWeapPurchase    ;Branch always to complete process.
 
 ApplyShield:
-LD651:  SEC                     ;Subtract 13 to move shield to proper bit-->
+LD651:  SEC                     ;Subtract 13 to move shield to proper bit
 LD652:  SBC #$0D                ;location for EqippedItems.
 
 LD654:  STA GenByte3C           ;Temp storage of new shield.
@@ -3633,14 +3633,14 @@ LD66F:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 ;----------------------------------------------------------------------------------------------------
 
 GetShopItems:
-LD672:  LDX #$00                ;The dialog control byte is the entry-->
+LD672:  LDX #$00                ;The dialog control byte is the entry
 LD674:  LDA DialogTemp          ;into the ShopItemsTbl.
 LD676:  STA ShopIndex           ;Store a copy of the table index.
 LD678:  BEQ ShopEntryFound      ;Is the index 0? If so, no need to search the table.
 
 ShopEntryLoop:
 LD67A:  LDA ShopItemsTbl,X      ;
-LD67D:  INX                     ;Increment through ShopItemsTbl to find end of-->
+LD67D:  INX                     ;Increment through ShopItemsTbl to find end of
 LD67E:  CMP #ITM_TBL_END        ;current shop index.
 LD680:  BNE ShopEntryLoop       ;
 
@@ -3655,8 +3655,8 @@ LD688:  LDY #$01                ;Load #$01 into the description buffer.
 LD68A:  STY DescBuf             ;
 
 ShopEntryLoad:
-LD68C:  LDA ShopItemsTbl,X      ;Store description byte for item in the description buffer.-->
-LD68F:  CLC                     ;The description byte will be converted to the proper-->
+LD68C:  LDA ShopItemsTbl,X      ;Store description byte for item in the description buffer.
+LD68F:  CLC                     ;The description byte will be converted to the proper
 LD690:  ADC #$02                ;value in the window engine.
 LD692:  STA _DescBuf,Y          ;
 
@@ -3726,7 +3726,7 @@ LD6DD:  SEC                     ;
 LD6DE:  SBC ItemCostTbl,X       ;
 LD6E1:  STA GenWord3CLB         ;
 LD6E3:  LDA GoldUB              ;
-LD6E5:  SBC ItemCostTbl+1,X     ;Does player have enough gold to-->
+LD6E5:  SBC ItemCostTbl+1,X     ;Does player have enough gold to
 LD6E8:  STA GenWord3CUB         ;purchase the selected item?
 LD6EA:  BCS ChkToolPurchase     ;If so, branch.
 
@@ -3935,7 +3935,7 @@ LD7EA:  JMP GetSellGold         ;($D7A0)Update gold after selling item.
 ;----------------------------------------------------------------------------------------------------
 
 KeysDialog:
-LD7ED:  SEC                     ;There are three key shops. The dialog control byte-->
+LD7ED:  SEC                     ;There are three key shops. The dialog control byte
 LD7EE:  SBC #$0C                ;determines what the price of the key is.
 
 LD7F0:  TAX                     ;Convert control byte to index for KeyCostTbl.
@@ -4065,7 +4065,7 @@ LD892:  JMP FairyDialogLoop     ;($D84F)Loop to see if player wants to buy anoth
 ;----------------------------------------------------------------------------------------------------
 
 InnDialog:
-LD895:  SEC                     ;Convert dialog control byte to-->
+LD895:  SEC                     ;Convert dialog control byte to
 LD896:  SBC #$11                ;proper index in InnCostTbl.
 
 LD898:  TAX                     ;Get inn cost from InnCostTbl.
@@ -4182,7 +4182,7 @@ LD92D:  RTS                     ;
 ;----------------------------------------------------------------------------------------------------
 
 IncDescBuffer:
-LD92E:  LDX #$00                ;Prepare to write incrementing numbers-->
+LD92E:  LDX #$00                ;Prepare to write incrementing numbers
 LD930:  LDA #$01                ;to the description buffer.
 
 LD932:* STA DescBuf,X           ;
@@ -4253,7 +4253,7 @@ LD98A:  STA CharYPixelsUB       ;
 LD98C:  LDX #$04                ;Prepare to loop 4 times.
 
 LD98E:* ASL CharXPixelsLB       ;
-LD990:  ROL CharXPixelsUB       ;Multiply given pixel position by 16 as the block position -->
+LD990:  ROL CharXPixelsUB       ;Multiply given pixel position by 16 as the block position 
 LD992:  ASL CharYPixelsLB       ;has been given. Each block is 16X16 pixels.
 LD994:  ROL CharYPixelsUB       ;
 LD996:  DEX                     ;Done multiplying?
@@ -4552,7 +4552,7 @@ LDB18:  STA CharYPixelsUB       ;
 LDB1A:  LDX #$04                ;Prepare to loop 4 times.
 
 LDB1C:* ASL CharXPixelsLB       ;
-LDB1E:  ROL CharXPixelsUB       ;Multiply given pixel position by 16 as the block position -->
+LDB1E:  ROL CharXPixelsUB       ;Multiply given pixel position by 16 as the block position 
 LDB20:  ASL CharYPixelsLB       ;has been given. Each block is 16X16 pixels.
 LDB22:  ROL CharYPixelsUB       ;
 LDB24:  DEX                     ;Done multiplying?
@@ -4594,12 +4594,12 @@ LDB55:  RTS                     ;
 
 ShowSpells:
 LDB56:  JSR IncDescBuffer       ;($D92E)Write #$01-#$0A to the description buffer.
-LDB59:  LDA #$02                ;Start description bytes for spells at #$02. 2 will be -->
+LDB59:  LDA #$02                ;Start description bytes for spells at #$02. 2 will be 
 LDB5B:  STA SpellDescByte       ;subtracted before the function returns.
 LDB5D:  LDX #$01                ;Start at index 1 in the description buffer.
 
 GetSpellsLoop:
-LDB5F:  LSR SpellFlagsUB        ;Rotate spell flags through the carry bit to see if the -->
+LDB5F:  LSR SpellFlagsUB        ;Rotate spell flags through the carry bit to see if the 
 LDB61:  ROR SpellFlagsLB        ;player has a given spell. Does the player have the spell?
 LDB63:  BCC nextSpell           ;If not, branch to check the next spell.
 
@@ -4623,8 +4623,8 @@ LDB7A:  CMP #WND_ABORT          ;Did the player abort the spell selection?
 LDB7C:  BEQ ShowSpellEnd        ;If so, branch to exit.
 
 LDB7E:  TAX                     ;
-LDB7F:  LDA DescBuf+1,X         ;The value from the description buffer needs to have 2 -->
-LDB81:  SEC                     ;subtracted from it to get the proper value for the spell -->
+LDB7F:  LDA DescBuf+1,X         ;The value from the description buffer needs to have 2 
+LDB81:  SEC                     ;subtracted from it to get the proper value for the spell 
 LDB82:  SBC #$02                ;description text. Do that here.
 
 ShowSpellEnd:
@@ -4733,14 +4733,14 @@ LDBFF:  LDY #$00                ;Index is always 0. Increment pointer address in
 
 DescriptionLoop:
 LDC01:  LDA (GenPtr3C),Y        ;
-LDC03:  INC GenPtr3CLB          ;Increment through the current description data looking -->
+LDC03:  INC GenPtr3CLB          ;Increment through the current description data looking 
 LDC05:  BNE +                   ;for the end marker.
 LDC07:  INC GenPtr3CUB          ;
 
 LDC09:* CMP #TXT_SUBEND         ;Has the end marker been found?
 LDC0B:  BNE DescriptionLoop     ;If not, branch to get another byte of the description.
 
-LDC0D:  DEX                     ;Found the end of the current description. Are we now aligned -->
+LDC0D:  DEX                     ;Found the end of the current description. Are we now aligned 
 LDC0E:  BNE DescriptionLoop     ;with the desired description? If not, branch.
 
 ;At this point, the pointer is pointed at the description byte.
@@ -5162,7 +5162,7 @@ LDE1E:  JSR UpdateRandNum       ;($C55B)Get random number.
 LDE21:  LDA RandNumUB           ;
 LDE23:  AND #$07                ;Choose a random number that is 0, 1, 2, 3, 4 or 6.
 LDE25:  CMP #$05                ;
-LDE27:  BEQ HarpRNGLoop         ;The harp will summon either a slime, red slime, drakee -->
+LDE27:  BEQ HarpRNGLoop         ;The harp will summon either a slime, red slime, drakee 
 LDE29:  CMP #$07                ;ghost, magician or scorpion.
 LDE2B:  BEQ HarpRNGLoop         ;Works even after the dragon lord is dead.
 
@@ -5271,7 +5271,7 @@ LDEB9:  ORA #F_RNBW_BRDG        ;Indicate rainbow bridge has been made.
 LDEBB:  STA ModsnSpells         ;
 
 LDEBD:  LDA #$FE                ;
-LDEBF:  STA XPosFromCenter      ;Prepare to create the rainbow bridge 2 -->
+LDEBF:  STA XPosFromCenter      ;Prepare to create the rainbow bridge 2 
 LDEC1:  LDA #$00                ;tiles to the left of the player.
 LDEC3:  STA YPosFromCenter      ;
 
@@ -5289,9 +5289,9 @@ LDED3:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LDED6:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 LDED9:  JSR WaitForNMI          ;($FF74)Wait for VBlank interrupt.
 
-LDEDC:  LDA #$03                ;Prepare to change a background palette color. -->
-LDEDE:  STA PPUAddrLB           ;This is the palette location that creates the -->
-LDEE0:  LDA #$3F                ;multicolor water effect when the rainbow bridge -->
+LDEDC:  LDA #$03                ;Prepare to change a background palette color. 
+LDEDE:  STA PPUAddrLB           ;This is the palette location that creates the 
+LDEE0:  LDA #$3F                ;multicolor water effect when the rainbow bridge 
 LDEE2:  STA PPUAddrUB           ;animation is occurring.
 
 LDEE4:  JSR AddPPUBufEntry      ;($C690)Add data to PPU buffer.
@@ -5660,7 +5660,7 @@ LE09E:  .byte WND_INVTRY1       ;Player inventory window.
 LE09F:  CMP #WND_ABORT          ;Did player abort the discard process?
 LE0A1:  BEQ PlayerNoDiscard     ;If so, branch.
 
-LE0A3:  TAX                     ;Prepare a check to see if player is trying to discard -->
+LE0A3:  TAX                     ;Prepare a check to see if player is trying to discard 
 LE0A4:  LDA DescBuf+1,X         ;an important item that cannot be discarded.
 LE0A6:  LDY #$00                ;
 
@@ -5748,7 +5748,7 @@ LE10F:  BNE NextSearch          ;If not, branch to do other searches.
 LE111:  LDA CharXPos            ;
 LE113:  CMP #$53                ;Is player in the proper X any Y position to find Erdrick's token?
 LE115:  BNE NextSearch          ;
-LE117:  LDA CharYPos            ;If not, branch to do other searches. Erdrick's token is the -->
+LE117:  LDA CharYPos            ;If not, branch to do other searches. Erdrick's token is the 
 LE119:  CMP #$71                ;only item to find on the overworld map.
 LE11B:  BNE NextSearch          ;
 
@@ -5837,7 +5837,7 @@ LE18E:  BNE ChkSearchTrsr       ;If not, branch.
 LE190:  LDA CharXPos            ;
 LE192:  CMP #$0A                ;Is the player standing in the dragonlord's throne?
 LE194:  BNE ChkSearchTrsr       ;
-LE196:  LDA CharYPos            ;If so, branch to tell player wind is comming -->
+LE196:  LDA CharYPos            ;If so, branch to tell player wind is comming 
 LE198:  CMP #$03                ;from behind the throne.
 LE19A:  BNE +                   ;Else branch.
 
@@ -5986,7 +5986,7 @@ LE256:  AND #F_DTH_NCK_FOUND    ;
 LE258:  BNE GetDthNeckGold      ;If so, branch to get gold instead.
 
 LE25A:  JSR UpdateRandNum       ;($C55B)Get random number.
-LE25D:  LDA RandNumUB           ;If lower 5 bits are 0, player will receive the-->
+LE25D:  LDA RandNumUB           ;If lower 5 bits are 0, player will receive the
 LE25F:  AND #$1F                ;death necklace(1 in 32 chance).
 LE261:  BNE GetDthNeckGold      ;($E288)Lower 5 zeros? if not, branch to get gold instead.
 
@@ -6337,22 +6337,22 @@ BGGFXScreenLoop:
 LE410:  LDX BlockCounter        ;Use the block counter as the index into the table.
 
 LE412:  LDA CmbtBGPlcmntTbl,X   ;
-LE415:  LSR                     ;Get byte from table and extract-->
+LE415:  LSR                     ;Get byte from table and extract
 LE416:  LSR                     ;x displacement (upper nibble).
 LE417:  LSR                     ;
 LE418:  LSR                     ;
 
-LE419:  CLC                     ;Need to convert from combat background coords-->
+LE419:  CLC                     ;Need to convert from combat background coords
 LE41A:  ADC #$FA                ;to screen tile coords.  The formula is:
 LE41C:  STA XPosFromCenter      ;x = combatBGX + #$0A.
 LE41E:  CLC                     ;
 LE41F:  ADC #$10                ;Here they are basing off the center so they actually use:
 LE421:  STA XPosFromLeft        ;x = combatBGX + #$10 - #$6.
 
-LE423:  LDA CmbtBGPlcmntTbl,X   ;Get same byte from table and extract-->
+LE423:  LDA CmbtBGPlcmntTbl,X   ;Get same byte from table and extract
 LE426:  AND #$0F                ;y displacement (lower nibble).
 
-LE428:  CLC                     ;The y position needs to be converted as well.-->
+LE428:  CLC                     ;The y position needs to be converted as well.
 LE429:  ADC #$FA                ;the formula is:
 LE42B:  STA YPosFromCenter      ;y = combatBGY + #$09.
 LE42D:  CLC                     ;
@@ -6392,8 +6392,8 @@ LE45C:  RTS                     ;
 
 LE45D:* LDA #$00                ;
 LE45F:  STA RAMTrgtPtrLB        ;
-LE461:  STA CopyCounterUB       ;Copy enemy sprite data into $0300 to $03A0. -->
-LE463:  LDA #$03                ;Always copy 160 bytes(53 sprites worth of data). -->
+LE461:  STA CopyCounterUB       ;Copy enemy sprite data into $0300 to $03A0. 
+LE463:  LDA #$03                ;Always copy 160 bytes(53 sprites worth of data). 
 LE465:  STA RAMTrgtPtrUB        ;Not all the data copied may be used.
 LE467:  LDA #$A0                ;
 LE469:  STA CopyCounterLB       ;
@@ -6438,7 +6438,7 @@ LE499:  LDA (EnSpritePtr),Y     ;
 LE49B:  LSR                     ;Get the X position data of the prite.
 LE49C:  LSR                     ;
 
-LE49D:  SEC                     ;Move sprite 28 pixels left. Not sure -->
+LE49D:  SEC                     ;Move sprite 28 pixels left. Not sure 
 LE49E:  SBC #$1C                ;why data was formatted this way.
 LE4A0:  STA EnSprtXPos          ;
 
@@ -6450,7 +6450,7 @@ LE4A8:  EOR #$FF                ;Enemy is mirrored. 2's compliment the X positio
 LE4AA:  STA EnSprtXPos          ;
 LE4AC:  INC EnSprtXPos          ;
 
-LE4AE:  LDA EnSprtAttribDat     ;Since the enemy is mirrored in the X direction, the -->
+LE4AE:  LDA EnSprtAttribDat     ;Since the enemy is mirrored in the X direction, the 
 LE4B0:  EOR #$40                ;horizontal mirroring of the sprite needs to be inverted.
 LE4B2:  STA EnSprtAttribDat     ;
 
@@ -6476,7 +6476,7 @@ LE4C8:  JSR LoadEnPalette       ;($EEFD)Load enemy palette data.
 LE4CB:  JSR Bank3ToNT1          ;($FCB8)Load data into nametable 1.
 
 LE4CE:  LDA #$00                ;
-LE4D0:  STA EnSprtXPos          ;Clear out sprite working variables. -->
+LE4D0:  STA EnSprtXPos          ;Clear out sprite working variables. 
 LE4D2:  LDA #$30                ;Doesn't appear to have an effect.
 LE4D4:  STA EnSprtAttribDat     ;
 
@@ -6526,7 +6526,7 @@ LE50E:  PLA                     ;
 LE50F:  STA EnNumber            ;
 LE511:  CMP #EN_RDRAGON         ;
 LE513:  BNE +                   ;
-LE515:  LDA #$46                ;Load additional description bytes for the red dragon.-->
+LE515:  LDA #$46                ;Load additional description bytes for the red dragon.
 LE517:  STA Stack               ;These bytes do not appear to be used for any enemy.
 LE51A:  LDA #$FA                ;
 LE51C:  STA Stack+1             ;
@@ -6542,7 +6542,7 @@ LE52B:  AND #$0F                ;Clear combat status flags.
 LE52D:  STA PlayerFlags         ;
 
 LE52F:  LDA EnNumber            ;
-LE531:  PHA                     ;Save the enemy number on the stack and-->
+LE531:  PHA                     ;Save the enemy number on the stack and
 LE532:  LDA #$00                ;then clear the EnNumber variable.
 LE534:  STA EnNumber            ;
 
@@ -6559,7 +6559,7 @@ LE53E:  LDX #$22                ;Save base address for EnSpritesPtrTbl in GenPtr
 LE540:  BRK                     ;Table of pointers to enemy sprites.
 LE541:  .byte $8B, $17          ;($99E4)EnSpritesPtrTbl, bank 1.
 
-LE543:  LDA #PRG_BANK_1         ;Get lower byte of sprite data pointer-->
+LE543:  LDA #PRG_BANK_1         ;Get lower byte of sprite data pointer
 LE545:  JSR GetBankDataByte     ;($FD1C)from PRG bank 1 and store in A.
 
 LE548:  CLC                     ;Add with carry does nothing.
@@ -6569,7 +6569,7 @@ LE54B:  STA ROMSrcPtrLB         ;Store lower byte of enemy sprite data pointer.
 LE54D:  PHP                     ;Carry should always be clear.
 
 LE54E:  INY                     ;Increment to next byte in EnSpritesPtrTbl
-LE54F:  LDA #PRG_BANK_1         ;Get upper byte of sprite data pointer-->
+LE54F:  LDA #PRG_BANK_1         ;Get upper byte of sprite data pointer
 LE551:  JSR GetBankDataByte     ;($FD1C)from PRG bank 1 and store in A.
 
 LE554:  TAY                     ;Save a copy of upper byte to check enemy mirroring later.
@@ -7240,7 +7240,7 @@ LE8E4:  BNE ChkMapSwampCave     ;If not, branch to move on.
 
 LE8E6:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
 
-LE8E9:  DEC CharXPos            ;Move player 1 block left so they cannot search -->
+LE8E9:  DEC CharXPos            ;Move player 1 block left so they cannot search 
 LE8EB:  DEC _CharXPos           ;for Erdrick's armor after running.
 
 LE8ED:  LDA CharXPixelsLB       ;
@@ -7270,7 +7270,7 @@ LE911:  BNE ChkMapOverworld     ;If so, branch.
 MovePlyrUp1Block:
 LE913:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
 
-LE916:  DEC CharYPos            ;Move player 1 block up so they cannot bypass -->
+LE916:  DEC CharYPos            ;Move player 1 block up so they cannot bypass 
 LE918:  DEC _CharYPos           ;the green dragon fight and save Gwaelin after running.
 
 LE91A:  LDA CharYPixelsLB       ;
@@ -7316,7 +7316,7 @@ LE951:  BCC SpellFailed         ;If so, branch. The spell failed.
 LE953:  RTS                     ;Spell succeeded. Return.
 
 SpellFailed:
-LE954:  PLA                     ;Spell failed. Remove return address from -->
+LE954:  PLA                     ;Spell failed. Remove return address from 
 LE955:  PLA                     ;stack and start enemy's turn.
 
 LE956:  JSR DoDialogLoBlock     ;($C7CB)The spell will not work...
@@ -7347,7 +7347,7 @@ LE971:  LDA MapNumber           ;Green dragon just killed.
 LE973:  CMP #MAP_SWAMPCAVE      ;Was it in the swamp cave?
 LE975:  BNE ChkGolemKilled      ;If not, move on.
 
-LE977:  LDA StoryFlags          ;Green dragon in the swamp cave-->
+LE977:  LDA StoryFlags          ;Green dragon in the swamp cave
 LE979:  ORA #F_GDRG_DEAD        ;was defeated.  Set story flag.
 LE97B:  STA StoryFlags          ;
 LE97D:  BNE ContEnDefeated      ;Branch always.
@@ -7360,7 +7360,7 @@ LE983:  LDA MapNumber           ;Golem just killed.
 LE985:  CMP #MAP_OVERWORLD      ;Was it on the overworld map?
 LE987:  BNE ContEnDefeated      ;If not, move on.
 
-LE989:  LDA StoryFlags          ;Golem on the overworld was-->
+LE989:  LDA StoryFlags          ;Golem on the overworld was
 LE98B:  ORA #F_GOLEM_DEAD       ;defeated.  Set story flag.
 LE98D:  STA StoryFlags          ;
 
@@ -7620,8 +7620,8 @@ LEAEE:  BEQ NewSpellDialog      ;
 LEAF0:  CMP #LVL_07             ;
 LEAF2:  BEQ NewSpellDialog      ;
 LEAF4:  CMP #LVL_09             ;
-LEAF6:  BEQ NewSpellDialog      ;A new spell has been learned.  New spells are-->
-LEAF8:  CMP #LVL_10             ;learned on levels 3, 4, 7, 9, 10, 12, 13, 15,-->
+LEAF6:  BEQ NewSpellDialog      ;A new spell has been learned.  New spells are
+LEAF8:  CMP #LVL_10             ;learned on levels 3, 4, 7, 9, 10, 12, 13, 15,
 LEAFA:  BEQ NewSpellDialog      ;17 and 19.
 LEAFC:  CMP #LVL_12             ;
 LEAFE:  BEQ NewSpellDialog      ;
@@ -7709,14 +7709,14 @@ LEB75:  JMP EnCastStopspell     ;($EC69)Enemy casts stopspell.
 LEB78:* CMP #$80                ;Does enemy have heal?
 LEB7A:  BNE +                   ;If not, branch to check for healmore.
 
-LEB7C:  LDA EnBaseHP            ;Is enemies current hit points less than 1/4-->
+LEB7C:  LDA EnBaseHP            ;Is enemies current hit points less than 1/4
 LEB7F:  LSR                     ;of base hit points?
 LEB80:  LSR                     ;If not, branch to check if lower spell will be cast.
 LEB81:  CMP EnCurntHP           ;
 LEB83:  BCC EnCheckHurtFire     ;
 LEB85:  JMP EnCastHeal          ;($ECA6)Enemy casts heal.
 
-LEB88:* LDA EnBaseHP            ;Is enemies current hit points less than 1/4-->
+LEB88:* LDA EnBaseHP            ;Is enemies current hit points less than 1/4
 LEB8B:  LSR                     ;of base hit points?
 LEB8C:  LSR                     ;If not, branch to check if lower spell will be cast.
 LEB8D:  CMP EnCurntHP           ;
@@ -8056,7 +8056,7 @@ LED6F:  CMP #EN_DRAGONLORD2     ;
 LED71:  BNE +                   ;If not, branch.
 
 LED73:  LDA ShakeX              ;
-LED75:  STA ScrollX             ;Reset scroll registers to original values if fighting -->
+LED75:  STA ScrollX             ;Reset scroll registers to original values if fighting 
 LED77:  LDA ShakeY              ;the end boss. Screen does not shake while fighting end boss.
 LED79:  STA ScrollY             ;
 
@@ -8256,7 +8256,7 @@ LEE90:  RTS                     ;
 TryRun:
 LEE91:  JSR UpdateRandNum       ;($C55B)Get random number.
 
-LEE94:  LDA EnNumber            ;Is player running from an Armored Knight, Red Dragon, -->
+LEE94:  LDA EnNumber            ;Is player running from an Armored Knight, Red Dragon, 
 LEE96:  CMP #EN_STONEMAN        ;Dragonlord 1 or Dragonlord 2?
 LEE98:  BCC ChkGrDrgnRun        ;If not, branch.
 
@@ -8264,7 +8264,7 @@ LEE9A:  LDA RandNumUB           ;Load a random number and keep all the bits(0-25
 LEE9C:  JMP CalcNextOdds        ;
 
 ChkGrDrgnRun:
-LEE9F:  CMP #EN_GDRAGON         ;Is player running from a Starwyvern, Wizard, Axe Knight, -->
+LEE9F:  CMP #EN_GDRAGON         ;Is player running from a Starwyvern, Wizard, Axe Knight, 
 LEEA1:  BCC ChkDrollMRun        ;Blue Dragon or Stoneman? If not, branch.
 
 LEEA3:  LDA RandNumUB           ;
@@ -8280,7 +8280,7 @@ LEEB0:  AND #$3F                ;
 LEEB2:  STA MultNum2LB          ;
 LEEB4:  JSR UpdateRandNum       ;($C55B)Get random number.
 
-LEEB7:  LDA RandNumUB           ;Get a random number and keep lower 5 bits. Add it to -->
+LEEB7:  LDA RandNumUB           ;Get a random number and keep lower 5 bits. Add it to 
 LEEB9:  AND #$1F                ;previous number to get a range of 0-95.
 LEEBB:  ADC MultNum2LB          ;
 LEEBD:  JMP CalcNextOdds        ;
@@ -8319,8 +8319,8 @@ LEEF0:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
 
 LEEF3:  LDA MultRsltLB          ;
 LEEF5:  SEC                     ;Subtract the enemy's defense*rnd from player's agility*rnd. 
-LEEF6:  SBC GenWord42LB         ;If number comes out negative, that's bad for the -->
-LEEF8:  LDA MultRsltUB          ;player(carry clear). The higher the enemy's defense, the -->
+LEEF6:  SBC GenWord42LB         ;If number comes out negative, that's bad for the 
+LEEF8:  LDA MultRsltUB          ;player(carry clear). The higher the enemy's defense, the 
 LEEFA:  SBC GenWord42UB         ;harder it is for the player to come out on top.
 LEEFC:  RTS                     ;
 
@@ -8330,16 +8330,16 @@ LoadEnPalette:
 LEEFD:  LDA EnNumber            ;
 LEEFF:  STA MultNum1LB          ;
 LEF01:  LDA #$0C                ;
-LEF03:  STA MultNum2LB          ;Multiply the enemy number by 12. There are 12 bytes of -->
-LEF05:  LDA #$00                ;palette data per enemy. The result contains the index to -->
+LEF03:  STA MultNum2LB          ;Multiply the enemy number by 12. There are 12 bytes of 
+LEF05:  LDA #$00                ;palette data per enemy. The result contains the index to 
 LEF07:  STA MultNum1UB          ;the desired enemy palette data.
 LEF09:  STA MultNum2UB          ;
 LEF0B:  JSR WordMultiply        ;($C1C9)Multiply 2 16-bit words.
 
 LEF0E:  LDA MultRsltLB          ;
 LEF10:  CLC                     ;
-LEF11:  ADC EnSPPalsPtr         ;Add the base address of the enemy palette data -->
-LEF14:  STA GenPtr3CLB          ;to the calculated index from above. The pointer -->
+LEF11:  ADC EnSPPalsPtr         ;Add the base address of the enemy palette data 
+LEF14:  STA GenPtr3CLB          ;to the calculated index from above. The pointer 
 LEF16:  LDA MultRsltUB          ;Now points to the proper enemy palette data.
 LEF18:  ADC EnSPPalsPtr+1       ;
 LEF1B:  STA GenPtr3CUB          ;
@@ -8534,7 +8534,7 @@ PlyrWeakAttack:
 LF026:  JSR UpdateRandNum       ;($C55B)Get random number.
 
 LF029:  LDA RandNumUB           ;
-LF02B:  AND #$01                ;Player is too weak to fight this enemy. 50% chance -->
+LF02B:  AND #$01                ;Player is too weak to fight this enemy. 50% chance 
 LF02D:  STA CalcDamage          ;of doing 1 point of damage or 50% chance of missing.
 LF02F:  RTS                     ;
 
@@ -8570,9 +8570,9 @@ GetLevelLoop:
 LF056:  LDA ExpLB               ;
 LF058:  SEC                     ;
 LF059:  SBC LevelUpTbl,X        ;
-LF05C:  LDA ExpUB               ;Get current experience and subtract the values in LevelUpTbl -->
-LF05E:  SBC LevelUpTbl+1,X      ;If the value goes negative, then the player's current level -->
-LF061:  BCS LevelFound          ;has been found.  Keep looping until the player's current -->
+LF05C:  LDA ExpUB               ;Get current experience and subtract the values in LevelUpTbl 
+LF05E:  SBC LevelUpTbl+1,X      ;If the value goes negative, then the player's current level 
+LF061:  BCS LevelFound          ;has been found.  Keep looping until the player's current 
 LF063:  DEC DisplayedLevel      ;level is determined.
 LF065:  DEX                     ;
 LF066:  DEX                     ;
@@ -8614,7 +8614,7 @@ LF092:  AND #$03                ;
 LF094:  STA StatPenalty         ;Get 2 LSBs for stat penalty calculations.
 
 LF096:  LDA StatBonus           ;
-LF098:  LSR                     ;Get bits 2 and 3 for stat bonus calculations and -->
+LF098:  LSR                     ;Get bits 2 and 3 for stat bonus calculations and 
 LF099:  LSR                     ;move them to bits 0 and 1.
 LF09A:  AND #$03                ;
 LF09C:  STA StatBonus           ;
@@ -8774,7 +8774,7 @@ LF136:  ASL                     ;*2
 LF137:  TAX                     ;
 LF138:  LDA LevelUpTbl,X        ;
 LF13B:  SEC                     ;
-LF13C:  SBC ExpLB               ;Subtract current experience from value in table-->
+LF13C:  SBC ExpLB               ;Subtract current experience from value in table
 LF13E:  STA GenWrd00LB          ;to get remaining experience until level up.
 LF140:  LDA LevelUpTbl+1,X      ;
 LF143:  SBC ExpUB               ;
@@ -10049,8 +10049,8 @@ LFAD7:  BCS CRCCheckFail        ;Is data valid? If not, branch.
 
 LFAD9:  JSR LoadSavedData       ;($FB6B)Load save game data into game engine registers.
 
-LFADC:  LDA CrntGamePtr         ;Set a pointer to copy save game data. Makes-->
-LFADF:  STA GenPtr3CLB          ;a working copy of saved game data but does not-->
+LFADC:  LDA CrntGamePtr         ;Set a pointer to copy save game data. Makes
+LFADF:  STA GenPtr3CLB          ;a working copy of saved game data but does not
 LFAE1:  LDA CrntGamePtr+1       ;put the data into the game engine registers.
 LFAE4:  STA GenPtr3CUB          ;
 
@@ -10247,7 +10247,7 @@ LFBD2:  LDA (GameDatPtr),Y      ;Load player's current MP.
 LFBD4:  STA MagicPoints         ;
 
 LFBD6:  INY                     ;
-LFBD7:  LDA (GameDatPtr),Y      ;Load player's start status-->
+LFBD7:  LDA (GameDatPtr),Y      ;Load player's start status
 LFBD9:  LDX SaveNumber          ;(should HP and MP be restored).
 LFBDC:  STA StartStatus1,X      ;
 LFBDF:  RTS                     ;
@@ -10311,7 +10311,7 @@ GetNxtSvGameBase:
 LFC1C:  LDA GameDatPtrLB        ;
 LFC1E:  CLC                     ;
 LFC1F:  ADC #$40                ;
-LFC21:  STA GameDatPtrLB        ;Add #$140 to current save game base addres-->
+LFC21:  STA GameDatPtrLB        ;Add #$140 to current save game base addres
 LFC23:  LDA GameDatPtrUB        ;to find the base of the next saved game.
 LFC25:  ADC #$01                ;
 LFC27:  STA GameDatPtrUB        ;
@@ -10329,8 +10329,8 @@ LFC30:  EOR GenByte3C           ;
 LFC32:  ASL CRCLB               ;
 LFC34:  ROL CRCUB               ;
 LFC36:  ASL GenByte3C           ;
-LFC38:  ASL                     ;Some kind of linear feedback shift register I think.-->
-LFC39:  BCC +                   ;The saved data is run though this function and a 16-bit-->
+LFC38:  ASL                     ;Some kind of linear feedback shift register I think.
+LFC39:  BCC +                   ;The saved data is run though this function and a 16-bit
 LFC3B:  LDA CRCLB               ;CRC appears to be generated. 
 LFC3D:  EOR #$21                ;
 LFC3F:  STA CRCLB               ;
@@ -10509,7 +10509,7 @@ LFD0C:  JSR SetPRGBankAndSwitch ;($FF91)Switch to new PRG bank.
 
 LFD0F:  LDX IRQStoreX           ;Restore X.
 LFD11:  LDA BankPntrLB          ;
-LFD13:  STA GenPtr00LB,X        ;Transfer retreived pointer to a-->
+LFD13:  STA GenPtr00LB,X        ;Transfer retreived pointer to a
 LFD15:  LDA BankPntrUB          ;general purpose pointer address.
 LFD17:  STA GenPtr00UB,X        ;
 LFD19:  LDA IRQStoreA           ;Restore A.
@@ -10549,9 +10549,9 @@ LFD43:  STY IRQStoreY           ;
 
 LFD45:  TSX                     ;Get stack pointer.
 LFD46:  LDA BankFuncDatLB,X     ;
-LFD49:  SEC                     ;Get return address from the stack-->
-LFD4A:  SBC #$01                ;and subtract 1.  This points to the-->
-LFD4C:  STA _BankFuncDatLB      ;first data byte after the BRK-->
+LFD49:  SEC                     ;Get return address from the stack
+LFD4A:  SBC #$01                ;and subtract 1.  This points to the
+LFD4C:  STA _BankFuncDatLB      ;first data byte after the BRK
 LFD4E:  LDA BankFuncDatUB,X     ;instruction.
 LFD51:  SBC #$00                ;
 LFD53:  STA _BankFuncDatUB      ;Save pointer to this byte in $33 and $34.
@@ -10647,7 +10647,7 @@ LFDE0:* STA PPUIOReg            ;Clear lower 16 bytes of pattern table 1.
 LFDE3:  DEX                     ;
 LFDE4:  BNE -                   ;
 
-LFDE6:  LDA #%10001000          ;Turn on VBlank interrupts, set sprites-->
+LFDE6:  LDA #%10001000          ;Turn on VBlank interrupts, set sprites
 LFDE8:  STA PPUControl0         ;to pattern table 1.
 LFDEB:  JSR ClearSpriteRAM      ;($C6BB)Clear sprite RAM.
 LFDEE:  JSR WaitForNMI          ;($FF74)Wait for VBlank.
@@ -10688,10 +10688,10 @@ LFE29:  LSR                     ;Move upper nibble to lower nibble.
 LFE2A:  LSR                     ;
 LFE2B:  LSR                     ;
 LFE2C:  AND #$04                ;
-LFE2E:  ORA #$88                ;Isolate bit used to control address increment-->
+LFE2E:  ORA #$88                ;Isolate bit used to control address increment
 LFE30:  STA PPUControl0         ;and apply it to the current PPU settings.
 
-LFE33:  TYA                     ;Next data byte is a counter for repeating tile data loads. -->
+LFE33:  TYA                     ;Next data byte is a counter for repeating tile data loads. 
 LFE34:  INX                     ;Store that byte in Y. only applicable if control bit flag is set.
 LFE35:  LDY BlockRAM,X          ;
 
@@ -10742,7 +10742,7 @@ LFE6C:  TSX                     ;
 
 LFE6D:  LDA Stack-10,X          ;
 LFE70:  CMP #>WaitForNMI        ;
-LFE72:  BNE NotVBlankReady      ;Get return address from the stack and check-->
+LFE72:  BNE NotVBlankReady      ;Get return address from the stack and check
 LFE74:  LDA Stack-11,X          ;If program was not idle waiting for VBlank.
 LFE77:  CMP #<WaitForNMI+3      ;
 LFE79:  BCC NotVBlankReady      ;
@@ -10822,15 +10822,15 @@ LFEF6:  TSX                     ;
 LFEF7:  LDA Stack-$A,X          ;Get upper byte of interrupt return address.
 LFEFA:  STA NMIPtrUB            ;
 
-LFEFC:  CMP #>MMC1LoadPRG       ;Is upper byte of return address within the range of the-->
+LFEFC:  CMP #>MMC1LoadPRG       ;Is upper byte of return address within the range of the
 LFEFE:  BNE ChkValidInst        ;MMC PRG functions? If not, branch to move on.
 
 LFF00:  LDA Stack-$B,X          ;Get lower byte of interrupt return address.
 
-LFF03:  CMP #<MMC1LoadPRG       ;Is lower byte of return address within the range of the-->
+LFF03:  CMP #<MMC1LoadPRG       ;Is lower byte of return address within the range of the
 LFF05:  BCC ChkValidInst        ;MMC PRG functions? If not, branch to move on.
 
-LFF07:  CMP #<MMC1LoadNT1+$14   ;Is lower byte of return address within the range of the-->
+LFF07:  CMP #<MMC1LoadNT1+$14   ;Is lower byte of return address within the range of the
 LFF09:  BCS ChkValidInst        ;MMC PRG functions? If not, branch to move on.
 
 LFF0B:  LDA #<MMC1LoadNT1+$14   ;MMC was being accessed when interrupt happened.
@@ -10843,7 +10843,7 @@ LFF13:  STA NMIPtrLB            ;
 LFF15:  LDY #$00                ;Does data at return address have 7 as the lower nibble?
 LFF17:  LDA (NMIPtr),Y          ;
 LFF19:  AND #$0F                ;
-LFF1B:  CMP #$07                ;If so, do not do IRQ routines.  No valid instruction-->
+LFF1B:  CMP #$07                ;If so, do not do IRQ routines.  No valid instruction
 LFF1D:  BEQ PrepForIRQFuncs     ;has 7 as the lower nibble.  Could be a data byte.
 
 LFF1F:  PLA                     ;
@@ -10919,7 +10919,7 @@ LFF8E:  JMP DoReset             ;($FD86)Reset game.
 
 SetPRGBankAndSwitch:
 LFF91:  STA ActiveBank          ;
-LFF94:  NOP                     ;Store active PRG bank number-->
+LFF94:  NOP                     ;Store active PRG bank number
 LFF95:  NOP                     ;and drop into the routine below.
 
 MMC1LoadPRG:

@@ -634,9 +634,9 @@
                                 ;the dradonlord is defeated. The palette does not
                                 ;seemed to be used for anything.
 
-.alias DoorXPos         $600C   ;Through $601A. X and y positions of doors-->
+.alias DoorXPos         $600C   ;Through $601A. X and y positions of doors
 .alias DoorYPos         $600D   ;Through $601B. opened on the current map.
-.alias TrsrXPos         $601C   ;Through $602A. X and y positions of treasure-->
+.alias TrsrXPos         $601C   ;Through $602A. X and y positions of treasure
 .alias TrsrYPos         $601D   ;Through $602B. chests picked up on the current map.
                                 
 .alias UpdateBGTiles    $602C   ;MSB set = update on-screen background tiles.

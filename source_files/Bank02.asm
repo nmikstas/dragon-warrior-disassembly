@@ -3543,7 +3543,7 @@ LBCF2:  JSR PrepBGPalLoad       ;($C63D)Setup PPU buffer
 
 LBCF5:  LDA #$37                ;
 LBCF7:  STA PPUDataByte         ;
-LBCF9:  LDA #$17                ;Set sprite color for the starburst-->
+LBCF9:  LDA #$17                ;Set sprite color for the starburst
 LBCFB:  STA PPUAddrLB           ;effect to a light pink color.
 LBCFD:  LDA #$3F                ;
 LBCFF:  STA PPUAddrUB           ;
@@ -3569,7 +3569,7 @@ LBD1F:  LDA #$0B                ;
 LBD21:  STA _CharXPos           ;
 LBD23:  LDA #$0C                ;
 LBD25:  STA CharXPixelsLB       ;
-LBD27:  LDA #$10                ;Initialize some variables but-->
+LBD27:  LDA #$10                ;Initialize some variables but
 LBD29:  STA _CharYPos           ;does not appear to be used.
 LBD2B:  LDA #$17                ;
 LBD2D:  STA CharYPixelsLB       ;
@@ -3585,7 +3585,7 @@ LBD3C:  BEQ +++                 ;
 
 LBD3E:  LDY IntroPointer        ;
 LBD40:  LDA StarburstPtrTbl,Y   ;
-LBD43:  STA DatPntr1LB          ;Get pointer to current sprite data table-->
+LBD43:  STA DatPntr1LB          ;Get pointer to current sprite data table
 LBD45:  LDA StarburstPtrTbl+1,Y ;and store it in $99, $9A.
 LBD48:  STA DatPntrlUB          ;
 LBD4A:  LDY #$00                ;
@@ -3605,13 +3605,13 @@ LBD5C:  INY                     ;
 LBD5D:  INX                     ;
 
 LBD5E:  LDA (DatPntr1),Y        ;
-LBD60:  AND #$C0                ;Get upper 2 bits of sprite data and store-->
+LBD60:  AND #$C0                ;Get upper 2 bits of sprite data and store
 LBD62:  ORA #$01                ;them as the sprite attribute byte.
 LBD64:  STA SpriteRAM+$40,X     ;
 LBD67:  INX                     ;
 
 LBD68:  LDA (DatPntr1),Y        ;
-LBD6A:  AND #$3F                ;Use the same byte but this time keep the-->
+LBD6A:  AND #$3F                ;Use the same byte but this time keep the
 LBD6C:  CLC                     ;lower 6 bits for the sprite x position.
 LBD6D:  ADC #$B4                ;
 LBD6F:  STA SpriteRAM+$40,X     ;Add 180 to the x position and store it.
@@ -3620,11 +3620,11 @@ LBD73:  INX                     ;
 
 LBD74:  BNE IntroSpLoadLoop     ;Looop to load more sprite data.
 
-LBD76:* LDA IntroCounter        ;Working on the second and third starbursts? If so,-->
-LBD78:  CMP #$80                ;branch to increment the table pointer. This has-->
+LBD76:* LDA IntroCounter        ;Working on the second and third starbursts? If so,
+LBD78:  CMP #$80                ;branch to increment the table pointer. This has
 LBD7A:  BCS +                   ;the effect of doubling the starburst animation.
 
-LBD7C:  LSR                     ;Branch to skip pointer increment. X is above the sprite-->
+LBD7C:  LSR                     ;Branch to skip pointer increment. X is above the sprite
 LBD7D:  BCC ++                  ;offsets so the effect is slowing down the starburst.
 
 LBD7F:* INC IntroPointer        ;Move to next pointer in the table.
@@ -3634,7 +3634,7 @@ LBD83:  LDA IntroPointer        ;At the end of the table?
 LBD85:  CMP #$18                ;If so, branch to clear sprites.
 LBD87:  BNE +                   ;
 
-LBD89:  LDA #$FF                ;Not time to load sprite data.-->
+LBD89:  LDA #$FF                ;Not time to load sprite data.
 LBD8B:  STA IntroPointer        ;Invalidate pointer.
 
 LBD8D:* LDA #$F0                ;
@@ -3660,7 +3660,7 @@ LBDA9:  STA IntroPointer        ;
 LBDAB:* LDA JoypadBtns          ;Get old button values and store them on the stack.
 LBDAD:  PHA                     ;
 LBDAE:  JSR GetJoypadStatus     ;($C608)Get input button presses.
-LBDB1:  PLA                     ;Get the old values again and branch if something-->
+LBDB1:  PLA                     ;Get the old values again and branch if something
 LBDB2:  BNE +                   ;was previously pressed. 
 
 LBDB4:  LDA JoypadBtns          ;Get joypad button presses.

@@ -9,10 +9,11 @@ cyan=`tput setaf 6`
 reset=`tput sgr0`
 
 printf "\n${magenta}Deleting previous build files...${reset}\n"
-rm ./output_files/*
+rm -rf Output_Files
+mkdir ./Output_Files
 
 printf "\n${magenta}Assembling individual PRG banks...${reset}\n\n"
-cd source_files
+cd Source_Files
 
 ../Ophis/ophis Bank00.asm ../output_files/Bank00.bin
 ../Ophis/ophis Bank01.asm ../output_files/Bank01.bin
@@ -23,7 +24,7 @@ cd ..
 printf "\n${magenta}Calculating checksums of individual PRG banks...${reset}\n\n"
 printf -- "${yellow}--------------------PRG Bank 00--------------------${reset}\n"
 out00=($(md5sum output_files/Bank00.bin))
-org00=($(md5sum original_files/Bank00.bin))
+org00="4494467c3c7f3401a5ea25947814b8bd"
 printf "Assembled md5sum = $out00\n"
 printf "Original  md5sum = $org00\n"
 if [ "$out00" = "$org00" ]; then
@@ -34,7 +35,7 @@ fi
 
 printf -- "${yellow}--------------------PRG Bank 01--------------------${reset}\n"
 out01=($(md5sum output_files/Bank01.bin))
-org01=($(md5sum original_files/Bank01.bin))
+org01="e34c39bfb3069bc6c563b0e614b22a49"
 printf "Assembled md5sum = $out01\n"
 printf "Original  md5sum = $org01\n"
 if [ "$out01" = "$org01" ]; then
@@ -45,7 +46,7 @@ fi
 
 printf -- "${yellow}--------------------PRG Bank 02--------------------${reset}\n"
 out02=($(md5sum output_files/Bank02.bin))
-org02=($(md5sum original_files/Bank02.bin))
+org02="0135d12602c3efb5728a0f220ae916fd"
 printf "Assembled md5sum = $out02\n"
 printf "Original  md5sum = $org02\n"
 if [ "$out02" = "$org02" ]; then
@@ -56,7 +57,7 @@ fi
 
 printf -- "${yellow}--------------------PRG Bank 03--------------------${reset}\n"
 out03=($(md5sum output_files/Bank03.bin))
-org03=($(md5sum original_files/Bank03.bin))
+org03="aae638b52ffc7a720a63d6ef1700a2b3"
 printf "Assembled md5sum = $out03\n"
 printf "Original  md5sum = $org03\n"
 if [ "$out03" = "$org03" ]; then
