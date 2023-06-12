@@ -8073,13 +8073,13 @@ LB49B:  .byte $81, $24, $27, $39, $28, $31, $37, $38, $35, $28, $81, $2F, $32, $
 LB4AB:  .byte $44
 LB4AC:  .byte $B5               ;Display Log 1 character's name.
 LB4AD:  .byte $80               ;Blank tiles, remainder of row.
-
+;              _    A    D    V    E    N    T    U    R    E    _    L    O    G    _    2
 LB4AE:  .byte $81, $24, $27, $39, $28, $31, $37, $38, $35, $28, $81, $2F, $32, $2A, $81, $02
 ;              :
 LB4BE:  .byte $44
 LB4BF:  .byte $B6               ;Display Log 2 character's name.
 LB4C0:  .byte $80               ;Blank tiles, remainder of row.
-
+;              _    A    D    V    E    N    T    U    R    E    _    L    O    G    _    3
 LB4C1:  .byte $81, $24, $27, $39, $28, $31, $37, $38, $35, $28, $81, $2F, $32, $2A, $81, $03
 ;              :
 LB4D1:  .byte $44

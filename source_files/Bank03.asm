@@ -4359,8 +4359,8 @@ LDA0E:  JMP ResumeGamePlay      ;($CFD9)Give control back to player.
 
 DoSpell:
 LDA11:  LDA SpellFlags          ;
-LDA13:  STA SpellFlagsLB        ;Get a copy of all the spells the player has.
-LDA15:  LDA ModsnSpells         ;
+LDA13:  STA SpellFlagsLB        ;
+LDA15:  LDA ModsnSpells         ;Get a copy of all the spells the player has.
 LDA17:  AND #$03                ;
 LDA19:  STA SpellFlagsUB        ;
 
@@ -8798,26 +8798,13 @@ LF152:  .word DescTbl           ;($F154)Pointer into table below.
 
 DescTbl:
 
-;Unused data.
-LF154:  .byte $FA
-LF155:  .byte $55, $62, $FA
-LF158:  .byte $41, $4E, $40, $62, $FA
-LF15D:  .byte $FA
-LF15E:  .byte $40, $47, $F8, $6B, $4E, $4D, $FA
-LF165:  .byte $0C, $35, $14, $1C, $F8, $23, $FA
-LF16C:  .byte $2F, $0C, $13, $18, $FA
-LF171:  .byte $0A, $38, $19, $FA
-LF175:  .byte $4C, $F8, $40, $4A, $22, $23, $0F, $FA
-LF17D:  .byte $1B, $19, $0D, $1C, $11, $33, $FA
-LF184:  .byte $42, $4D, $42, $4E, $40, $FA
-LF18A:  .byte $31, $4D, $43, $47, $F8, $4E, $43, $FA
-LF192:  .byte $28, $16, $4F, $FA
-LF196:  .byte $15, $F8, $39, $4F, $FA
-LF19B:  .byte $1C, $F8, $16, $0F, $60, $FA
-LF1A1:  .byte $28, $16, $0F, $60, $FA
-LF1A6:  .byte $13, $F8, $14, $F8, $0B, $28, $16, $4F, $FA
-LF1AF:  .byte $00, $FA
-LF1B1:  .byte $00, $FA
+;Unused.
+LF154:  .byte $FA, $55, $62, $FA, $41, $4E, $40, $62, $FA, $FA, $40, $47, $F8, $6B, $4E, $4D
+LF164:  .byte $FA, $0C, $35, $14, $1C, $F8, $23, $FA, $2F, $0C, $13, $18, $FA, $0A, $38, $19
+LF174:  .byte $FA, $4C, $F8, $40, $4A, $22, $23, $0F, $FA, $1B, $19, $0D, $1C, $11, $33, $FA
+LF184:  .byte $42, $4D, $42, $4E, $40, $FA, $31, $4D, $43, $47, $F8, $4E, $43, $FA, $28, $16
+LF194:  .byte $4F, $FA, $15, $F8, $39, $4F, $FA, $1C, $F8, $16, $0F, $60, $FA, $28, $16, $0F
+LF1A4:  .byte $60, $FA, $13, $F8, $14, $F8, $0B, $28, $16, $4F, $FA, $00, $FA, $00, $FA
 
 LF1B3:  .byte DSC_SCRT_PSG,      TXT_SUBEND     ;Secret passage text.
 LF1B5:  .byte DSC_HEAL-$13,      TXT_SUBEND     ;Heal spell text.
@@ -8831,7 +8818,7 @@ LF1C3:  .byte DSC_REPEL-$13,     TXT_SUBEND     ;Repel spell text.
 LF1C5:  .byte DSC_HEALMORE-$13,  TXT_SUBEND     ;Healmore spell text.
 LF1C7:  .byte DSC_HURTMORE-$13,  TXT_SUBEND     ;Hurtmore spell text.
 
-;Unused data.
+;Unused.
 LF1C9:  .byte $44, $26, $F8, $43, $FA
 
 LF1CE:  .byte DSC_BMB_POLE,      TXT_SUBEND     ;Bamboo pole text.
@@ -8852,11 +8839,9 @@ LF1EA:  .byte DSC_SM_SHLD,       TXT_SUBEND     ;Small shield text.
 LF1EC:  .byte DSC_LG_SHLD,       TXT_SUBEND     ;Large shield text.
 LF1EE:  .byte DSC_SLVR_SHLD,     TXT_SUBEND     ;Silver shield text.
 
-;Unused data.
-LF1F0:  .byte $3C, $5F, $5F, $25, $F8, $10, $58, $FA
-LF1F8:  .byte $3C, $5F, $2F, $34, $0B, $58, $FA
-LF1FF:  .byte $28, $13, $1D, $22, $5F, $FA
-LF205:  .byte $41, $6B, $22, $5F, $1A, $36, $24, $11, $FA
+;Unused.
+LF1F0:  .byte $3C, $5F, $5F, $25, $F8, $10, $58, $FA, $3C, $5F, $2F, $34, $0B, $58, $FA, $28
+LF200:  .byte $13, $1D, $22, $5F, $FA, $41, $6B, $22, $5F, $1A, $36, $24, $11, $FA
 
 LF20E:  .byte DSC_HERB,          TXT_SUBEND     ;Herb text.
 LF210:  .byte DSC_KEY,           TXT_SUBEND     ;Magic key text.
@@ -8875,72 +8860,26 @@ LF228:  .byte DSC_STN_SUN,       TXT_SUBEND     ;Stones of sunlight text.
 LF22A:  .byte DSC_RN_STAFF,      TXT_SUBEND     ;Staff of rain text.
 LF22C:  .byte DSC_RNBW_DRP,      TXT_SUBEND     ;Rainbow drop text.
 
-;Unused data.
-LF22E:  .byte $15, $0F, $15, $FA
-LF232:  .byte $15, $F8, $3A, $2C, $37, $FA
-LF238:  .byte $0A, $1E, $19, $FA
-LF23C:  .byte $28, $19, $F8, $FA
-LF240:  .byte $18, $33, $0B, $15, $F8, $3B, $0C, $FA
-LF248:  .byte $2C, $1C, $28, $17, $37, $0F, $F8, $6C, $FA
-LF251:  .byte $0E, $0F, $21, $0F, $F8, $5F, $19, $31, $28, $17, $37, $0F, $F8, $6C, $FA
-LF260:  .byte $1E, $1F, $0F, $FA
-LF264:  .byte $1D, $F8, $33, $36, $FA
-LF269:  .byte $1E, $1F, $36, $FA
-LF26D:  .byte $1C, $1F, $0B, $33, $19, $FA
-LF273:  .byte $29, $1B, $12, $19, $FA
-LF278:  .byte $35, $19, $15, $FA
-LF27C:  .byte $41, $4E, $40, $FA
-LF280:  .byte $24, $2B, $FA
-LF283:  .byte $1C, $F8, $16, $4F, $FA
-LF288:  .byte $0A, $2B, $1D, $5F, $19, $0B, $2F, $0C, $0F, $F8, $5F, $0A, $35, $14, $32, $FA
-LF298:  .byte $19, $16, $12, $19, $F8, $15, $1C, $FA
-LF2A0:  .byte $13, $F8, $14, $F8, $0B, $28, $16, $FA
-LF2A8:  .byte $11, $19, $F8, $14, $0B, $FA
-LF2AE:  .byte $14, $28, $FA
-LF2B1:  .byte $0E, $0C, $14, $28, $FA
-LF2B6:  .byte $13, $13, $23, $FA
-LF2BA:  .byte $18, $1E, $19, $FA
-LF2BE:  .byte $0A, $30, $35, $33, $FA
-LF2C3:  .byte $0F, $F8, $2F, $0B, $52, $FA
-LF2C9:  .byte $1D, $F8, $0C, $0F, $FA
-LF2CE:  .byte $2E, $0C, $15, $39, $FA
-LF2D3:  .byte $23, $16, $F8, $FA
-LF2D7:  .byte $14, $0F, $F8, $16, $FA
-LF2DC:  .byte $0A, $32, $30, $15, $0B, $FA
-LF2E2:  .byte $1D, $F8, $13, $0F, $1F, $FA
-LF2E8:  .byte $24, $1B, $2F, $0C, $FA
-LF2ED:  .byte $0E, $28, $0D, $FA
-LF2F1:  .byte $0E, $15, $34, $FA
-LF2F5:  .byte $25, $32, $0B, $5F, $0B, $0B, $1B, $19, $0D, $FA
-LF2FF:  .byte $28, $1A, $FA
-LF302:  .byte $28, $2C, $22, $19, $1A, $FA
-LF308:  .byte $0A, $31, $0F, $F8, $1D, $0C, $FA
-LF30F:  .byte $0F, $F8, $FA
-LF312:  .byte $10, $F8, $FA
-LF315:  .byte $11, $F8, $FA
-LF318:  .byte $12, $F8, $FA
-LF31B:  .byte $13, $F8, $FA
-LF31E:  .byte $14, $F8, $FA
-LF321:  .byte $15, $F8, $FA
-LF324:  .byte $16, $F8, $FA
-LF327:  .byte $17, $F8, $FA
-LF32A:  .byte $18, $F8, $FA
-LF32D:  .byte $19, $F8, $FA
-LF330:  .byte $1A, $F8, $FA
-LF333:  .byte $1B, $F8, $FA
-LF336:  .byte $1C, $F8, $FA
-LF339:  .byte $1D, $F8, $FA
-LF33C:  .byte $23, $F8, $FA
-LF33F:  .byte $24, $F8, $FA
-LF342:  .byte $25, $F8, $FA
-LF345:  .byte $26, $F8, $FA
-LF348:  .byte $27, $F8, $FA
-LF34B:  .byte $23, $F9, $FA
-LF34E:  .byte $24, $F9, $FA
-LF351:  .byte $25, $F9, $FA
-LF354:  .byte $26, $F9, $FA
-LF357:  .byte $27, $F9, $FA
-LF35A:  .byte $FA
+;Unused.
+LF22E:  .byte $15, $0F, $15, $FA, $15, $F8, $3A, $2C, $37, $FA, $0A, $1E, $19, $FA, $28, $19
+LF23E:  .byte $F8, $FA, $18, $33, $0B, $15, $F8, $3B, $0C, $FA, $2C, $1C, $28, $17, $37, $0F
+LF24E:  .byte $F8, $6C, $FA, $0E, $0F, $21, $0F, $F8, $5F, $19, $31, $28, $17, $37, $0F, $F8
+LF25E:  .byte $6C, $FA, $1E, $1F, $0F, $FA, $1D, $F8, $33, $36, $FA, $1E, $1F, $36, $FA, $1C
+LF26E:  .byte $1F, $0B, $33, $19, $FA, $29, $1B, $12, $19, $FA, $35, $19, $15, $FA, $41, $4E
+LF27E:  .byte $40, $FA, $24, $2B, $FA, $1C, $F8, $16, $4F, $FA, $0A, $2B, $1D, $5F, $19, $0B
+LF28E:  .byte $2F, $0C, $0F, $F8, $5F, $0A, $35, $14, $32, $FA, $19, $16, $12, $19, $F8, $15
+LF29E:  .byte $1C, $FA, $13, $F8, $14, $F8, $0B, $28, $16, $FA, $11, $19, $F8, $14, $0B, $FA
+LF2AE:  .byte $14, $28, $FA, $0E, $0C, $14, $28, $FA, $13, $13, $23, $FA, $18, $1E, $19, $FA
+LF2BE:  .byte $0A, $30, $35, $33, $FA, $0F, $F8, $2F, $0B, $52, $FA, $1D, $F8, $0C, $0F, $FA
+LF2CE:  .byte $2E, $0C, $15, $39, $FA, $23, $16, $F8, $FA, $14, $0F, $F8, $16, $FA, $0A, $32
+LF2DE:  .byte $30, $15, $0B, $FA, $1D, $F8, $13, $0F, $1F, $FA, $24, $1B, $2F, $0C, $FA, $0E
+LF2EE:  .byte $28, $0D, $FA, $0E, $15, $34, $FA, $25, $32, $0B, $5F, $0B, $0B, $1B, $19, $0D
+LF2FE:  .byte $FA, $28, $1A, $FA, $28, $2C, $22, $19, $1A, $FA, $0A, $31, $0F, $F8, $1D, $0C
+LF30E:  .byte $FA, $0F, $F8, $FA, $10, $F8, $FA, $11, $F8, $FA, $12, $F8, $FA, $13, $F8, $FA
+LF31E:  .byte $14, $F8, $FA, $15, $F8, $FA, $16, $F8, $FA, $17, $F8, $FA, $18, $F8, $FA, $19
+LF32E:  .byte $F8, $FA, $1A, $F8, $FA, $1B, $F8, $FA, $1C, $F8, $FA, $1D, $F8, $FA, $23, $F8
+LF33E:  .byte $FA, $24, $F8, $FA, $25, $F8, $FA, $26, $F8, $FA, $27, $F8, $FA, $23, $F9, $FA
+LF34E:  .byte $24, $F9, $FA, $25, $F9, $FA, $26, $F9, $FA, $27, $F9, $FA, $FA
 
 ;----------------------------------------------------------------------------------------------------
 
