@@ -3396,7 +3396,7 @@ LD552:  .byte ITM_STFF_RAIN     ;
 WeaponsDialog:
 LD553:  STA DialogTemp          ;Save dialog control byte.
 
-LD555:  JSR DoDialogLoBlock     ;($C7CB)We deal in weapons and armor.
+LD555:  JSR DoDialogLoBlock     ;($C7CB)We deal in weapons and armor...
 LD558:  .byte $28               ;TextBlock3, entry 8.
 
 WpnDialogLoop:
@@ -3407,7 +3407,7 @@ LD55D:  BEQ WeapYesDialog       ;Does the player want weapons? If so, branch.
 LD55F:  JMP WeapNoDialog        ;($D66B)Finish weapons shop dialog.
 
 WeapYesDialog:
-LD562:  JSR DoDialogLoBlock     ;($C7CB)What dost thou wish to buy?
+LD562:  JSR DoDialogLoBlock     ;($C7CB)What dost thou wish to buy?...
 LD565:  .byte $2D               ;TextBlock3, entry 13.
 
 LD566:  JSR GetShopItems        ;($D672)Get items for sale in this shop.
@@ -4711,9 +4711,9 @@ LDBE1:  JMP PlyrAddHP           ;Healmore adds 85 to 100 points to HP.
 
 CopyEnUpperBytes:
 LDBE4:  LDA #$08                ;
-LDBE6:  STA $3C                 ;Copy the unused enemy bytes into the description buffer.
+LDBE6:  STA GenPtr3CLB          ;Copy the unused enemy bytes into the description buffer.
 LDBE8:  LDA #$01                ;
-LDBEA:  STA $3D                 ;
+LDBEA:  STA GenPtr3CUB          ;
 
 LDBEC:  LDY #$00                ;Index is always 0.
 LDBEE:  BEQ GetThisDescLoop     ;Branch always.

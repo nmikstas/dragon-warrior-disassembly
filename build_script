@@ -15,6 +15,7 @@ mkdir ./Output_Files
 printf "\n${magenta}Assembling individual PRG banks...${reset}\n\n"
 cd Source_Files
 
+../Ophis/ophis Header.asm ../output_files/Header.bin
 ../Ophis/ophis Bank00.asm ../output_files/Bank00.bin
 ../Ophis/ophis Bank01.asm ../output_files/Bank01.bin
 ../Ophis/ophis Bank02.asm ../output_files/Bank02.bin
@@ -67,7 +68,7 @@ else
 fi
 
 #printf "${magenta}Combining Assembled banks into a ROM...${reset}\n"
-#cat original_files/Header.bin \
+#cat output_files/Header.bin \
 #	output_files/Bank00.bin \
 #	output_files/Bank01.bin \
 #	output_files/Bank02.bin \

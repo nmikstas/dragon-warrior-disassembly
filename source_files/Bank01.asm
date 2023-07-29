@@ -9469,7 +9469,7 @@ EnNames2Tbl:
 LBDA2:  .byte $FF
 ;              S    l    i    m    e   
 LBDA3:  .byte $36, $15, $12, $16, $0E, $FF
-;             
+;             None
 LBDA9:  .byte $FF
 ;             None
 LBDAA:  .byte $FF
@@ -9523,7 +9523,7 @@ LBDDC:  .byte $FF
 LBDDD:  .byte $FF
 ;              K    n    i    g    h    t   
 LBDDE:  .byte $2E, $17, $12, $10, $11, $1D, $FF
-
+;             None
 LBDE5:  .byte $FF
 ;              D    r    a    g    o    n   
 LBDE6:  .byte $27, $1B, $0A, $10, $18, $17, $FF
