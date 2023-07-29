@@ -41,7 +41,7 @@
 ;++++----- Upper nybble of mapper number
 ;
 ;Byte 7.
-.byte $00                       ;MMC1 mapper.
+.byte $00                       ;NES 1.0 header format, MMC1 mapper.
 
 ;----------------------------------------------------------------------------------------------------
 
